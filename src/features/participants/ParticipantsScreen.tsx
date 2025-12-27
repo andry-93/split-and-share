@@ -21,11 +21,11 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { useParticipants } from './useParticipants';
-import { ScreenHeader } from '../../shared/ui/ScreenHeader';
-import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
-import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
-import { EmptyState } from '../../shared/ui/EmptyState';
-import { ParticipantsStackParamList } from '../../app/navigation/types';
+import { ScreenHeader } from '@/shared/ui/ScreenHeader';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import { EmptyState } from '@/shared/ui/EmptyState';
+import { ParticipantsStackParamList } from '@/app/navigation/types';
 
 type Nav =
     NativeStackNavigationProp<ParticipantsStackParamList>;

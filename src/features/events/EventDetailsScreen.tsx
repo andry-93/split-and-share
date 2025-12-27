@@ -27,29 +27,45 @@ import {
     NativeStackNavigationProp,
 } from '@react-navigation/native-stack';
 
-import { EventsStackParamList } from '../../app/navigation/types';
+import { EventsStackParamList } from '@/app/navigation/types';
+import { useEvent } from './useEvent';
 import { useEvents } from './useEvents';
 import { useParticipants } from '../participants/useParticipants';
 import { useExpenses } from '../expenses/useExpenses';
-import { calculateDebts } from '../../entities/debt/calculateDebts';
+import { calculateDebts } from '@/entities/debt/calculateDebts';
 
 import { ExpenseDialog } from '../expenses/components/ExpenseDialog';
 import { ExpensesList } from '../expenses/ExpensesList';
 import { ParticipantsPreview } from '../participants/ParticipantsPreview';
 import { EventParticipantsDialog } from '../participants/EventParticipantsDialog';
 import { DebtList } from '../debts/DebtList';
-import { Section } from '../../shared/ui/Section';
-import { ScreenHeader } from '../../shared/ui/ScreenHeader';
+import { Section } from '@/shared/ui/Section';
+import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 import { useSettings } from '../settings/SettingsContext';
 
+/* =======================
+   TYPES
+   ======================= */
+
 type Props = {
-    route: RouteProp<EventsStackParamList, 'EventDetails'>;
+    route: RouteProp<
+        EventsStackParamList,
+        'EventDetails'
+    >;
 };
 
 type Nav =
-    NativeStackNavigationProp<EventsStackParamList>;
+    NativeStackNavigationProp<
+        EventsStackParamList
+    >;
 
-export const EventDetailsScreen = ({ route }: Props) => {
+/* =======================
+   SCREEN
+   ======================= */
+
+export const EventDetailsScreen = ({
+                                       route,
+                                   }: Props) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const navigation = useNavigation<Nav>();
@@ -60,12 +76,11 @@ export const EventDetailsScreen = ({ route }: Props) => {
        DATA
        ======================= */
 
-    const { getEventById, loading, updateEvent } =
-        useEvents();
+    const { event } = useEvent(eventId);
+    const { updateEvent } = useEvents();
+
     const { participants } = useParticipants();
     const { defaultCurrency } = useSettings();
-
-    const event = getEventById(eventId);
 
     const {
         expenses,
@@ -79,7 +94,7 @@ export const EventDetailsScreen = ({ route }: Props) => {
        ======================= */
 
     const participantIds =
-        event?.participantIds ?? [];
+        event.participantIds ?? [];
 
     const eventParticipants = useMemo(
         () =>
@@ -90,7 +105,7 @@ export const EventDetailsScreen = ({ route }: Props) => {
     );
 
     const currency =
-        event?.currency ?? defaultCurrency;
+        event.currency ?? defaultCurrency;
 
     /* =======================
        DEBTS + ANIMATION
@@ -122,7 +137,7 @@ export const EventDetailsScreen = ({ route }: Props) => {
                 useNativeDriver: true,
             }),
         ]).start();
-    }, [debts.length]); // 🔥 анимация только при реальном изменении
+    }, [debts.length]);
 
     /* =======================
        LOCAL STATE
@@ -161,8 +176,8 @@ export const EventDetailsScreen = ({ route }: Props) => {
        ======================= */
 
     useEffect(() => {
-        setCurrencyInput(event?.currency ?? '');
-    }, [event?.currency]);
+        setCurrencyInput(event.currency ?? '');
+    }, [event.currency]);
 
     /* =======================
        HANDLERS
@@ -179,8 +194,6 @@ export const EventDetailsScreen = ({ route }: Props) => {
     };
 
     const saveCurrency = () => {
-        if (!event) return;
-
         const next =
             currencyInput.trim().toUpperCase();
 
@@ -203,20 +216,6 @@ export const EventDetailsScreen = ({ route }: Props) => {
     /* =======================
        GUARDS
        ======================= */
-
-    if (loading) {
-        return (
-            <View
-                style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <ActivityIndicator />
-            </View>
-        );
-    }
 
     if (!event) {
         return (
@@ -289,7 +288,10 @@ export const EventDetailsScreen = ({ route }: Props) => {
                     <HelperText type="info">
                         {t(
                             'leave_empty_for_default',
-                            { currency: defaultCurrency }
+                            {
+                                currency:
+                                defaultCurrency,
+                            }
                         )}
                     </HelperText>
                 </Section>
@@ -327,7 +329,7 @@ export const EventDetailsScreen = ({ route }: Props) => {
                     />
                 </Section>
 
-                {/* DEBTS (ANIMATED) */}
+                {/* DEBTS */}
                 <Animated.View
                     style={{ opacity: fadeAnim }}
                 >

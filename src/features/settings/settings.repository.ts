@@ -1,5 +1,5 @@
-import { Settings } from '../../entities/types';
-import { storage } from '../../shared/lib/storage';
+import { Settings } from '@/entities/types';
+import { storage } from '@/shared/lib/storage';
 
 const SETTINGS_KEY = 'settings';
 

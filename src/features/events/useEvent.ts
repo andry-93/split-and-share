@@ -1,33 +1,16 @@
-import { useEffect, useState } from 'react';
-import { Event } from '../../entities/types';
-import { eventsRepository } from '../../entities/event/event.repository';
+import { useAppSelector } from '@/store/hooks';
+import { selectEvents } from '@/store/selectors/events.selectors';
 
 export const useEvent = (eventId: string) => {
-  const [event, setEvent] = useState<Event | null>(null);
+    const event = useAppSelector(state =>
+        selectEvents(state).find(e => e.id === eventId)
+    );
 
-  useEffect(() => {
-    load();
-  }, [eventId]);
+    if (!event) {
+        throw new Error(
+            `Event with id ${eventId} not found`
+        );
+    }
 
-  const load = async () => {
-    const events = await eventsRepository.getAll();
-    setEvent(events.find(e => e.id === eventId) ?? null);
-  };
-
-  const updateParticipants = async (participantIds: string[]) => {
-    if (!event) return;
-
-    const updated: Event = {
-      ...event,
-      participantIds,
-    };
-
-    setEvent(updated);
-    await eventsRepository.update(updated);
-  };
-
-  return {
-    event,
-    updateParticipants,
-  };
+    return { event };
 };

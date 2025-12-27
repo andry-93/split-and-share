@@ -1,6 +1,6 @@
-import { Debt, Participant } from '../../entities/types';
-import { toCSV } from '../../shared/lib/csv';
-import { exportCsv } from '../../shared/lib/exportCsv';
+import { Debt, Participant } from '@/entities/types';
+import { toCSV } from '@/shared/lib/csv';
+import { exportCsv } from '@/shared/lib/exportCsv';
 
 export const exportDebts = async (
     debts: Debt[],

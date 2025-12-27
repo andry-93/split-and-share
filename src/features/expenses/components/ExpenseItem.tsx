@@ -1,7 +1,7 @@
 import React from 'react';
 import { IconButton, List, Text } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
-import { Expense, Participant } from '../../../entities/types';
+import { Expense, Participant } from '@/entities/types';
 
 interface Props {
     expense: Expense;

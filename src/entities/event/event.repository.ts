@@ -1,5 +1,5 @@
 import { Event } from '../types';
-import { storage } from '../../shared/lib/storage';
+import { storage } from '@/shared/lib/storage';
 
 const EVENTS_KEY = 'events';
 

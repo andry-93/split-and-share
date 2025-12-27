@@ -7,9 +7,9 @@ import {
 } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 
-import { Expense, Participant } from '../../entities/types';
-import { EmptyState } from '../../shared/ui/EmptyState';
-import { useCurrencyFormatter } from '../../shared/hooks/useCurrencyFormatter';
+import { Expense, Participant } from '@/entities/types';
+import { EmptyState } from '@/shared/ui/EmptyState';
+import { useCurrencyFormatter } from '@/shared/hooks/useCurrencyFormatter';
 
 type Props = {
     expenses: Expense[];

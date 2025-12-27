@@ -1,5 +1,5 @@
 import { Avatar, IconButton, List } from 'react-native-paper';
-import { Participant } from '../../../entities/types';
+import { Participant } from '@/entities/types';
 
 interface Props {
   participant: Participant;

@@ -8,7 +8,7 @@ import {
 } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 
-import { Debt, Participant } from '../../../entities/types';
+import { Debt, Participant } from '@/entities/types';
 
 type Props = {
     debt: Debt;

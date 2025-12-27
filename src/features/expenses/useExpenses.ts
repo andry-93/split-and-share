@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Expense } from '../../entities/types';
-import { expensesRepository } from '../../entities/expense/expense.repository';
+import { Expense } from '@/entities/types';
+import { expensesRepository } from '@/entities/expense/expense.repository';
 import { nanoid } from 'nanoid/non-secure';
 
 export const useExpenses = (eventId: string) => {

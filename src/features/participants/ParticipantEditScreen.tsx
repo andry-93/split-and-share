@@ -11,9 +11,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
-import { ScreenHeader } from '../../shared/ui/ScreenHeader';
+import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 import { useParticipants } from './useParticipants';
-import { ParticipantsStackParamList } from '../../app/navigation/types';
+import { ParticipantsStackParamList } from '@/app/navigation/types';
 
 type Props = {
     route: RouteProp<

@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Participant } from '../../entities/types';
-import { participantsRepository } from '../../entities/participant/participant.repository';
-import { eventsRepository } from '../../entities/event/event.repository';
-import { expensesRepository } from '../../entities/expense/expense.repository';
+import { Participant } from '@/entities/types';
+import { participantsRepository } from '@/entities/participant/participant.repository';
+import { eventsRepository } from '@/entities/event/event.repository';
+import { expensesRepository } from '@/entities/expense/expense.repository';
 import { nanoid } from 'nanoid/non-secure';
 
 export const useParticipants = () => {

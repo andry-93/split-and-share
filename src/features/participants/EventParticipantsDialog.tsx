@@ -7,7 +7,7 @@ import {
     List,
 } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
-import { Participant } from '../../entities/types';
+import { Participant } from '@/entities/types';
 
 type Props = {
     visible: boolean;

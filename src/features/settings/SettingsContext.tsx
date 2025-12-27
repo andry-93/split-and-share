@@ -12,7 +12,7 @@ import type {
     Settings,
     Language,
     Theme,
-} from '../../entities/types';
+} from '@/entities/types';
 
 const SettingsContext =
     createContext<Settings | undefined>(undefined);

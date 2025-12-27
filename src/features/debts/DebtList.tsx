@@ -9,9 +9,9 @@ import {
 } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 
-import { Debt, Participant } from '../../entities/types';
+import { Debt, Participant } from '@/entities/types';
 import { exportDebts } from './exportDebts';
-import { useBottomSheet } from '../../shared/ui/bottom-sheet/BottomSheetProvider';
+import { useBottomSheet } from '@/shared/ui/bottom-sheet/BottomSheetProvider';
 import { DebtDetailsContent } from './components/DebtDetailsContent';
 
 type Props = {

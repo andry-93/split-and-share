@@ -11,7 +11,7 @@ import {
 } from 'react-native-paper';
 
 import { useSettings } from './SettingsContext';
-import { ScreenHeader } from '../../shared/ui/ScreenHeader';
+import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 
 const spacing = {
     xs: 8,

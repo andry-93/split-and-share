@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Participant } from '../../entities/types';
-import { participantsRepository } from '../../entities/participant/participant.repository';
+import { Participant } from '@/entities/types';
+import { participantsRepository } from '@/entities/participant/participant.repository';
 
 export const useParticipantsReadonly = () => {
     const [participants, setParticipants] = useState<Participant[]>([]);

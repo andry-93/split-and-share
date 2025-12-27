@@ -1,104 +1,97 @@
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
-import { Event } from '../../entities/types';
-import { eventsRepository } from '../../entities/event/event.repository';
+import { useEffect } from 'react';
+import { updateEvent as updateEventAction } from '@/store/slices/events.slice';
+import { eventsRepository } from '@/entities/event/event.repository';
+import {
+    addEvent,
+    removeEvent,
+    setEvents,
+    setActiveEvent,
+} from '@/store/slices/events.slice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { selectEvents, selectActiveEvent } from '@/store/selectors/events.selectors';
 import { nanoid } from 'nanoid/non-secure';
+import { Event } from '@/entities/types';
 
 export const useEvents = () => {
-    const [events, setEvents] = useState<Event[]>([]);
-    const [loading, setLoading] = useState(true);
+    const dispatch = useAppDispatch();
+    const events = useAppSelector(selectEvents);
+    const activeEvent = useAppSelector(selectActiveEvent);
 
-    /* =======================
-       LOAD
-       ======================= */
+    /* ========= LOAD ON START ========= */
+    useEffect(() => {
+        eventsRepository.getAll().then(stored => {
+            dispatch(setEvents(stored));
+        });
+    }, [dispatch]);
 
-    const loadEvents = useCallback(async () => {
-        const data = await eventsRepository.getAll();
-        setEvents(data);
-        setLoading(false);
-    }, []);
-
-    useFocusEffect(
-        useCallback(() => {
-            loadEvents();
-        }, [loadEvents])
-    );
-
-    /* =======================
-       CREATE
-       ======================= */
-
+    /* ========= CREATE ========= */
     const createEvent = async (title: string) => {
-        const newEvent: Event = {
+        const event: Event = {
             id: nanoid(),
-            title,
-            participantIds: [],
-            currency: 'BYN',
+            title: title.trim(),
             createdAt: Date.now(),
+            participantIds: [],
+            currency: undefined,
         };
 
-        const updated = [newEvent, ...events];
-        setEvents(updated);
-        await eventsRepository.saveAll(updated);
+        const next = [...events, event];
+        await eventsRepository.saveAll(next);
+        dispatch(addEvent(event));
     };
-
-    /* =======================
-       UPDATE
-       ======================= */
 
     const updateEvent = async (
-        id: string,
-        patch: Partial<Event>
+        eventId: string,
+        changes: Partial<Event>
     ) => {
-        const updated = events.map(e =>
-            e.id === id ? { ...e, ...patch } : e
+        const current = events.find(
+            e => e.id === eventId
         );
 
-        setEvents(updated);
-        await eventsRepository.saveAll(updated);
+        if (!current) return;
+
+        const updated: Event = {
+            ...current,
+            ...changes,
+        };
+
+        const next = events.map(e =>
+            e.id === eventId ? updated : e
+        );
+
+        await eventsRepository.saveAll(next);
+        dispatch(
+            updateEventAction({
+                id: eventId,
+                changes,
+            })
+        );
     };
 
-    /* =======================
-       DELETE
-       ======================= */
-
+    /* ========= DELETE ONE ========= */
     const deleteEvent = async (id: string) => {
-        const updated = events.filter(e => e.id !== id);
-        setEvents(updated);
-        await eventsRepository.saveAll(updated);
+        const next = events.filter(e => e.id !== id);
+        await eventsRepository.saveAll(next);
+        dispatch(removeEvent(id));
     };
 
+    /* ========= DELETE MANY ========= */
     const deleteEvents = async (ids: string[]) => {
-        const updated = events.filter(
-            e => !ids.includes(e.id)
-        );
-        setEvents(updated);
-        await eventsRepository.saveAll(updated);
+        const idSet = new Set(ids);
+        const next = events.filter(e => !idSet.has(e.id));
+        await eventsRepository.saveAll(next);
+        ids.forEach(id => dispatch(removeEvent(id)));
     };
-
-    /* =======================
-       DERIVED ACCESS
-       ======================= */
-
-    const getEventById = useCallback(
-        (id: string) => {
-            return events.find(e => e.id === id);
-        },
-        [events]
-    );
-
-    /* =======================
-       🔥 PUBLIC RELOAD
-       ======================= */
 
     return {
         events,
-        loading,
-        getEventById,
+        activeEvent,
         createEvent,
-        updateEvent,
         deleteEvent,
         deleteEvents,
-        reloadEvents: loadEvents,
+        updateEvent,
+        openEvent: (id: string) =>
+            dispatch(setActiveEvent(id)),
+        closeEvent: () =>
+            dispatch(setActiveEvent(null)),
     };
 };

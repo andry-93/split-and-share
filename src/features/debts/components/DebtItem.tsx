@@ -1,5 +1,5 @@
 import { List } from 'react-native-paper';
-import { Debt, Participant } from '../../../entities/types';
+import { Debt, Participant } from '@/entities/types';
 
 interface Props {
     debt: Debt;

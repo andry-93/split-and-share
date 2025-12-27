@@ -9,7 +9,7 @@ import {
 } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 
-import { Participant } from '../../../entities/types';
+import { Participant } from '@/entities/types';
 
 type Props = {
     visible: boolean;
@@ -29,15 +29,15 @@ type Props = {
 };
 
 export const ExpenseDialog = ({
-                                  visible,
-                                  participants,
-                                  currency,
-                                  initialDescription = '',
-                                  initialAmount,
-                                  initialPaidBy,
-                                  onDismiss,
-                                  onSave,
-                              }: Props) => {
+    visible,
+    participants,
+    currency,
+    initialDescription = '',
+    initialAmount,
+    initialPaidBy,
+    onDismiss,
+    onSave,
+}: Props) => {
     const { t } = useTranslation();
 
     const [description, setDescription] =

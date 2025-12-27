@@ -1,5 +1,5 @@
 import { Expense } from '../types';
-import { storage } from '../../shared/lib/storage';
+import { storage } from '@/shared/lib/storage';
 
 const EXPENSES_KEY = 'expenses';
 

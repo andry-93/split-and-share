@@ -20,13 +20,13 @@ import { useTranslation } from 'react-i18next';
 
 import { useEvents } from './useEvents';
 import { EventDialog } from './components/EventDialog';
-import { ScreenHeader } from '../../shared/ui/ScreenHeader';
-import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
-import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
-import { EmptyState } from '../../shared/ui/EmptyState';
+import { ScreenHeader } from '@/shared/ui/ScreenHeader';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import {
     EventsStackParamList,
-} from '../../app/navigation/types';
+} from '@/app/navigation/types';
 
 type Nav =
     NativeStackNavigationProp<EventsStackParamList>;
@@ -36,8 +36,12 @@ export const EventsScreen = () => {
     const navigation = useNavigation<Nav>();
     const { t } = useTranslation();
 
-    const { events, deleteEvents, createEvent } =
-        useEvents();
+    const {
+        events,
+        createEvent,
+        deleteEvents,
+        openEvent,
+    } = useEvents();
 
     const [selectedIds, setSelectedIds] =
         useState<string[]>([]);
@@ -86,10 +90,10 @@ export const EventsScreen = () => {
         if (isSelectionMode) {
             toggleSelect(id);
         } else {
-            navigation.navigate(
-                'EventDetails',
-                { eventId: id }
-            );
+            openEvent(id);
+            navigation.navigate('EventDetails', {
+                eventId: id,
+            });
         }
     };
 
