@@ -1,31 +1,46 @@
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
-import { Expense } from '@/entities/types';
-import { expensesRepository } from '@/entities/expense/expense.repository';
+import { useEffect, useMemo } from 'react';
 import { nanoid } from 'nanoid/non-secure';
 
+import { Expense } from '@/entities/types';
+import { expensesRepository } from '@/entities/expense/expense.repository';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import {
+    addExpense,
+    removeExpense,
+    setExpenses,
+    updateExpense as updateExpenseAction,
+} from '@/store/slices/expenses.slice';
+import { selectExpenses } from '@/store/selectors/expenses.selectors';
+
 export const useExpenses = (eventId: string) => {
-    const [expenses, setExpenses] = useState<Expense[]>([]);
-
-    const load = async () => {
-        const data = await expensesRepository.getByEvent(eventId);
-        setExpenses(data);
-    };
-
-    useFocusEffect(
-        useCallback(() => {
-            load();
-        }, [eventId])
+    const dispatch = useAppDispatch();
+    const allExpenses = useAppSelector(
+        selectExpenses
     );
 
+    /* ========= LOAD (ONCE) ========= */
+    useEffect(() => {
+        expensesRepository.getAll().then(stored => {
+            dispatch(setExpenses(stored));
+        });
+    }, [dispatch]);
+
+    /* ========= FILTER BY EVENT ========= */
+    const expenses = useMemo(
+        () =>
+            allExpenses.filter(
+                e => e.eventId === eventId
+            ),
+        [allExpenses, eventId]
+    );
+
+    /* ========= CREATE ========= */
     const createExpense = async (
         description: string,
         amount: number,
         paidBy: string
     ) => {
-        const all = await expensesRepository.getAll();
-
-        const newExpense: Expense = {
+        const expense: Expense = {
             id: nanoid(),
             eventId,
             description,
@@ -33,34 +48,54 @@ export const useExpenses = (eventId: string) => {
             paidBy,
         };
 
-        const updated = [...all, newExpense];
-        await expensesRepository.saveAll(updated);
-        setExpenses(updated.filter(e => e.eventId === eventId));
+        const next = [...allExpenses, expense];
+        await expensesRepository.saveAll(next);
+        dispatch(addExpense(expense));
     };
 
+    /* ========= UPDATE ========= */
     const updateExpense = async (
         id: string,
         description: string,
         amount: number,
         paidBy: string
     ) => {
-        const all = await expensesRepository.getAll();
-        const updated = all.map(e =>
-            e.id === id
-                ? { ...e, description, amount, paidBy }
-                : e
+        const current = allExpenses.find(
+            e => e.id === id
+        );
+        if (!current) return;
+
+        const updated: Expense = {
+            ...current,
+            description,
+            amount,
+            paidBy,
+        };
+
+        const next = allExpenses.map(e =>
+            e.id === id ? updated : e
         );
 
-        await expensesRepository.saveAll(updated);
-        setExpenses(updated.filter(e => e.eventId === eventId));
+        await expensesRepository.saveAll(next);
+        dispatch(
+            updateExpenseAction({
+                id,
+                changes: {
+                    description,
+                    amount,
+                    paidBy,
+                },
+            })
+        );
     };
 
+    /* ========= DELETE ========= */
     const deleteExpense = async (id: string) => {
-        const all = await expensesRepository.getAll();
-        const updated = all.filter(e => e.id !== id);
-
-        await expensesRepository.saveAll(updated);
-        setExpenses(updated.filter(e => e.eventId === eventId));
+        const next = allExpenses.filter(
+            e => e.id !== id
+        );
+        await expensesRepository.saveAll(next);
+        dispatch(removeExpense(id));
     };
 
     return {

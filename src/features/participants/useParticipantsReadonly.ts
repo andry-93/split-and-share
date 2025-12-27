@@ -1,21 +1,24 @@
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useMemo } from 'react';
+import { useAppSelector } from '@/store/hooks';
 import { Participant } from '@/entities/types';
-import { participantsRepository } from '@/entities/participant/participant.repository';
+import { selectParticipants } from '@/store/selectors/participants.selectors';
 
-export const useParticipantsReadonly = () => {
-    const [participants, setParticipants] = useState<Participant[]>([]);
-
-    const load = async () => {
-        const data = await participantsRepository.getAll();
-        setParticipants(data);
-    };
-
-    useFocusEffect(
-        useCallback(() => {
-            load();
-        }, [])
+export const useParticipantsReadonly = (
+    participantIds?: string[]
+): Participant[] => {
+    const participants = useAppSelector(
+        selectParticipants
     );
 
-    return participants;
+    return useMemo(() => {
+        if (!participantIds) {
+            return participants;
+        }
+
+        const idSet = new Set(participantIds);
+
+        return participants.filter(p =>
+            idSet.has(p.id)
+        );
+    }, [participants, participantIds?.join(',')]);
 };

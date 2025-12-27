@@ -1,18 +1,12 @@
-import React, {
-    useEffect,
-    useMemo,
-    useState,
-} from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, FlatList } from 'react-native';
 import {
     Card,
     FAB,
-    useTheme,
     Appbar,
+    useTheme,
 } from 'react-native-paper';
-import {
-    useNavigation,
-} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import {
     NativeStackNavigationProp,
 } from '@react-navigation/native-stack';
@@ -20,21 +14,43 @@ import { useTranslation } from 'react-i18next';
 
 import { useEvents } from './useEvents';
 import { EventDialog } from './components/EventDialog';
-import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
-import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 import { EmptyState } from '@/shared/ui/EmptyState';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+
 import {
     EventsStackParamList,
 } from '@/app/navigation/types';
+
+import {
+    useAppDispatch,
+    useAppSelector,
+} from '@/store/hooks';
+
+import {
+    selectSelectedEventIds,
+    selectIsEventDialogOpen,
+    selectIsConfirmDeleteOpen,
+} from '@/store/selectors/ui.selectors';
+
+import {
+    setSelectedEventIds,
+    clearSelectedEvents,
+    openEventDialog,
+    closeEventDialog,
+    openConfirmDelete,
+    closeConfirmDelete,
+} from '@/store/slices/ui.slice';
 
 type Nav =
     NativeStackNavigationProp<EventsStackParamList>;
 
 export const EventsScreen = () => {
     const { colors } = useTheme();
-    const navigation = useNavigation<Nav>();
     const { t } = useTranslation();
+    const navigation = useNavigation<Nav>();
+    const dispatch = useAppDispatch();
 
     const {
         events,
@@ -43,23 +59,29 @@ export const EventsScreen = () => {
         openEvent,
     } = useEvents();
 
-    const [selectedIds, setSelectedIds] =
-        useState<string[]>([]);
-    const [search, setSearch] = useState('');
-    const [dialogVisible, setDialogVisible] =
-        useState(false);
-    const [confirmVisible, setConfirmVisible] =
-        useState(false);
+    /* =======================
+       UI STATE (REDUX)
+       ======================= */
 
-    const debouncedSearch =
-        useDebouncedValue(search, 250);
+    const selectedIds = useAppSelector(
+        selectSelectedEventIds
+    );
+    const isEventDialogOpen = useAppSelector(
+        selectIsEventDialogOpen
+    );
+    const isConfirmDeleteOpen = useAppSelector(
+        selectIsConfirmDeleteOpen
+    );
 
-    const isSelectionMode =
-        selectedIds.length > 0;
+    const isSelectionMode = selectedIds.length > 0;
 
     /* =======================
-       FILTER
+       SEARCH
        ======================= */
+
+    const [search, setSearch] = useState('');
+    const debouncedSearch =
+        useDebouncedValue(search, 250);
 
     const filteredEvents = useMemo(() => {
         const q =
@@ -79,10 +101,12 @@ export const EventsScreen = () => {
        ======================= */
 
     const toggleSelect = (id: string) => {
-        setSelectedIds(prev =>
-            prev.includes(id)
-                ? prev.filter(x => x !== id)
-                : [...prev, id]
+        dispatch(
+            setSelectedEventIds(
+                selectedIds.includes(id)
+                    ? selectedIds.filter(x => x !== id)
+                    : [...selectedIds, id]
+            )
         );
     };
 
@@ -106,13 +130,13 @@ export const EventsScreen = () => {
        ======================= */
 
     const handleDeleteSelected = () => {
-        setConfirmVisible(true);
+        dispatch(openConfirmDelete());
     };
 
     const confirmDelete = async () => {
         await deleteEvents(selectedIds);
-        setSelectedIds([]);
-        setConfirmVisible(false);
+        dispatch(clearSelectedEvents());
+        dispatch(closeConfirmDelete());
     };
 
     /* =======================
@@ -124,9 +148,11 @@ export const EventsScreen = () => {
             filteredEvents.map(e => e.id)
         );
 
-        setSelectedIds(prev =>
-            prev.filter(id =>
-                visibleIds.has(id)
+        dispatch(
+            setSelectedEventIds(
+                selectedIds.filter(id =>
+                    visibleIds.has(id)
+                )
             )
         );
     }, [filteredEvents]);
@@ -144,15 +170,13 @@ export const EventsScreen = () => {
                 searchPlaceholder={t('search')}
                 selectionCount={selectedIds.length}
                 onClearSelection={() =>
-                    setSelectedIds([])
+                    dispatch(clearSelectedEvents())
                 }
                 actions={
                     isSelectionMode ? (
                         <Appbar.Action
                             icon="delete"
-                            onPress={
-                                handleDeleteSelected
-                            }
+                            onPress={handleDeleteSelected}
                         />
                     ) : null
                 }
@@ -162,19 +186,13 @@ export const EventsScreen = () => {
                 <EmptyState
                     title={
                         hasSearch
-                            ? t(
-                                'no_search_results'
-                            )
+                            ? t('no_search_results')
                             : t('no_events')
                     }
                     description={
                         hasSearch
-                            ? t(
-                                'try_another_query'
-                            )
-                            : t(
-                                'create_first_event'
-                            )
+                            ? t('try_another_query')
+                            : t('create_first_event')
                     }
                 />
             ) : (
@@ -186,36 +204,26 @@ export const EventsScreen = () => {
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => {
                         const selected =
-                            selectedIds.includes(
-                                item.id
-                            );
+                            selectedIds.includes(item.id);
 
                         return (
                             <Card
                                 onPress={() =>
-                                    handlePress(
-                                        item.id
-                                    )
+                                    handlePress(item.id)
                                 }
                                 onLongPress={() =>
-                                    handleLongPress(
-                                        item.id
-                                    )
+                                    handleLongPress(item.id)
                                 }
                                 style={{
                                     marginBottom: 12,
-                                    borderWidth: selected
-                                        ? 2
-                                        : 1,
+                                    borderWidth: selected ? 2 : 1,
                                     borderColor: selected
                                         ? colors.primary
                                         : colors.outlineVariant,
                                 }}
                             >
                                 <Card.Title
-                                    title={
-                                        item.title
-                                    }
+                                    title={item.title}
                                 />
                             </Card>
                         );
@@ -232,33 +240,32 @@ export const EventsScreen = () => {
                         bottom: 16,
                     }}
                     onPress={() =>
-                        setDialogVisible(true)
+                        dispatch(openEventDialog())
                     }
                 />
             )}
 
+            {/* EVENT DIALOG */}
             <EventDialog
-                visible={dialogVisible}
+                visible={isEventDialogOpen}
                 onDismiss={() =>
-                    setDialogVisible(false)
+                    dispatch(closeEventDialog())
                 }
                 onSave={title => {
                     createEvent(title);
-                    setDialogVisible(false);
+                    dispatch(closeEventDialog());
                 }}
             />
 
+            {/* CONFIRM DELETE */}
             <ConfirmDialog
-                visible={confirmVisible}
+                visible={isConfirmDeleteOpen}
                 title={t('delete')}
-                message={t(
-                    'delete_selected',
-                    {
-                        count: selectedIds.length,
-                    }
-                )}
+                message={t('delete_selected', {
+                    count: selectedIds.length,
+                })}
                 onCancel={() =>
-                    setConfirmVisible(false)
+                    dispatch(closeConfirmDelete())
                 }
                 onConfirm={confirmDelete}
             />

@@ -11,11 +11,15 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { selectEvents, selectActiveEvent } from '@/store/selectors/events.selectors';
 import { nanoid } from 'nanoid/non-secure';
 import { Event } from '@/entities/types';
+import { selectExpenses } from '@/store/selectors/expenses.selectors';
+import { expensesRepository } from '@/entities/expense/expense.repository';
+import { removeExpense } from '@/store/slices/expenses.slice';
 
 export const useEvents = () => {
     const dispatch = useAppDispatch();
     const events = useAppSelector(selectEvents);
     const activeEvent = useAppSelector(selectActiveEvent);
+    const allExpenses = useAppSelector(selectExpenses);
 
     /* ========= LOAD ON START ========= */
     useEffect(() => {
@@ -68,18 +72,59 @@ export const useEvents = () => {
     };
 
     /* ========= DELETE ONE ========= */
-    const deleteEvent = async (id: string) => {
-        const next = events.filter(e => e.id !== id);
-        await eventsRepository.saveAll(next);
-        dispatch(removeEvent(id));
+    const deleteEvent = async (eventId: string) => {
+        /* ===== EVENTS ===== */
+        const nextEvents = events.filter(
+            e => e.id !== eventId
+        );
+        await eventsRepository.saveAll(nextEvents);
+        dispatch(removeEvent(eventId));
+
+        /* ===== EXPENSES (CASCADE) ===== */
+        const remainingExpenses = allExpenses.filter(
+            e => e.eventId !== eventId
+        );
+
+        if (
+            remainingExpenses.length !==
+            allExpenses.length
+        ) {
+            await expensesRepository.saveAll(
+                remainingExpenses
+            );
+
+            allExpenses
+                .filter(e => e.eventId === eventId)
+                .forEach(e =>
+                    dispatch(removeExpense(e.id))
+                );
+        }
     };
 
     /* ========= DELETE MANY ========= */
     const deleteEvents = async (ids: string[]) => {
         const idSet = new Set(ids);
-        const next = events.filter(e => !idSet.has(e.id));
-        await eventsRepository.saveAll(next);
+
+        /* EVENTS */
+        const nextEvents = events.filter(
+            e => !idSet.has(e.id)
+        );
+        await eventsRepository.saveAll(nextEvents);
         ids.forEach(id => dispatch(removeEvent(id)));
+
+        /* EXPENSES */
+        const remainingExpenses = allExpenses.filter(
+            e => !idSet.has(e.eventId)
+        );
+        await expensesRepository.saveAll(
+            remainingExpenses
+        );
+
+        allExpenses
+            .filter(e => idSet.has(e.eventId))
+            .forEach(e =>
+                dispatch(removeExpense(e.id))
+            );
     };
 
     return {

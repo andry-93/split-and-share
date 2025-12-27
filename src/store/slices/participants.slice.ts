@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Participant } from '../../entities/types';
+import { Participant } from '@/entities/types';
 
 type ParticipantsState = {
     list: Participant[];
@@ -13,7 +13,17 @@ const participantsSlice = createSlice({
     name: 'participants',
     initialState,
     reducers: {
-        addParticipant(state, action: PayloadAction<Participant>) {
+        setParticipants(
+            state,
+            action: PayloadAction<Participant[]>
+        ) {
+            state.list = action.payload;
+        },
+
+        addParticipant(
+            state,
+            action: PayloadAction<Participant>
+        ) {
             state.list.push(action.payload);
         },
 
@@ -21,47 +31,36 @@ const participantsSlice = createSlice({
             state,
             action: PayloadAction<{
                 id: string;
-                name?: string;
-                color?: string;
+                changes: Partial<Participant>;
             }>
         ) {
-            const participant = state.list.find(
+            const index = state.list.findIndex(
                 p => p.id === action.payload.id
             );
+            if (index === -1) return;
 
-            if (!participant) return;
-
-            if (action.payload.name !== undefined) {
-                participant.name = action.payload.name;
-            }
-
-            if (action.payload.color !== undefined) {
-                participant.color = action.payload.color;
-            }
+            state.list[index] = {
+                ...state.list[index],
+                ...action.payload.changes,
+            };
         },
 
-        removeParticipant(state, action: PayloadAction<string>) {
-            state.list = state.list.filter(
-                p => p.id !== action.payload
-            );
-        },
-
-        removeParticipantsByEvent(
+        removeParticipant(
             state,
             action: PayloadAction<string>
         ) {
             state.list = state.list.filter(
-                p => p.eventId !== action.payload
+                p => p.id !== action.payload
             );
         },
     },
 });
 
 export const {
+    setParticipants,
     addParticipant,
     updateParticipant,
     removeParticipant,
-    removeParticipantsByEvent,
 } = participantsSlice.actions;
 
 export default participantsSlice.reducer;
