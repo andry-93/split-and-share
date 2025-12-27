@@ -38,24 +38,24 @@ type Props = {
 };
 
 export const ScreenHeader = ({
-                                 title,
+    title,
 
-                                 searchVisible = false,
-                                 searchValue = '',
-                                 searchPlaceholder,
+    searchVisible = false,
+    searchValue = '',
+    searchPlaceholder,
 
-                                 onSearchPress,
-                                 onSearchChange,
-                                 onSearchBlur,
+    onSearchPress,
+    onSearchChange,
+    onSearchBlur,
 
-                                 selectionCount = 0,
-                                 onClearSelection,
+    selectionCount = 0,
+    onClearSelection,
 
-                                 showBack = false,
-                                 onBack,
+    showBack = false,
+    onBack,
 
-                                 actions,
-                             }: Props) => {
+    actions,
+}: Props) => {
     const { colors } = useTheme();
     const isSelectionMode = selectionCount > 0;
 
