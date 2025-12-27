@@ -8,7 +8,6 @@ import {
 import {
     Appbar,
     TextInput,
-    useTheme,
 } from 'react-native-paper';
 
 const APPBAR_HEIGHT = 56;
@@ -56,7 +55,6 @@ export const ScreenHeader = ({
 
     actions,
 }: Props) => {
-    const { colors } = useTheme();
     const isSelectionMode = selectionCount > 0;
 
     /* =======================
