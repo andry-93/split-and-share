@@ -1,9 +1,4 @@
-import React, {
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     ScrollView,
     View,
@@ -13,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import {
     Text,
     FAB,
-    ActivityIndicator,
     TextInput,
     Button,
     HelperText,
@@ -28,20 +22,49 @@ import {
 } from '@react-navigation/native-stack';
 
 import { EventsStackParamList } from '@/app/navigation/types';
+
 import { useEvent } from './useEvent';
 import { useEvents } from './useEvents';
 import { useParticipants } from '../participants/useParticipants';
 import { useExpenses } from '../expenses/useExpenses';
-import { calculateDebts } from '@/entities/debt/calculateDebts';
 
 import { ExpenseDialog } from '../expenses/components/ExpenseDialog';
 import { ExpensesList } from '../expenses/ExpensesList';
 import { ParticipantsPreview } from '../participants/ParticipantsPreview';
 import { EventParticipantsDialog } from '../participants/EventParticipantsDialog';
 import { DebtList } from '../debts/DebtList';
+import { EventTotalsCard } from '../debts/EventTotalsCard';
+
 import { Section } from '@/shared/ui/Section';
 import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 import { useSettings } from '../settings/SettingsContext';
+
+import {
+    useAppDispatch,
+    useAppSelector,
+} from '@/store/hooks';
+
+import {
+    selectIsExpenseDialogOpen,
+    selectEditingExpenseId,
+    selectIsParticipantsDialogOpen,
+} from '@/store/selectors/ui.selectors';
+
+import {
+    openExpenseDialog,
+    closeExpenseDialog,
+    setEditingExpenseId,
+    openParticipantsDialog,
+    closeParticipantsDialog,
+} from '@/store/slices/ui.slice';
+
+import {
+    makeSelectDebtsByEvent,
+} from '@/store/selectors/debts.selectors';
+
+import {
+    makeSelectTotalsByEvent,
+} from '@/store/selectors/totals.selectors';
 
 /* =======================
    TYPES
@@ -69,6 +92,7 @@ export const EventDetailsScreen = ({
     const { colors } = useTheme();
     const { t } = useTranslation();
     const navigation = useNavigation<Nav>();
+    const dispatch = useAppDispatch();
 
     const { eventId } = route.params;
 
@@ -78,7 +102,6 @@ export const EventDetailsScreen = ({
 
     const { event } = useEvent(eventId);
     const { updateEvent } = useEvents();
-
     const { participants } = useParticipants();
     const { defaultCurrency } = useSettings();
 
@@ -90,39 +113,80 @@ export const EventDetailsScreen = ({
     } = useExpenses(eventId);
 
     /* =======================
+       UI STATE
+       ======================= */
+
+    const isExpenseDialogOpen = useAppSelector(
+        selectIsExpenseDialogOpen
+    );
+    const editingExpenseId = useAppSelector(
+        selectEditingExpenseId
+    );
+    const isParticipantsDialogOpen =
+        useAppSelector(
+            selectIsParticipantsDialogOpen
+        );
+
+    /* =======================
+       GUARD
+       ======================= */
+
+    if (!event) {
+        return (
+            <View style={{ flex: 1 }}>
+                <ScreenHeader
+                    title=""
+                    showBack
+                    onBack={() =>
+                        navigation.goBack()
+                    }
+                />
+                <View style={{ padding: 16 }}>
+                    <Text>{t('event_not_found')}</Text>
+                </View>
+            </View>
+        );
+    }
+
+    /* =======================
        DERIVED
        ======================= */
 
     const participantIds =
         event.participantIds ?? [];
 
-    const eventParticipants = useMemo(
-        () =>
-            participants.filter(p =>
-                participantIds.includes(p.id)
-            ),
-        [participants, participantIds]
+    const eventParticipants = participants.filter(
+        p => participantIds.includes(p.id)
     );
 
     const currency =
         event.currency ?? defaultCurrency;
 
+    const editingExpense = expenses.find(
+        e => e.id === editingExpenseId
+    );
+
+    const debts = useAppSelector(
+        makeSelectDebtsByEvent(
+            event.id,
+            participantIds
+        )
+    );
+
+    const totals = useAppSelector(
+        makeSelectTotalsByEvent(
+            event.id,
+            participantIds
+        )
+    );
+
     /* =======================
-       DEBTS + ANIMATION
+       ANIMATION
        ======================= */
 
     const fadeAnim = useRef(
         new Animated.Value(1)
     ).current;
-
-    const debts = useMemo(
-        () =>
-            calculateDebts(
-                expenses,
-                participantIds
-            ),
-        [expenses, participantIds.join(',')]
-    );
 
     useEffect(() => {
         Animated.sequence([
@@ -140,40 +204,11 @@ export const EventDetailsScreen = ({
     }, [debts.length]);
 
     /* =======================
-       LOCAL STATE
+       LOCAL FORM STATE
        ======================= */
 
-    const [
-        expenseDialogVisible,
-        setExpenseDialogVisible,
-    ] = useState(false);
-
-    const [
-        editingExpenseId,
-        setEditingExpenseId,
-    ] = useState<string | null>(null);
-
-    const [
-        participantsDialogVisible,
-        setParticipantsDialogVisible,
-    ] = useState(false);
-
-    const [
-        currencyInput,
-        setCurrencyInput,
-    ] = useState('');
-
-    const editingExpense = useMemo(
-        () =>
-            expenses.find(
-                e => e.id === editingExpenseId
-            ),
-        [expenses, editingExpenseId]
-    );
-
-    /* =======================
-       EFFECTS
-       ======================= */
+    const [currencyInput, setCurrencyInput] =
+        useState('');
 
     useEffect(() => {
         setCurrencyInput(event.currency ?? '');
@@ -184,13 +219,13 @@ export const EventDetailsScreen = ({
        ======================= */
 
     const openAddExpense = () => {
-        setEditingExpenseId(null);
-        setExpenseDialogVisible(true);
+        dispatch(setEditingExpenseId(null));
+        dispatch(openExpenseDialog());
     };
 
     const openEditExpense = (id: string) => {
-        setEditingExpenseId(id);
-        setExpenseDialogVisible(true);
+        dispatch(setEditingExpenseId(id));
+        dispatch(openExpenseDialog());
     };
 
     const saveCurrency = () => {
@@ -212,29 +247,6 @@ export const EventDetailsScreen = ({
             });
         }
     };
-
-    /* =======================
-       GUARDS
-       ======================= */
-
-    if (!event) {
-        return (
-            <View style={{ flex: 1 }}>
-                <ScreenHeader
-                    title=""
-                    showBack
-                    onBack={() =>
-                        navigation.goBack()
-                    }
-                />
-                <View style={{ padding: 16 }}>
-                    <Text>
-                        {t('event_not_found')}
-                    </Text>
-                </View>
-            </View>
-        );
-    }
 
     /* =======================
        RENDER
@@ -277,9 +289,7 @@ export const EventDetailsScreen = ({
                     <TextInput
                         label={t('currency')}
                         value={currencyInput}
-                        onChangeText={
-                            setCurrencyInput
-                        }
+                        onChangeText={setCurrencyInput}
                         onBlur={saveCurrency}
                         autoCapitalize="characters"
                         maxLength={5}
@@ -289,8 +299,7 @@ export const EventDetailsScreen = ({
                         {t(
                             'leave_empty_for_default',
                             {
-                                currency:
-                                defaultCurrency,
+                                currency: defaultCurrency,
                             }
                         )}
                     </HelperText>
@@ -306,8 +315,8 @@ export const EventDetailsScreen = ({
                     <Button
                         mode="text"
                         onPress={() =>
-                            setParticipantsDialogVisible(
-                                true
+                            dispatch(
+                                openParticipantsDialog()
                             )
                         }
                         style={{ marginTop: 8 }}
@@ -320,9 +329,7 @@ export const EventDetailsScreen = ({
                 <Section title={t('expenses')}>
                     <ExpensesList
                         expenses={expenses}
-                        participants={
-                            eventParticipants
-                        }
+                        participants={eventParticipants}
                         currency={currency}
                         onEdit={openEditExpense}
                         onDelete={deleteExpense}
@@ -335,17 +342,22 @@ export const EventDetailsScreen = ({
                 >
                     <DebtList
                         debts={debts}
-                        participants={
-                            eventParticipants
-                        }
+                        participants={eventParticipants}
                         eventTitle={event.title}
                         currency={currency}
                     />
                 </Animated.View>
+
+                {/* TOTALS */}
+                <EventTotalsCard
+                    totals={totals}
+                    participants={eventParticipants}
+                    currency={currency}
+                />
             </ScrollView>
 
             {/* FAB */}
-            {!expenseDialogVisible && (
+            {!isExpenseDialogOpen && (
                 <FAB
                     icon="plus"
                     style={{
@@ -359,7 +371,7 @@ export const EventDetailsScreen = ({
 
             {/* EXPENSE DIALOG */}
             <ExpenseDialog
-                visible={expenseDialogVisible}
+                visible={isExpenseDialogOpen}
                 participants={eventParticipants}
                 currency={currency}
                 initialDescription={
@@ -372,10 +384,8 @@ export const EventDetailsScreen = ({
                     editingExpense?.paidBy
                 }
                 onDismiss={() => {
-                    setExpenseDialogVisible(
-                        false
-                    );
-                    setEditingExpenseId(null);
+                    dispatch(closeExpenseDialog());
+                    dispatch(setEditingExpenseId(null));
                 }}
                 onSave={data => {
                     if (editingExpense) {
@@ -393,33 +403,27 @@ export const EventDetailsScreen = ({
                         );
                     }
 
-                    setExpenseDialogVisible(
-                        false
-                    );
-                    setEditingExpenseId(null);
+                    dispatch(closeExpenseDialog());
+                    dispatch(setEditingExpenseId(null));
                 }}
             />
 
             {/* PARTICIPANTS DIALOG */}
             <EventParticipantsDialog
-                visible={
-                    participantsDialogVisible
-                }
+                visible={isParticipantsDialogOpen}
                 participants={participants}
-                selectedIds={
-                    event.participantIds
-                }
+                selectedIds={participantIds}
                 onDismiss={() =>
-                    setParticipantsDialogVisible(
-                        false
+                    dispatch(
+                        closeParticipantsDialog()
                     )
                 }
                 onSave={ids => {
                     updateEvent(event.id, {
                         participantIds: ids,
                     });
-                    setParticipantsDialogVisible(
-                        false
+                    dispatch(
+                        closeParticipantsDialog()
                     );
                 }}
             />

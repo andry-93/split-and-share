@@ -6,14 +6,25 @@ import {
     Avatar,
     Text,
     useTheme,
+    ActivityIndicator,
 } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
-import { RouteProp, useNavigation } from '@react-navigation/native';
+import {
+    RouteProp,
+    useNavigation,
+} from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
 import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 import { useParticipants } from './useParticipants';
 import { ParticipantsStackParamList } from '@/app/navigation/types';
+
+import {
+    useAppDispatch,
+    useAppSelector,
+} from '@/store/hooks';
+import { setLoading } from '@/store/slices/ui.slice';
+import { selectLoading } from '@/store/selectors/ui.selectors';
 
 type Props = {
     route: RouteProp<
@@ -22,10 +33,17 @@ type Props = {
     >;
 };
 
-export const ParticipantEditScreen = ({ route }: Props) => {
+export const ParticipantEditScreen = ({
+                                          route,
+                                      }: Props) => {
     const { colors } = useTheme();
     const navigation = useNavigation();
     const { t } = useTranslation();
+    const dispatch = useAppDispatch();
+
+    const isLoading = useAppSelector(
+        selectLoading
+    );
 
     const { participantId } = route.params ?? {};
 
@@ -42,7 +60,7 @@ export const ParticipantEditScreen = ({ route }: Props) => {
     const isEdit = Boolean(participant);
 
     /* =======================
-       STATE
+       LOCAL FORM STATE
        ======================= */
 
     const [name, setName] = useState('');
@@ -95,19 +113,30 @@ export const ParticipantEditScreen = ({ route }: Props) => {
 
     const handleSave = async () => {
         const trimmed = name.trim();
-        if (!trimmed) return;
+        if (!trimmed || isLoading) return;
 
-        if (participant) {
-            await updateParticipant(participant.id, {
-                name: trimmed,
-                avatarUri,
-            });
-        } else {
-            await createParticipant(trimmed, avatarUri);
+        try {
+            dispatch(setLoading(true));
+
+            if (participant) {
+                await updateParticipant(
+                    participant.id,
+                    {
+                        name: trimmed,
+                        avatarUri,
+                    }
+                );
+            } else {
+                await createParticipant(
+                    trimmed,
+                    avatarUri
+                );
+            }
+
+            navigation.goBack();
+        } finally {
+            dispatch(setLoading(false));
         }
-
-        // ✅ ВСЕГДА выходим из редактирования
-        navigation.goBack();
     };
 
     /* =======================
@@ -134,16 +163,25 @@ export const ParticipantEditScreen = ({ route }: Props) => {
                         marginBottom: 24,
                     }}
                 >
-                    <TouchableOpacity onPress={pickAvatar}>
+                    <TouchableOpacity
+                        onPress={pickAvatar}
+                        disabled={isLoading}
+                    >
                         {avatarUri ? (
                             <Avatar.Image
                                 size={96}
-                                source={{ uri: avatarUri }}
+                                source={{
+                                    uri: avatarUri,
+                                }}
                             />
                         ) : (
                             <Avatar.Text
                                 size={96}
-                                label={name ? name[0] : '?'}
+                                label={
+                                    name
+                                        ? name[0]
+                                        : '?'
+                                }
                             />
                         )}
                     </TouchableOpacity>
@@ -179,6 +217,7 @@ export const ParticipantEditScreen = ({ route }: Props) => {
                     value={name}
                     onChangeText={setName}
                     autoFocus
+                    disabled={isLoading}
                 />
 
                 {/* ===== SAVE ===== */}
@@ -186,9 +225,15 @@ export const ParticipantEditScreen = ({ route }: Props) => {
                     mode="contained"
                     style={{ marginTop: 32 }}
                     onPress={handleSave}
-                    disabled={!name.trim()}
+                    disabled={
+                        !name.trim() || isLoading
+                    }
                 >
-                    {t('save')}
+                    {isLoading ? (
+                        <ActivityIndicator />
+                    ) : (
+                        t('save')
+                    )}
                 </Button>
             </View>
         </>

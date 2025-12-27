@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, FlatList } from 'react-native';
 import {
     Card,
@@ -17,7 +17,6 @@ import { EventDialog } from './components/EventDialog';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 import { EmptyState } from '@/shared/ui/EmptyState';
-import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
 import {
     EventsStackParamList,
@@ -29,9 +28,17 @@ import {
 } from '@/store/hooks';
 
 import {
+    selectFilteredSortedEvents,
+} from '@/store/selectors/events.ui.selectors';
+
+import {
     selectSelectedEventIds,
     selectIsEventDialogOpen,
     selectIsConfirmDeleteOpen,
+    selectEventsSearch,
+    selectEventsSearchVisible,
+    selectEventsSort,
+    selectEventsFilterHasExpenses,
 } from '@/store/selectors/ui.selectors';
 
 import {
@@ -41,6 +48,11 @@ import {
     closeEventDialog,
     openConfirmDelete,
     closeConfirmDelete,
+    setEventsSearch,
+    showEventsSearch,
+    hideEventsSearch,
+    setEventsSort,
+    toggleEventsFilterHasExpenses,
 } from '@/store/slices/ui.slice';
 
 type Nav =
@@ -53,15 +65,12 @@ export const EventsScreen = () => {
     const dispatch = useAppDispatch();
 
     const {
-        events,
         createEvent,
         deleteEvents,
         openEvent,
     } = useEvents();
 
-    /* =======================
-       UI STATE (REDUX)
-       ======================= */
+    /* ===== UI STATE ===== */
 
     const selectedIds = useAppSelector(
         selectSelectedEventIds
@@ -73,32 +82,24 @@ export const EventsScreen = () => {
         selectIsConfirmDeleteOpen
     );
 
+    const search = useAppSelector(selectEventsSearch);
+    const searchVisible = useAppSelector(
+        selectEventsSearchVisible
+    );
+    const sort = useAppSelector(selectEventsSort);
+    const filterHasExpenses = useAppSelector(
+        selectEventsFilterHasExpenses
+    );
+
     const isSelectionMode = selectedIds.length > 0;
 
-    /* =======================
-       SEARCH
-       ======================= */
+    /* ===== DATA ===== */
 
-    const [search, setSearch] = useState('');
-    const debouncedSearch =
-        useDebouncedValue(search, 250);
+    const events = useAppSelector(
+        selectFilteredSortedEvents
+    );
 
-    const filteredEvents = useMemo(() => {
-        const q =
-            debouncedSearch.trim().toLowerCase();
-        if (!q) return events;
-
-        return events.filter(e =>
-            e.title.toLowerCase().includes(q)
-        );
-    }, [events, debouncedSearch]);
-
-    const hasSearch =
-        debouncedSearch.trim().length > 0;
-
-    /* =======================
-       SELECTION
-       ======================= */
+    /* ===== SELECTION ===== */
 
     const toggleSelect = (id: string) => {
         dispatch(
@@ -125,13 +126,7 @@ export const EventsScreen = () => {
         toggleSelect(id);
     };
 
-    /* =======================
-       DELETE
-       ======================= */
-
-    const handleDeleteSelected = () => {
-        dispatch(openConfirmDelete());
-    };
+    /* ===== DELETE ===== */
 
     const confirmDelete = async () => {
         await deleteEvents(selectedIds);
@@ -139,15 +134,10 @@ export const EventsScreen = () => {
         dispatch(closeConfirmDelete());
     };
 
-    /* =======================
-       SYNC SELECTION
-       ======================= */
+    /* ===== SYNC SELECTION ===== */
 
     useEffect(() => {
-        const visibleIds = new Set(
-            filteredEvents.map(e => e.id)
-        );
-
+        const visibleIds = new Set(events.map(e => e.id));
         dispatch(
             setSelectedEventIds(
                 selectedIds.filter(id =>
@@ -155,42 +145,79 @@ export const EventsScreen = () => {
                 )
             )
         );
-    }, [filteredEvents]);
+    }, [events]);
 
-    /* =======================
-       RENDER
-       ======================= */
+    /* ===== RENDER ===== */
 
     return (
         <View style={{ flex: 1 }}>
             <ScreenHeader
                 title={t('events')}
+                searchVisible={searchVisible}
                 searchValue={search}
-                onSearchChange={setSearch}
                 searchPlaceholder={t('search')}
+                onSearchPress={() =>
+                    dispatch(showEventsSearch())
+                }
+                onSearchChange={v =>
+                    dispatch(setEventsSearch(v))
+                }
+                onSearchBlur={() => {
+                    if (!search.trim()) {
+                        dispatch(hideEventsSearch());
+                    }
+                }}
                 selectionCount={selectedIds.length}
                 onClearSelection={() =>
                     dispatch(clearSelectedEvents())
                 }
                 actions={
-                    isSelectionMode ? (
+                    <>
                         <Appbar.Action
-                            icon="delete"
-                            onPress={handleDeleteSelected}
+                            icon={
+                                filterHasExpenses
+                                    ? 'filter'
+                                    : 'filter-outline'
+                            }
+                            onPress={() =>
+                                dispatch(
+                                    toggleEventsFilterHasExpenses()
+                                )
+                            }
                         />
-                    ) : null
+                        <Appbar.Action
+                            icon="sort"
+                            onPress={() =>
+                                dispatch(
+                                    setEventsSort(
+                                        sort === 'title_asc'
+                                            ? 'title_desc'
+                                            : 'title_asc'
+                                    )
+                                )
+                            }
+                        />
+                        {isSelectionMode && (
+                            <Appbar.Action
+                                icon="delete"
+                                onPress={() =>
+                                    dispatch(openConfirmDelete())
+                                }
+                            />
+                        )}
+                    </>
                 }
             />
 
-            {filteredEvents.length === 0 ? (
+            {events.length === 0 ? (
                 <EmptyState
                     title={
-                        hasSearch
+                        search
                             ? t('no_search_results')
                             : t('no_events')
                     }
                     description={
-                        hasSearch
+                        search
                             ? t('try_another_query')
                             : t('create_first_event')
                     }
@@ -200,7 +227,7 @@ export const EventsScreen = () => {
                     contentContainerStyle={{
                         padding: 16,
                     }}
-                    data={filteredEvents}
+                    data={events}
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => {
                         const selected =
@@ -222,9 +249,7 @@ export const EventsScreen = () => {
                                         : colors.outlineVariant,
                                 }}
                             >
-                                <Card.Title
-                                    title={item.title}
-                                />
+                                <Card.Title title={item.title} />
                             </Card>
                         );
                     }}
@@ -245,7 +270,6 @@ export const EventsScreen = () => {
                 />
             )}
 
-            {/* EVENT DIALOG */}
             <EventDialog
                 visible={isEventDialogOpen}
                 onDismiss={() =>
@@ -257,7 +281,6 @@ export const EventsScreen = () => {
                 }}
             />
 
-            {/* CONFIRM DELETE */}
             <ConfirmDialog
                 visible={isConfirmDeleteOpen}
                 title={t('delete')}

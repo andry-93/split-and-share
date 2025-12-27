@@ -1,5 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+export type EventsSort =
+    | 'created_desc'
+    | 'created_asc'
+    | 'title_asc'
+    | 'title_desc';
+
+export type ParticipantsSort =
+    | 'name_asc'
+    | 'name_desc';
+
+
 type UiState = {
     /* ===== GLOBAL ===== */
     loading: boolean;
@@ -7,9 +18,16 @@ type UiState = {
 
     /* ===== EVENTS UI ===== */
     selectedEventIds: string[];
+    eventsSearch: string;
+    eventsSort: EventsSort;
+    eventsFilterHasExpenses: boolean;
+    eventsSearchVisible: boolean;
 
     /* ===== PARTICIPANTS UI ===== */
     selectedParticipantIds: string[];
+    participantsSearch: string;
+    participantsSort: ParticipantsSort;
+    participantsSearchVisible: boolean;
 
     /* ===== EXPENSES UI ===== */
     editingExpenseId?: string | null;
@@ -24,12 +42,16 @@ type UiState = {
 const initialState: UiState = {
     loading: false,
     error: undefined,
-
     selectedEventIds: [],
     selectedParticipantIds: [],
-
+    eventsSearch: '',
+    participantsSearch: '',
+    eventsSort: 'created_desc',
+    eventsFilterHasExpenses: false,
+    participantsSort: 'name_asc',
     editingExpenseId: null,
-
+    eventsSearchVisible: false,
+    participantsSearchVisible: false,
     isEventDialogOpen: false,
     isExpenseDialogOpen: false,
     isParticipantsDialogOpen: false,
@@ -67,6 +89,23 @@ const uiSlice = createSlice({
             state.selectedEventIds = [];
         },
 
+        setEventsSort(
+            state,
+            action: PayloadAction<EventsSort>
+        ) {
+            state.eventsSort = action.payload;
+        },
+
+        toggleEventsFilterHasExpenses(state) {
+            state.eventsFilterHasExpenses =
+                !state.eventsFilterHasExpenses;
+        },
+
+        resetEventsFilters(state) {
+            state.eventsSort = 'created_desc';
+            state.eventsFilterHasExpenses = false;
+        },
+
         /* ===== PARTICIPANTS ===== */
         setSelectedParticipantIds(
             state,
@@ -78,6 +117,13 @@ const uiSlice = createSlice({
 
         clearSelectedParticipants(state) {
             state.selectedParticipantIds = [];
+        },
+
+        setParticipantsSort(
+            state,
+            action: PayloadAction<ParticipantsSort>
+        ) {
+            state.participantsSort = action.payload;
         },
 
         /* ===== EXPENSES ===== */
@@ -116,8 +162,47 @@ const uiSlice = createSlice({
         openConfirmDelete(state) {
             state.isConfirmDeleteOpen = true;
         },
+
         closeConfirmDelete(state) {
             state.isConfirmDeleteOpen = false;
+        },
+
+        setEventsSearch(
+            state,
+            action: PayloadAction<string>
+        ) {
+            state.eventsSearch = action.payload;
+        },
+
+        clearEventsSearch(state) {
+            state.eventsSearch = '';
+        },
+
+        setParticipantsSearch(
+            state,
+            action: PayloadAction<string>
+        ) {
+            state.participantsSearch = action.payload;
+        },
+
+        clearParticipantsSearch(state) {
+            state.participantsSearch = '';
+        },
+
+        showEventsSearch(state) {
+            state.eventsSearchVisible = true;
+        },
+
+        hideEventsSearch(state) {
+            state.eventsSearchVisible = false;
+        },
+
+        showParticipantsSearch(state) {
+            state.participantsSearchVisible = true;
+        },
+
+        hideParticipantsSearch(state) {
+            state.participantsSearchVisible = false;
         },
     },
 });
@@ -144,7 +229,24 @@ export const {
     closeParticipantsDialog,
 
     openConfirmDelete,
-    closeConfirmDelete
+    closeConfirmDelete,
+
+    setEventsSearch,
+    clearEventsSearch,
+
+    setParticipantsSearch,
+    clearParticipantsSearch,
+
+    setEventsSort,
+    toggleEventsFilterHasExpenses,
+    resetEventsFilters,
+
+    setParticipantsSort,
+
+    showEventsSearch,
+    hideEventsSearch,
+    showParticipantsSearch,
+    hideParticipantsSearch
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

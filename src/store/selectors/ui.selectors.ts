@@ -30,3 +30,29 @@ export const selectIsEventDialogOpen = (state: RootState) =>
 
 export const selectIsConfirmDeleteOpen = (state: RootState) =>
     state.ui.isConfirmDeleteOpen;
+
+export const selectEventsSearch = (state: RootState) =>
+    state.ui.eventsSearch;
+
+export const selectParticipantsSearch = (
+    state: RootState
+) => state.ui.participantsSearch;
+
+export const selectEventsSort = (state: RootState) =>
+    state.ui.eventsSort;
+
+export const selectEventsFilterHasExpenses = (
+    state: RootState
+) => state.ui.eventsFilterHasExpenses;
+
+export const selectParticipantsSort = (
+    state: RootState
+) => state.ui.participantsSort;
+
+export const selectEventsSearchVisible = (
+    state: RootState
+) => state.ui.eventsSearchVisible;
+
+export const selectParticipantsSearchVisible = (
+    state: RootState
+) => state.ui.participantsSearchVisible;
