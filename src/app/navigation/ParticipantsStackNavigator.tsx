@@ -1,7 +1,7 @@
 import React from "react";
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ParticipantsScreen } from '../../features/participants/ParticipantsScreen';
-import { ParticipantEditScreen } from '../../features/participants/ParticipantEditScreen';
+import { ParticipantsScreen } from '@/features/participants/ParticipantsScreen';
+import { ParticipantEditScreen } from '@/features/participants/ParticipantEditScreen';
 
 export type ParticipantsStackParamList = {
     ParticipantsList: undefined;

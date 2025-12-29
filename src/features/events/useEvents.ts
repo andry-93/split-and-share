@@ -23,13 +23,11 @@ export const useEvents = () => {
 
     /* ========= LOAD ON START ========= */
     useEffect(() => {
-        eventsRepository.getAll().then(stored => {
-            dispatch(setEvents(stored));
-        });
+        dispatch(setEvents(eventsRepository.getAll()));
     }, [dispatch]);
 
     /* ========= CREATE ========= */
-    const createEvent = async (title: string) => {
+    const createEvent = (title: string) => {
         const event: Event = {
             id: nanoid(),
             title: title.trim(),
@@ -39,11 +37,11 @@ export const useEvents = () => {
         };
 
         const next = [...events, event];
-        await eventsRepository.saveAll(next);
+        eventsRepository.saveAll(next);
         dispatch(addEvent(event));
     };
 
-    const updateEvent = async (
+    const updateEvent = (
         eventId: string,
         changes: Partial<Event>
     ) => {
@@ -62,7 +60,7 @@ export const useEvents = () => {
             e.id === eventId ? updated : e
         );
 
-        await eventsRepository.saveAll(next);
+        eventsRepository.saveAll(next);
         dispatch(
             updateEventAction({
                 id: eventId,
@@ -72,12 +70,12 @@ export const useEvents = () => {
     };
 
     /* ========= DELETE ONE ========= */
-    const deleteEvent = async (eventId: string) => {
+    const deleteEvent = (eventId: string) => {
         /* ===== EVENTS ===== */
         const nextEvents = events.filter(
             e => e.id !== eventId
         );
-        await eventsRepository.saveAll(nextEvents);
+        eventsRepository.saveAll(nextEvents);
         dispatch(removeEvent(eventId));
 
         /* ===== EXPENSES (CASCADE) ===== */
@@ -89,7 +87,7 @@ export const useEvents = () => {
             remainingExpenses.length !==
             allExpenses.length
         ) {
-            await expensesRepository.saveAll(
+            expensesRepository.saveAll(
                 remainingExpenses
             );
 
@@ -102,21 +100,21 @@ export const useEvents = () => {
     };
 
     /* ========= DELETE MANY ========= */
-    const deleteEvents = async (ids: string[]) => {
+    const deleteEvents = (ids: string[]) => {
         const idSet = new Set(ids);
 
         /* EVENTS */
         const nextEvents = events.filter(
             e => !idSet.has(e.id)
         );
-        await eventsRepository.saveAll(nextEvents);
+        eventsRepository.saveAll(nextEvents);
         ids.forEach(id => dispatch(removeEvent(id)));
 
         /* EXPENSES */
         const remainingExpenses = allExpenses.filter(
             e => !idSet.has(e.eventId)
         );
-        await expensesRepository.saveAll(
+        expensesRepository.saveAll(
             remainingExpenses
         );
 

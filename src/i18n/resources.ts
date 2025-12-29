@@ -21,6 +21,7 @@ export const resources = {
             edit_participants: 'Edit participants',
             amount_hint: 'Amount in {{currency}}',
             expense: 'Expense',
+            unknown_participant: 'Unknown participant',
 
             // ===== COMMON ACTIONS =====
             delete: 'Delete',
@@ -89,6 +90,7 @@ export const resources = {
             edit_participants: 'Редактировать участников',
             amount_hint: 'Сумма в {{currency}}',
             expense: 'Трата',
+            unknown_participant: 'Неизвестный участник',
 
             // ===== COMMON ACTIONS =====
             delete: 'Удалить',

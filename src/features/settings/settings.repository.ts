@@ -3,17 +3,21 @@ import { storage } from '@/shared/lib/storage';
 
 const SETTINGS_KEY = 'settings';
 
-const DEFAULT_SETTINGS: Settings = {
+type PersistedSettings = Pick<Settings, 'language' | 'theme' | 'defaultCurrency' | 'locale'>;
+
+const DEFAULT_PERSISTED: PersistedSettings = {
     language: 'en',
     theme: 'light',
+    defaultCurrency: 'USD',
+    locale: 'en-US',
 };
 
 export const settingsRepository = {
-    async get(): Promise<Settings> {
-        return (await storage.get<Settings>(SETTINGS_KEY)) ?? DEFAULT_SETTINGS;
+    get(): PersistedSettings {
+        return storage.get<PersistedSettings>(SETTINGS_KEY) ?? DEFAULT_PERSISTED;
     },
 
-    async save(settings: Settings): Promise<void> {
-        await storage.set(SETTINGS_KEY, settings);
+    save(persisted: PersistedSettings): void {
+        storage.set(SETTINGS_KEY, persisted);
     },
 };

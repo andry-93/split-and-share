@@ -1,11 +1,12 @@
 import React, {
     createContext,
+    useMemo,
     useContext,
     useEffect,
     useState,
     useCallback,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StorageService } from '@/shared/services/StorageService';
 import i18n from 'i18next';
 
 import type {
@@ -14,8 +15,7 @@ import type {
     Theme,
 } from '@/entities/types';
 
-const SettingsContext =
-    createContext<Settings | undefined>(undefined);
+const SettingsContext = createContext<Settings | undefined>(undefined);
 
 const languageToLocale: Record<Language, string> = {
     en: 'en-US',
@@ -23,55 +23,32 @@ const languageToLocale: Record<Language, string> = {
 };
 
 export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
-    const [language, setLanguageState] =
-        useState<Language>('en');
-    const [theme, setThemeState] =
-        useState<Theme>('light');
-    const [defaultCurrency, setDefaultCurrencyState] =
-        useState<string>('BYN');
+    const [language, setLanguageState] = useState<Language>('en');
+    const [theme, setThemeState] = useState<Theme>('light');
+    const [defaultCurrency, setDefaultCurrencyState] = useState<string>('BYN');
     const [ready, setReady] = useState(false);
-
-    /* =======================
-       INIT
-       ======================= */
 
     useEffect(() => {
         const loadSettings = async () => {
             try {
-                const storedLang =
-                    await AsyncStorage.getItem('language');
-                const storedTheme =
-                    await AsyncStorage.getItem('theme');
-                const storedCurrency =
-                    await AsyncStorage.getItem(
-                        'defaultCurrency'
-                    );
+                const storedLang = StorageService.getItem('language');
+                const storedTheme = StorageService.getItem('theme');
+                const storedCurrency = StorageService.getItem('defaultCurrency');
 
                 if (storedLang) {
-                    setLanguageState(
-                        storedLang as Language
-                    );
-                    await i18n.changeLanguage(
-                        storedLang
-                    );
+                    setLanguageState(storedLang as Language);
+                    await i18n.changeLanguage(storedLang); // ✅ теперь корректно ожидается
                 }
 
                 if (storedTheme) {
-                    setThemeState(
-                        storedTheme as Theme
-                    );
+                    setThemeState(storedTheme as Theme);
                 }
 
                 if (storedCurrency) {
-                    setDefaultCurrencyState(
-                        storedCurrency
-                    );
+                    setDefaultCurrencyState(storedCurrency);
                 }
             } catch (e) {
-                console.warn(
-                    'Failed to load settings',
-                    e
-                );
+                console.warn('Failed to load settings', e);
             } finally {
                 setReady(true);
             }
@@ -80,59 +57,29 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         loadSettings();
     }, []);
 
-    /* =======================
-       ACTIONS
-       ======================= */
+    const setLanguage = useCallback(async (lang: Language) => {
+        setLanguageState(lang);
+        await i18n.changeLanguage(lang);
+        StorageService.setItem('language', lang);
+    }, []);
 
-    const setLanguage = useCallback(
-        async (lang: Language) => {
-            setLanguageState(lang);
-            await i18n.changeLanguage(lang);
-            await AsyncStorage.setItem(
-                'language',
-                lang
-            );
-        },
-        []
-    );
+    const setTheme = useCallback((nextTheme: Theme) => {
+        setThemeState(nextTheme);
+        StorageService.setItem('theme', nextTheme);
+    }, []);
 
-    const setTheme = useCallback(
-        async (nextTheme: Theme) => {
-            setThemeState(nextTheme);
-            await AsyncStorage.setItem(
-                'theme',
-                nextTheme
-            );
-        },
-        []
-    );
+    const setDefaultCurrency = useCallback((currency: string) => {
+        const next = currency.trim().toUpperCase();
+        if (!next) return;
+        setDefaultCurrencyState(next);
+        StorageService.setItem('defaultCurrency', next);
+    }, []);
 
-    const setDefaultCurrency = useCallback(
-        async (currency: string) => {
-            const next = currency
-                .trim()
-                .toUpperCase();
+    const locale = useMemo(() => {
+        return languageToLocale[language];
+    }, [language]);
 
-            if (!next) return;
-
-            setDefaultCurrencyState(next);
-            await AsyncStorage.setItem(
-                'defaultCurrency',
-                next
-            );
-        },
-        []
-    );
-
-    /* =======================
-       GUARD
-       ======================= */
-
-    if (!ready) {
-        return null;
-    }
-
-    const locale = languageToLocale[language];
+    if (!ready) return null;
 
     return (
         <SettingsContext.Provider
@@ -154,9 +101,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 export const useSettings = () => {
     const ctx = useContext(SettingsContext);
     if (!ctx) {
-        throw new Error(
-            'useSettings must be used within SettingsProvider'
-        );
+        throw new Error('useSettings must be used within SettingsProvider');
     }
     return ctx;
 };

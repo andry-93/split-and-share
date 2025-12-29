@@ -1,8 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { EventsScreen } from '../../features/events/EventsScreen';
-import { EventDetailsScreen } from '../../features/events/EventDetailsScreen';
+import { EventsScreen } from '@/features/events/EventsScreen';
+import { EventDetailsScreen } from '@/features/events/EventDetailsScreen';
 import {EventsStackParamList} from "./types";
 
 const Stack =
