@@ -1,56 +1,17 @@
-import { StorageService } from '@/shared/services/StorageService';
 import { Participant } from '../types';
+import {storage} from "@/shared/lib/storage";
 
-const KEY = 'participants';
-
-type LegacyParticipant = Participant & {
-    avatar?: string;
-};
+const PARTICIPANTS_KEY = 'participants';
 
 export const participantsRepository = {
     getAll(): Participant[] {
-        const raw = StorageService.getItem(KEY);
-        if (!raw) return [];
-
-        const parsed: LegacyParticipant[] = JSON.parse(raw);
-
-        let migrated = false;
-
-        const normalized: Participant[] = parsed.map(p => {
-            // already new format
-            if (p.avatarUri !== undefined) {
-                return p;
-            }
-
-            // migrate legacy avatar → avatarUri
-            if (p.avatar) {
-                migrated = true;
-                const { avatar, ...rest } = p;
-
-                return {
-                    ...rest,
-                    avatarUri: avatar,
-                };
-            }
-
-            return p;
-        });
-
-        // save back only if migration happened
-        if (migrated) {
-            StorageService.setItem(
-                KEY,
-                JSON.stringify(normalized)
-            );
-        }
-
-        return normalized;
+        return storage.get<Participant[]>(PARTICIPANTS_KEY) ?? [];
     },
 
-    saveAll(participants: Participant[]) {
-        StorageService.setItem(
-            KEY,
-            JSON.stringify(participants)
+    saveAll(participants: Participant[]): void {
+        const unique = Array.from(
+            new Map(participants.map(p => [p.id, p])).values()
         );
+        storage.set(PARTICIPANTS_KEY, unique);
     },
 };

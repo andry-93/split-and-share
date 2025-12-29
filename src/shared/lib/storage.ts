@@ -3,8 +3,10 @@ import { StorageService } from '@/shared/services/StorageService';
 export const storage = {
     get<T>(key: string): T | null {
         const value = StorageService.getItem(key);
+        if (!value) return null;
+
         try {
-            return value ? JSON.parse(value) : null;
+            return JSON.parse(value);
         } catch {
             return null;
         }

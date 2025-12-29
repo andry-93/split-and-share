@@ -9,7 +9,10 @@ export const eventsRepository = {
     },
 
     saveAll(events: Event[]): void {
-        storage.set(EVENTS_KEY, events);
+        const unique = Array.from(
+            new Map(events.map(e => [e.id, e])).values()
+        );
+        storage.set(EVENTS_KEY, unique);
     },
 
     update(updatedEvent: Event): void {
