@@ -21,11 +21,7 @@ export const useParticipants = () => {
 
     /* ========= LOAD ========= */
     useEffect(() => {
-        participantsRepository
-            .getAll()
-            .then(stored => {
-                dispatch(setParticipants(stored));
-            });
+        dispatch(setParticipants(participantsRepository.getAll()));
     }, [dispatch]);
 
     /* ========= CREATE ========= */

@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StorageService } from '@/shared/services/StorageService';
 import { Participant } from '../types';
 
 const KEY = 'participants';
@@ -8,8 +8,8 @@ type LegacyParticipant = Participant & {
 };
 
 export const participantsRepository = {
-    async getAll(): Promise<Participant[]> {
-        const raw = await AsyncStorage.getItem(KEY);
+    getAll(): Participant[] {
+        const raw = StorageService.getItem(KEY);
         if (!raw) return [];
 
         const parsed: LegacyParticipant[] = JSON.parse(raw);
@@ -38,7 +38,7 @@ export const participantsRepository = {
 
         // save back only if migration happened
         if (migrated) {
-            await AsyncStorage.setItem(
+            StorageService.setItem(
                 KEY,
                 JSON.stringify(normalized)
             );
@@ -47,8 +47,8 @@ export const participantsRepository = {
         return normalized;
     },
 
-    async saveAll(participants: Participant[]) {
-        await AsyncStorage.setItem(
+    saveAll(participants: Participant[]) {
+        StorageService.setItem(
             KEY,
             JSON.stringify(participants)
         );

@@ -1,5 +1,5 @@
 import { Card, IconButton, Text } from 'react-native-paper';
-import { Event } from '../../../entities/types';
+import { Event } from '@/entities/types';
 
 interface Props {
   event: Event;

@@ -20,9 +20,7 @@ export const useExpenses = (eventId: string) => {
 
     /* ========= LOAD (ONCE) ========= */
     useEffect(() => {
-        expensesRepository.getAll().then(stored => {
-            dispatch(setExpenses(stored));
-        });
+        dispatch(setExpenses(expensesRepository.getAll()));
     }, [dispatch]);
 
     /* ========= FILTER BY EVENT ========= */

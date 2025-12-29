@@ -29,12 +29,12 @@ export interface Debt {
 export type Language = 'en' | 'ru';
 export type Theme = 'light' | 'dark';
 
-export type Settings = {
+export interface Settings {
     language: Language;
     theme: Theme;
     defaultCurrency: string;
     locale: string;
-    setLanguage: (lang: Language) => Promise<void>;
-    setTheme: (theme: Theme) => Promise<void>;
-    setDefaultCurrency: (currency: string) => Promise<void>;
-};
+    setLanguage: (lang: Language) => void;
+    setTheme: (theme: Theme) => void;
+    setDefaultCurrency: (currency: string) => void;
+}

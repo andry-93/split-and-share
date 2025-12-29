@@ -4,39 +4,20 @@ import { storage } from '@/shared/lib/storage';
 const EVENTS_KEY = 'events';
 
 export const eventsRepository = {
-    async getAll(): Promise<Event[]> {
-        const events =
-            (await storage.get<Event[]>(EVENTS_KEY)) ?? [];
-
-        let changed = false;
-
-        const migrated = events.map(event => {
-            if (!('currency' in event)) {
-                changed = true;
-                return {
-                    ...event,
-                    currency: undefined,
-                };
-            }
-            return event;
-        });
-
-        if (changed) {
-            await storage.set(EVENTS_KEY, migrated);
-        }
-
-        return migrated;
+    getAll(): Event[] {
+        return storage.get<Event[]>(EVENTS_KEY) ?? [];
     },
 
-    async saveAll(events: Event[]): Promise<void> {
-        await storage.set(EVENTS_KEY, events);
+    saveAll(events: Event[]): void {
+        storage.set(EVENTS_KEY, events);
     },
 
-    async update(event: Event): Promise<void> {
-        const events = await this.getAll();
+    update(updatedEvent: Event): void {
+        const events = this.getAll();
         const updated = events.map(e =>
-            e.id === event.id ? event : e
+            e.id === updatedEvent.id ? updatedEvent : e
         );
-        await this.saveAll(updated);
+        this.saveAll(updated);
     },
 };
+
