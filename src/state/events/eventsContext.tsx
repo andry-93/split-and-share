@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import { nanoid } from 'nanoid';
+import uuid from 'react-native-uuid';
 import { EventItem, ExpenseItem, ParticipantItem } from '../../features/events/types/events';
 import { initialEvents } from '../../features/events/data/initialEvents';
 import { PersonItem } from '../../features/people/types/people';
@@ -54,7 +54,7 @@ export function useEventsActions() {
         dispatch({
           type: 'events/create',
           payload: {
-            id: nanoid(),
+            id: `event-${String(uuid.v4())}`,
             name: trimmedName,
             description: payload.description?.trim() || undefined,
           },
@@ -71,7 +71,7 @@ export function useEventsActions() {
         }
 
         const nextExpense: ExpenseItem = {
-          id: nanoid(),
+          id: `expense-${String(uuid.v4())}`,
           title: trimmedTitle,
           amount: payload.expense.amount,
           paidBy: payload.expense.paidBy,

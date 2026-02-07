@@ -1,11 +1,12 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Appbar, Card, FAB, Searchbar, Text, useTheme } from 'react-native-paper';
+import { Appbar, Card, FAB, Icon, Searchbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
 import { useEventsState } from '../../../state/events/eventsContext';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
+import { EventItem } from '../types/events';
 
 type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
@@ -23,8 +24,8 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
   );
 
   const renderEventItem = useCallback(
-    ({ item }: { item: { id: string; name: string; description?: string } }) => (
-      <EventCard event={item} onPress={handlePressEvent} />
+    ({ item, index }: { item: EventItem; index: number }) => (
+      <EventCard event={item} index={index} onPress={handlePressEvent} />
     ),
     [handlePressEvent],
   );
@@ -44,7 +45,7 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header>
+      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
         <Appbar.Content title="Events" />
       </Appbar.Header>
 
@@ -52,7 +53,7 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
         value={query}
         onChangeText={setQuery}
         placeholder="Search events"
-        style={styles.search}
+        style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
       />
 
       <FlatList
@@ -81,24 +82,91 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
 }
 
 type EventCardProps = {
-  event: { id: string; name: string; description?: string };
+  event: EventItem;
+  index: number;
   onPress: (eventId: string) => void;
 };
 
-const EventCard = memo(function EventCard({ event, onPress }: EventCardProps) {
+function formatMoney(value: number) {
+  return `$${value.toFixed(2)}`;
+}
+
+function buildEventDate(index: number) {
+  const day = 5 + index * 5;
+  return `Dec ${day}, 2024`;
+}
+
+const EventCard = memo(function EventCard({ event, index, onPress }: EventCardProps) {
+  const theme = useTheme();
   const handlePress = useCallback(() => {
     onPress(event.id);
   }, [event.id, onPress]);
+  const total = useMemo(
+    () => event.expenses.reduce((sum, expense) => sum + expense.amount, 0),
+    [event.expenses],
+  );
+  const status = useMemo(() => {
+    if (index % 3 === 0) {
+      return { text: `You get ${formatMoney(total * 0.15)}`, tone: 'positive' as const };
+    }
+    if (index % 3 === 1) {
+      return { text: `You owe ${formatMoney(total * 0.28)}`, tone: 'negative' as const };
+    }
+    return { text: 'Settled', tone: 'neutral' as const };
+  }, [index, total]);
+
+  const statusStyle = useMemo(() => {
+    if (status.tone === 'positive') {
+      return {
+        backgroundColor: 'rgba(22, 163, 74, 0.16)',
+        color: '#22C55E',
+        borderColor: '#16A34A',
+      };
+    }
+    if (status.tone === 'negative') {
+      return {
+        backgroundColor: theme.colors.errorContainer,
+        color: theme.colors.onErrorContainer,
+        borderColor: theme.colors.error,
+      };
+    }
+    return {
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.onSurfaceVariant,
+      borderColor: theme.colors.outlineVariant,
+    };
+  }, [status.tone, theme.colors.error, theme.colors.errorContainer, theme.colors.onErrorContainer, theme.colors.onSurfaceVariant, theme.colors.outlineVariant, theme.colors.surface]);
 
   return (
-    <Card style={styles.card} onPress={handlePress}>
-      <Card.Content>
-        <Text variant="titleMedium">{event.name}</Text>
-        {event.description ? (
-          <Text variant="bodyMedium" style={styles.description}>
-            {event.description}
+    <Card
+      mode="contained"
+      style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}
+      onPress={handlePress}
+    >
+      <Card.Content style={styles.cardContent}>
+        <Text variant="titleMedium" style={styles.cardTitle}>
+          {event.name}
+        </Text>
+        <View style={styles.dateRow}>
+          <Icon source="calendar-blank-outline" size={16} color={theme.colors.onSurfaceVariant} />
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            {buildEventDate(index)}
           </Text>
-        ) : null}
+        </View>
+        <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />
+        <View style={styles.totalRow}>
+          <View>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              Total
+            </Text>
+            <Text variant="titleMedium">{formatMoney(total)}</Text>
+          </View>
+          <View style={[styles.statusPill, { backgroundColor: statusStyle.backgroundColor, borderColor: statusStyle.borderColor }]}>
+            <Text variant="labelSmall" style={{ color: statusStyle.color }}>
+              {status.text}
+            </Text>
+          </View>
+        </View>
       </Card.Content>
     </Card>
   );
@@ -110,24 +178,57 @@ const styles = StyleSheet.create({
   },
   search: {
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 12,
+    marginBottom: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   list: {
     flex: 1,
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 8,
     paddingBottom: 96,
   },
   listEmpty: {
     flexGrow: 1,
   },
   card: {
-    marginBottom: 12,
+    marginBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    elevation: 0,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
   },
-  description: {
-    marginTop: 4,
+  cardContent: {
+    paddingVertical: 10,
+  },
+  cardTitle: {
+    marginBottom: 6,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  separator: {
+    marginVertical: 8,
+    height: StyleSheet.hairlineWidth,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  statusPill: {
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   emptyState: {
     flex: 1,
@@ -138,5 +239,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

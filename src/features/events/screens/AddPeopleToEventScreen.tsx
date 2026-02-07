@@ -68,13 +68,20 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
   );
 
   const header = useMemo(
-    () => <Searchbar value={query} onChangeText={setQuery} placeholder="Search people" style={styles.search} />,
-    [query],
+    () => (
+      <Searchbar
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search people"
+        style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
+      />
+    ),
+    [query, theme.colors.outlineVariant],
   );
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header>
+      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Add people" />
       </Appbar.Header>
@@ -156,6 +163,8 @@ const styles = StyleSheet.create({
   },
   search: {
     marginBottom: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   list: {
     flex: 1,

@@ -1,12 +1,13 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Appbar, Avatar, FAB, Searchbar, Text, useTheme } from 'react-native-paper';
+import { Appbar, FAB, Searchbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { PeopleStackParamList } from '../../../navigation/types';
 import { PersonItem } from '../types/people';
 import { AddPersonActionSheet } from '../components/AddPersonActionSheet';
+import { PersonListRow } from '../components/PersonListRow';
 import { usePeopleState } from '../../../state/people/peopleContext';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 
@@ -33,11 +34,6 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
     navigation.navigate('ImportContactsAccess');
   }, [navigation]);
 
-  const renderPersonItem = useCallback(
-    ({ item }: { item: PersonItem }) => <PersonRow person={item} />,
-    [],
-  );
-
   const filteredPeople = useMemo(() => {
     const normalized = debouncedQuery.trim().toLowerCase();
     if (!normalized) {
@@ -47,9 +43,16 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
     return people.filter((person) => person.name.toLowerCase().includes(normalized));
   }, [debouncedQuery, people]);
 
+  const renderPersonItem = useCallback(
+    ({ item, index }: { item: PersonItem; index: number }) => (
+      <PersonRow person={item} withDivider={index < filteredPeople.length - 1} />
+    ),
+    [filteredPeople.length],
+  );
+
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header>
+      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
         <Appbar.Content title="People" />
       </Appbar.Header>
 
@@ -57,7 +60,7 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
         value={query}
         onChangeText={setQuery}
         placeholder="Search people"
-        style={styles.search}
+        style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
       />
 
       <FlatList
@@ -91,22 +94,9 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
   );
 }
 
-const PersonRow = memo(function PersonRow({ person }: { person: PersonItem }) {
-  const initials = person.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-
+const PersonRow = memo(function PersonRow({ person, withDivider }: { person: PersonItem; withDivider: boolean }) {
   return (
-    <View style={styles.row}>
-      <Avatar.Text size={40} label={initials || '?'} style={styles.avatar} />
-      <View style={styles.rowText}>
-        <Text variant="titleMedium">{person.name}</Text>
-        {person.contact ? <Text variant="bodyMedium">{person.contact}</Text> : null}
-      </View>
-    </View>
+    <PersonListRow name={person.name} contact={person.contact} withDivider={withDivider} />
   );
 });
 
@@ -116,7 +106,9 @@ const styles = StyleSheet.create({
   },
   search: {
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   list: {
     flex: 1,
@@ -136,20 +128,14 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     gap: 6,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  avatar: {
-    marginRight: 12,
-  },
-  rowText: {
-    flex: 1,
-  },
   fab: {
     position: 'absolute',
     right: 16,
     bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

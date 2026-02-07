@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Appbar, Button, Text, useTheme } from 'react-native-paper';
+import { Appbar, Button, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
@@ -14,23 +14,31 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header>
+      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
         <Appbar.BackAction onPress={handleBack} />
         <Appbar.Content title="Contacts access" />
       </Appbar.Header>
 
       <View style={styles.content}>
-        <Text variant="titleLarge">Allow access to contacts</Text>
-        <Text variant="bodyMedium" style={styles.supporting}>
-          This lets you quickly add people you already know. We never store or share your contacts.
+        <View style={[styles.iconCircle, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <Icon source="account-group" size={32} color={theme.colors.primary} />
+        </View>
+        <Text variant="headlineSmall" style={styles.title}>
+          Access Your Contacts
+        </Text>
+        <Text
+          variant="bodyLarge"
+          style={[styles.supporting, { color: theme.colors.onSurfaceVariant }]}
+        >
+          To import people from your contacts, we&apos;ll need permission to access your contact list.
         </Text>
       </View>
 
-      <View style={styles.actions}>
-        <Button mode="contained" onPress={handleContinue}>
+      <View style={[styles.actions, { borderTopColor: theme.colors.outlineVariant }]}>
+        <Button mode="contained" onPress={handleContinue} style={styles.primaryButton}>
           Continue
         </Button>
-        <Button mode="text" onPress={handleBack}>
+        <Button mode="outlined" onPress={handleBack} style={styles.secondaryButton}>
           Not now
         </Button>
       </View>
@@ -44,15 +52,38 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    gap: 12,
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  title: {
+    textAlign: 'center',
   },
   supporting: {
-    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   actions: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingBottom: 24,
+    paddingTop: 16,
     gap: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  primaryButton: {
+    borderRadius: 12,
+  },
+  secondaryButton: {
+    borderRadius: 12,
   },
 });

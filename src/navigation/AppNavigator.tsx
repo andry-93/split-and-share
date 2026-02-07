@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useTheme } from 'react-native-paper';
@@ -34,6 +35,16 @@ function getTabBarDisplay(route: { name?: string } | undefined) {
 
 export function AppNavigator() {
   const theme = useTheme();
+  const baseTabBarStyle = {
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.outlineVariant,
+    elevation: 0,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+  } as const;
 
   return (
     <Tab.Navigator
@@ -42,9 +53,7 @@ export function AppNavigator() {
         tabBarShowLabel: true,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
-        tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-        },
+        tabBarStyle: baseTabBarStyle,
         tabBarIcon: ({ color, size }) => {
           const iconName =
             route.name === 'EventsTab'
@@ -62,7 +71,7 @@ export function AppNavigator() {
         options={({ route }) => ({
           title: 'Events',
           tabBarStyle: {
-            backgroundColor: theme.colors.surface,
+            ...baseTabBarStyle,
             display: getTabBarDisplay(route),
           },
         })}
@@ -74,7 +83,7 @@ export function AppNavigator() {
         options={({ route }) => ({
           title: 'People',
           tabBarStyle: {
-            backgroundColor: theme.colors.surface,
+            ...baseTabBarStyle,
             display: getTabBarDisplay(route),
           },
         })}

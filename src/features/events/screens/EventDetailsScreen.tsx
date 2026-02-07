@@ -1,10 +1,11 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { Appbar, Avatar, Button, Card, FAB, Icon, SegmentedButtons, Text, useTheme } from 'react-native-paper';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Appbar, Avatar, Button, Card, FAB, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
 import { ExpenseItem, ParticipantItem } from '../types/events';
+import { PersonListRow } from '../../people/components/PersonListRow';
 import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
 import {
   RawDebt,
@@ -12,11 +13,11 @@ import {
   selectPaidSimplifiedIds,
   selectRawDebts,
   selectSimplifiedDebts,
-  selectSimplifiedTotals,
   selectTotalAmount,
   selectParticipantsCount,
   selectExpensesCount,
 } from '../../../state/events/eventsSelectors';
+import { useSettingsState } from '../../../state/settings/settingsContext';
 
 type EventDetailsScreenProps = NativeStackScreenProps<EventsStackParamList, 'EventDetails'>;
 
@@ -27,6 +28,7 @@ type SummaryMetricProps = {
 
 export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProps) {
   const theme = useTheme();
+  const settings = useSettingsState();
   const { events, paidSimplifiedByEvent } = useEventsState();
   const { markSimplifiedPaid } = useEventsActions();
   const event = events.find((item) => item.id === route.params.eventId);
@@ -39,12 +41,6 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     }
   }, []);
 
-  const handleDebtsModeChange = useCallback((value: string) => {
-    if (value === 'raw' || value === 'simplified') {
-      setDebtsMode(value);
-    }
-  }, []);
-
   const handleViewRawDebts = useCallback(() => {
     setDebtsMode('raw');
   }, []);
@@ -52,11 +48,28 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const totalAmount = useMemo(() => selectTotalAmount(event), [event]);
   const participantsCount = useMemo(() => selectParticipantsCount(event), [event]);
   const expensesCount = useMemo(() => selectExpensesCount(event), [event]);
+  const currencySymbol = useMemo(() => {
+    switch (settings.currency) {
+      case 'EUR':
+        return 'EUR';
+      case 'GBP':
+        return 'GBP';
+      case 'RUB':
+        return 'RUB';
+      case 'USD':
+      default:
+        return '$';
+    }
+  }, [settings.currency]);
+  const totalAmountDisplay = useMemo(
+    () => `${currencySymbol}${totalAmount.toFixed(2)}`,
+    [currencySymbol, totalAmount],
+  );
 
   if (!event) {
     return (
       <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-        <Appbar.Header>
+        <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="Event Details" />
         </Appbar.Header>
@@ -71,8 +84,6 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const rawDebts = useMemo(() => selectRawDebts(event), [event]);
   const simplifiedDebts = useMemo(() => selectSimplifiedDebts(rawDebts), [rawDebts]);
 
-  const simplifiedTotals = useMemo(() => selectSimplifiedTotals(simplifiedDebts), [simplifiedDebts]);
-
   const paidSimplifiedIds = selectPaidSimplifiedIds({ events, paidSimplifiedByEvent }, event.id);
   const paidSet = useMemo(() => new Set(paidSimplifiedIds), [paidSimplifiedIds]);
   const visibleSimplifiedDebts = useMemo(
@@ -83,27 +94,93 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const header = useMemo(
     () => (
       <View>
-        <Card style={styles.summaryCard}>
+        <Card
+          mode="contained"
+          style={[
+            styles.summaryCard,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant },
+          ]}
+        >
           <Card.Content style={styles.summaryContent}>
-            <SummaryMetric label="Total spent" value={`${totalAmount}`} />
-            <SummaryMetric label="Participants" value={`${participantsCount}`} />
+            <SummaryMetric label="Total" value={totalAmountDisplay} />
+            <SummaryMetric label="People" value={`${participantsCount}`} />
             <SummaryMetric label="Expenses" value={`${expensesCount}`} />
           </Card.Content>
         </Card>
 
-        <SegmentedButtons
-          value={activeTab}
-          onValueChange={handleTabChange}
-          style={styles.tabs}
-          buttons={[
-            { value: 'expenses', label: 'Expenses' },
-            { value: 'debts', label: 'Debts' },
-            { value: 'people', label: 'People' },
+        <View
+          style={[
+            styles.tabsToggle,
+            {
+              backgroundColor: theme.colors.elevation.level2,
+              borderColor: theme.colors.outlineVariant,
+              borderWidth: StyleSheet.hairlineWidth,
+            },
           ]}
-        />
+        >
+          <Pressable
+            onPress={() => handleTabChange('expenses')}
+            style={[
+              styles.tabsItem,
+              activeTab === 'expenses' ? { backgroundColor: theme.colors.elevation.level3 } : null,
+            ]}
+          >
+            <Text
+              variant="labelLarge"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={[styles.tabsLabel, { color: activeTab === 'expenses' ? theme.colors.onSurface : theme.colors.onSurfaceVariant }]}
+            >
+              Expenses
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleTabChange('debts')}
+            style={[
+              styles.tabsItem,
+              activeTab === 'debts' ? { backgroundColor: theme.colors.elevation.level3 } : null,
+            ]}
+          >
+            <Text
+              variant="labelLarge"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={[styles.tabsLabel, { color: activeTab === 'debts' ? theme.colors.onSurface : theme.colors.onSurfaceVariant }]}
+            >
+              Debts
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleTabChange('people')}
+            style={[
+              styles.tabsItem,
+              activeTab === 'people' ? { backgroundColor: theme.colors.elevation.level3 } : null,
+            ]}
+          >
+            <Text
+              variant="labelLarge"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={[styles.tabsLabel, { color: activeTab === 'people' ? theme.colors.onSurface : theme.colors.onSurfaceVariant }]}
+            >
+              People
+            </Text>
+          </Pressable>
+        </View>
       </View>
     ),
-    [activeTab, handleTabChange, participantsCount, expensesCount, totalAmount],
+    [
+      activeTab,
+      expensesCount,
+      handleTabChange,
+      participantsCount,
+      theme.colors.elevation.level2,
+      theme.colors.elevation.level3,
+      theme.colors.onSurface,
+      theme.colors.onSurfaceVariant,
+      theme.colors.outlineVariant,
+      totalAmountDisplay,
+    ],
   );
 
   const handleMarkPaid = useCallback(
@@ -114,13 +191,34 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   );
 
   const renderExpenseItem = useCallback(
-    ({ item }: { item: ExpenseItem }) => <ExpenseCard expense={item} />,
-    [],
+    ({ item }: { item: ExpenseItem }) => <ExpenseCard expense={item} currencySymbol={currencySymbol} />,
+    [currencySymbol],
   );
 
+  const participantBalanceMap = useMemo(() => {
+    const balanceById = new Map<string, number>();
+    event.participants.forEach((participant) => {
+      balanceById.set(participant.id, 0);
+    });
+
+    rawDebts.forEach((debt) => {
+      balanceById.set(debt.from.id, (balanceById.get(debt.from.id) ?? 0) - debt.amount);
+      balanceById.set(debt.to.id, (balanceById.get(debt.to.id) ?? 0) + debt.amount);
+    });
+
+    return balanceById;
+  }, [event.participants, rawDebts]);
+
   const renderParticipantItem = useCallback(
-    ({ item }: { item: ParticipantItem }) => <ParticipantRow participant={item} />,
-    [],
+    ({ item, index }: { item: ParticipantItem; index: number }) => (
+      <ParticipantRow
+        participant={item}
+        balance={participantBalanceMap.get(item.id) ?? 0}
+        currencySymbol={currencySymbol}
+        withDivider={index < event.participants.length - 1}
+      />
+    ),
+    [currencySymbol, event.participants.length, participantBalanceMap],
   );
 
   const renderDebtItem = useCallback(
@@ -137,24 +235,58 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     () => (
       <View>
         {header}
-        <Card style={styles.summaryCard}>
-          <Card.Content style={styles.summaryContent}>
-            <SummaryMetric label="You owe" value={debtsMode === 'raw' ? '0' : `${simplifiedTotals.youOwe}`} />
-            <SummaryMetric label="You are owed" value={debtsMode === 'raw' ? '0' : `${simplifiedTotals.youAreOwed}`} />
-          </Card.Content>
-        </Card>
-        <SegmentedButtons
-          value={debtsMode}
-          onValueChange={handleDebtsModeChange}
-          style={styles.tabs}
-          buttons={[
-            { value: 'raw', label: 'Raw' },
-            { value: 'simplified', label: 'Simplified' },
+        <View
+          style={[
+            styles.debtsModeToggle,
+            {
+              backgroundColor: theme.colors.elevation.level2,
+              borderColor: theme.colors.outlineVariant,
+              borderWidth: StyleSheet.hairlineWidth,
+            },
           ]}
-        />
+        >
+          <Pressable
+            onPress={() => setDebtsMode('raw')}
+            style={[
+              styles.debtsModeItem,
+              debtsMode === 'raw' ? { backgroundColor: theme.colors.elevation.level3 } : null,
+            ]}
+          >
+            <Text
+              variant="labelLarge"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={[
+                styles.debtsModeLabel,
+                { color: debtsMode === 'raw' ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Raw
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setDebtsMode('simplified')}
+            style={[
+              styles.debtsModeItem,
+              debtsMode === 'simplified' ? { backgroundColor: theme.colors.elevation.level3 } : null,
+            ]}
+          >
+            <Text
+              variant="labelLarge"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={[
+                styles.debtsModeLabel,
+                { color: debtsMode === 'simplified' ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Simplified
+            </Text>
+          </Pressable>
+        </View>
       </View>
     ),
-    [debtsMode, handleDebtsModeChange, header, simplifiedTotals.youAreOwed, simplifiedTotals.youOwe],
+    [debtsMode, header, theme.colors.elevation.level2, theme.colors.elevation.level3, theme.colors.onSurface, theme.colors.onSurfaceVariant, theme.colors.outlineVariant],
   );
 
   const handleAddExpense = useCallback(() => {
@@ -167,7 +299,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header>
+      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={event.name} />
         <Appbar.Action icon="share-variant" onPress={() => undefined} />
@@ -282,18 +414,31 @@ const SummaryMetric = memo(function SummaryMetric({ label, value }: SummaryMetri
 
 type ExpenseCardProps = {
   expense: ExpenseItem;
+  currencySymbol: string;
 };
 
-const ExpenseCard = memo(function ExpenseCard({ expense }: ExpenseCardProps) {
+const ExpenseCard = memo(function ExpenseCard({ expense, currencySymbol }: ExpenseCardProps) {
+  const theme = useTheme();
+
   return (
-    <Card style={styles.card}>
+    <Card
+      mode="contained"
+      style={[styles.card, { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}
+    >
       <Card.Content style={styles.cardContent}>
+        <View style={styles.expenseLeading}>
+          <View style={[styles.expenseIconCircle, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Icon source="cart-outline" size={18} color={theme.colors.primary} />
+          </View>
+        </View>
         <View style={styles.cardText}>
           <Text variant="titleMedium">{expense.title}</Text>
-          <Text variant="bodyMedium">Paid by {expense.paidBy}</Text>
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            Paid by {expense.paidBy}
+          </Text>
         </View>
         <Text variant="titleMedium" style={styles.amount}>
-          {expense.amount}
+          {currencySymbol}{expense.amount.toFixed(2)}
         </Text>
       </Card.Content>
     </Card>
@@ -302,24 +447,59 @@ const ExpenseCard = memo(function ExpenseCard({ expense }: ExpenseCardProps) {
 
 type ParticipantRowProps = {
   participant: ParticipantItem;
+  balance: number;
+  currencySymbol: string;
+  withDivider: boolean;
 };
 
-const ParticipantRow = memo(function ParticipantRow({ participant }: ParticipantRowProps) {
-  const initials = participant.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
+const ParticipantRow = memo(function ParticipantRow({
+  participant,
+  balance,
+  currencySymbol,
+  withDivider,
+}: ParticipantRowProps) {
+  const theme = useTheme();
+  const absoluteBalance = Math.abs(balance);
+  const formattedBalance =
+    balance > 0
+      ? `+${currencySymbol}${absoluteBalance.toFixed(2)}`
+      : balance < 0
+        ? `-${currencySymbol}${absoluteBalance.toFixed(2)}`
+        : `${currencySymbol}0.00`;
+
+  const balanceStyle = balance > 0
+    ? {
+        backgroundColor: 'rgba(22, 163, 74, 0.16)',
+        borderColor: '#4ADE80',
+        color: '#16A34A',
+      }
+    : balance < 0
+      ? {
+          backgroundColor: theme.colors.errorContainer,
+          borderColor: theme.colors.error,
+          color: theme.colors.onErrorContainer,
+        }
+      : {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.outlineVariant,
+          color: theme.colors.onSurfaceVariant,
+        };
+
+  const balanceChip = (
+    <View style={[styles.balancePill, { backgroundColor: balanceStyle.backgroundColor, borderColor: balanceStyle.borderColor }]}>
+      <Text variant="labelMedium" style={{ color: balanceStyle.color }}>
+        {formattedBalance}
+      </Text>
+    </View>
+  );
 
   return (
-    <View style={styles.participantRow}>
-      <Avatar.Text size={40} label={initials || '?'} style={styles.avatar} />
-      <View style={styles.participantText}>
-        <Text variant="titleMedium">{participant.name}</Text>
-        <Text variant="bodyMedium">Balance: 0</Text>
-      </View>
-    </View>
+    <PersonListRow
+      name={participant.name}
+      contact={participant.contact}
+      withDivider={withDivider}
+      rightSlot={balanceChip}
+    />
   );
 });
 
@@ -409,7 +589,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   summaryCard: {
+    marginTop: -12,
+    marginHorizontal: -16,
     marginBottom: 12,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    elevation: 0,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
   },
   summaryContent: {
     flexDirection: 'row',
@@ -418,16 +608,79 @@ const styles = StyleSheet.create({
   metric: {
     flex: 1,
   },
-  tabs: {
+  tabsToggle: {
+    marginHorizontal: 16,
     marginBottom: 12,
+    borderRadius: 10,
+    padding: 5,
+    maxWidth: '100%',
+    flexDirection: 'row',
+    gap: 6,
+    alignSelf: 'center',
+  },
+  tabsItem: {
+    minHeight: 40,
+    minWidth: 0,
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  tabsLabel: {
+    fontWeight: '700',
+    letterSpacing: 0.1,
+    flexShrink: 1,
+  },
+  debtsModeToggle: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 10,
+    padding: 5,
+    maxWidth: '100%',
+    flexDirection: 'row',
+    gap: 6,
+    alignSelf: 'center',
+  },
+  debtsModeItem: {
+    minHeight: 40,
+    minWidth: 0,
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  debtsModeLabel: {
+    fontWeight: '700',
+    letterSpacing: 0.1,
+    flexShrink: 1,
   },
   card: {
     marginBottom: 12,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  expenseLeading: {
+    marginRight: 10,
+  },
+  expenseIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardText: {
     flex: 1,
@@ -446,16 +699,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  participantRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+  balancePill: {
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   avatar: {
     marginRight: 12,
-  },
-  participantText: {
-    flex: 1,
   },
   debtRow: {
     flexDirection: 'row',
@@ -473,6 +724,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   missingState: {
     flex: 1,

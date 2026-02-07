@@ -1,9 +1,10 @@
 import React, { memo, useCallback, useMemo, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Appbar, Divider, List, SegmentedButtons, Text, useTheme } from 'react-native-paper';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Appbar, Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useSettingsActions, useSettingsState } from '../../../state/settings/settingsContext';
+import type { SettingsState } from '../../../state/settings/settingsTypes';
 import appPackage from '../../../../package.json';
 
 const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
@@ -33,10 +34,10 @@ export function SettingsScreen() {
   }, []);
 
   const handleThemeChange = useCallback(
-    (value: string) => {
-      setTheme(value as typeof settings.theme);
+    (value: SettingsState['theme']) => {
+      setTheme(value);
     },
-    [setTheme, settings.theme],
+    [setTheme],
   );
 
   const handleSelectLanguage = useCallback(
@@ -83,7 +84,7 @@ export function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header>
+      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
         <Appbar.Content title="Settings" />
       </Appbar.Header>
 
@@ -94,13 +95,15 @@ export function SettingsScreen() {
         <List.Item
           title="Language"
           description={settings.language}
+          style={styles.fullBleedRow}
           right={(props) => <List.Icon {...props} icon="chevron-right" />}
           onPress={handleOpenLanguage}
         />
-        <Divider />
+        <Divider style={styles.fullBleedDivider} />
         <List.Item
           title="Currency"
           description={currencyLabels[settings.currency] ?? settings.currency}
+          style={styles.fullBleedRow}
           right={(props) => <List.Icon {...props} icon="chevron-right" />}
           onPress={handleOpenCurrency}
         />
@@ -108,20 +111,36 @@ export function SettingsScreen() {
         <Text variant="labelLarge" style={styles.sectionLabel}>
           Appearance
         </Text>
-        <SegmentedButtons
-          value={settings.theme}
-          onValueChange={handleThemeChange}
-          buttons={[
-            { value: 'system', label: 'System' },
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
+        <View
+          style={[
+            styles.appearanceToggle,
+            {
+              backgroundColor: theme.colors.elevation.level2,
+              borderColor: theme.colors.outlineVariant,
+            },
           ]}
-        />
+        >
+          <ListItemToggle
+            label="System"
+            selected={settings.theme === 'system'}
+            onPress={() => handleThemeChange('system')}
+          />
+          <ListItemToggle
+            label="Light"
+            selected={settings.theme === 'light'}
+            onPress={() => handleThemeChange('light')}
+          />
+          <ListItemToggle
+            label="Dark"
+            selected={settings.theme === 'dark'}
+            onPress={() => handleThemeChange('dark')}
+          />
+        </View>
 
         <Text variant="labelLarge" style={styles.sectionLabel}>
           About
         </Text>
-        <List.Item title="Version" description={appPackage.version} />
+        <List.Item title="Version" description={appPackage.version} style={styles.fullBleedRow} />
       </View>
 
       <BottomSheetModal
@@ -174,6 +193,12 @@ type OptionRowProps = {
   onSelect: (value: string) => void;
 };
 
+type ListItemToggleProps = {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+};
+
 const OptionRow = memo(function OptionRow({ title, value, selected, onSelect }: OptionRowProps) {
   const theme = useTheme();
   const handleSelect = useCallback(() => {
@@ -191,6 +216,39 @@ const OptionRow = memo(function OptionRow({ title, value, selected, onSelect }: 
   );
 });
 
+const ListItemToggle = memo(function ListItemToggle({
+  label,
+  selected,
+  onPress,
+}: ListItemToggleProps) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.appearanceToggleItem,
+        {
+          backgroundColor: selected ? theme.colors.elevation.level3 : 'transparent',
+          borderRadius: selected ? 8 : 0,
+        },
+      ]}
+    >
+      <Text
+        variant="labelLarge"
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={[
+          styles.appearanceToggleLabel,
+          { color: selected ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+});
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -203,6 +261,34 @@ const styles = StyleSheet.create({
   sectionLabel: {
     marginTop: 8,
     marginBottom: 4,
+  },
+  fullBleedRow: {
+    marginHorizontal: -16,
+  },
+  fullBleedDivider: {
+    marginHorizontal: -16,
+  },
+  appearanceToggle: {
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 5,
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  appearanceToggleItem: {
+    flex: 1,
+    minHeight: 40,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  appearanceToggleLabel: {
+    textAlign: 'center',
+    fontWeight: '700',
+    letterSpacing: 0.1,
+    flexShrink: 1,
   },
   sheetContent: {
     paddingHorizontal: 16,

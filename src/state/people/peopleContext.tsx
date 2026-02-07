@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import { nanoid } from 'nanoid';
+import uuid from 'react-native-uuid';
 import { initialPeople } from '../../features/people/data/initialPeople';
 import { PersonItem } from '../../features/people/types/people';
 import { readJSON, writeJSON } from '../storage/mmkv';
@@ -54,18 +54,19 @@ export function usePeopleActions() {
         dispatch({
           type: 'people/add',
           payload: {
-            id: nanoid(),
+            id: `person-${String(uuid.v4())}`,
             name: trimmedName,
             contact: trimmedContact || undefined,
             note: trimmedNote || undefined,
           },
         });
       },
-      addPeople: (payload: { people: { name: string; contact: string }[] }) => {
+      addPeople: (payload: { people: { name: string; contact?: string; crypto?: string }[] }) => {
         const nextPeople: PersonItem[] = payload.people.map((person) => ({
-          id: nanoid(),
+          id: `person-${String(uuid.v4())}`,
           name: person.name,
-          contact: person.contact,
+          // Keep backward compatibility if caller used `crypto` by mistake.
+          contact: person.contact ?? person.crypto ?? undefined,
         }));
 
         dispatch({ type: 'people/addMany', payload: { people: nextPeople } });

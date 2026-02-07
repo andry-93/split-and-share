@@ -1,28 +1,53 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { Appbar, Button, Checkbox, List, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Appbar, Button, Checkbox, Divider, Icon, List, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { EventsStackParamList } from '../../../navigation/types';
 import { useEventsActions } from '../../../state/events/eventsContext';
+import { useSettingsState } from '../../../state/settings/settingsContext';
+import { OutlinedFieldContainer } from '../../../shared/ui/OutlinedFieldContainer';
 
-const participants = ['Alice', 'Bob', 'Charlie'];
+const participants = ['Alice Johnson', 'Bob Smith', 'Charlie Davis'];
+const categoryOptions = [
+  { id: 'food', label: 'Food', icon: 'cart-outline' },
+  { id: 'transport', label: 'Transport', icon: 'car-outline' },
+  { id: 'lodging', label: 'Lodging', icon: 'home-outline' },
+  { id: 'other', label: 'Other', icon: 'dots-horizontal' },
+] as const;
+type CategoryId = (typeof categoryOptions)[number]['id'];
 
 type AddExpenseScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddExpense'>;
 
 export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const settings = useSettingsState();
   const { addExpense } = useEventsActions();
   const [amount, setAmount] = useState('');
   const [title, setTitle] = useState('');
   const [paidBy, setPaidBy] = useState(participants[0]);
+  const [category, setCategory] = useState<CategoryId>('food');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(participants);
   const sheetRef = useRef<BottomSheetModal>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
   const selectedSet = useMemo(() => new Set(selectedParticipants), [selectedParticipants]);
+  const selectedCurrency = useMemo(() => {
+    switch (settings.currency) {
+      case 'EUR':
+        return 'EUR';
+      case 'GBP':
+        return 'GBP';
+      case 'RUB':
+        return 'RUB';
+      case 'USD':
+      default:
+        return '$';
+    }
+  }, [settings.currency]);
+
   const isSaveDisabled = useMemo(() => {
     return amount.trim().length === 0 || title.trim().length === 0;
   }, [amount, title]);
@@ -35,7 +60,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
 
   const snapPoints = useMemo(() => ['40%'], []);
 
-  const openPicker = useCallback(() => {
+  const openPaidByPicker = useCallback(() => {
     Keyboard.dismiss();
     requestAnimationFrame(() => sheetRef.current?.present());
   }, []);
@@ -85,48 +110,134 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header>
+      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Add Expense" />
       </Appbar.Header>
 
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.form}>
-          <TextInput
-            label="Amount"
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="decimal-pad"
-            style={styles.amountInput}
-            placeholder="0"
-          />
+      <KeyboardAvoidingView
+        style={[styles.flex, { backgroundColor: theme.colors.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.form,
+            styles.formContentGrow,
+            { paddingBottom: 16 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text variant="labelLarge" style={styles.sectionLabel}>
+            Amount
+          </Text>
+          <OutlinedFieldContainer style={styles.amountInputContainer}>
+            <Text variant="headlineSmall" style={styles.amountCurrency}>
+              {selectedCurrency}
+            </Text>
+            <TextInput
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="decimal-pad"
+              mode="flat"
+              style={[styles.amountInlineInput, { backgroundColor: 'transparent' }]}
+              contentStyle={styles.amountInlineInputContent}
+              underlineStyle={styles.hiddenUnderline}
+              placeholder="0.00"
+            />
+          </OutlinedFieldContainer>
 
-          <TextInput
-            label="Title"
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Dinner"
-            style={styles.input}
-          />
+          <Text variant="labelLarge" style={styles.sectionLabel}>
+            Title
+          </Text>
+          <OutlinedFieldContainer style={styles.titleInputContainer}>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              mode="flat"
+              style={[styles.titleInlineInput, { backgroundColor: 'transparent' }]}
+              contentStyle={styles.titleInlineInputContent}
+              underlineStyle={styles.hiddenUnderline}
+              placeholder="e.g. Dinner, Taxi, Hotel"
+            />
+          </OutlinedFieldContainer>
+
+          <Text variant="labelLarge" style={styles.sectionLabel}>
+            Category
+          </Text>
+          <View style={styles.categoryRow}>
+            {categoryOptions.map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={() => setCategory(item.id)}
+                style={[
+                  styles.categoryChip,
+                  {
+                    backgroundColor:
+                      category === item.id ? theme.colors.primary : theme.colors.surfaceVariant,
+                  },
+                ]}
+              >
+                <Icon
+                  source={item.icon}
+                  size={20}
+                  color={category === item.id ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
+                />
+                <Text
+                  variant="labelMedium"
+                  style={{
+                    color: category === item.id ? theme.colors.onPrimary : theme.colors.onSurfaceVariant,
+                  }}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
 
           <View style={styles.section}>
             <Text variant="labelLarge" style={styles.sectionLabel}>
               Paid by
             </Text>
-            <Button mode="outlined" onPress={openPicker}>
-              {paidBy}
-            </Button>
+            <OutlinedFieldContainer>
+              <Pressable
+                onPress={openPaidByPicker}
+                style={styles.selectField}
+              >
+                <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
+                  {paidBy}
+                </Text>
+                <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
+              </Pressable>
+            </OutlinedFieldContainer>
           </View>
 
           <View style={styles.section}>
             <Text variant="labelLarge" style={styles.sectionLabel}>
               Split between
             </Text>
-            {participants.map(renderParticipantRow)}
+            <OutlinedFieldContainer style={styles.participantsCard}>
+              {participants.map((name, index) => (
+                <View key={name}>
+                  {index > 0 ? <Divider /> : null}
+                  {renderParticipantRow(name)}
+                </View>
+              ))}
+            </OutlinedFieldContainer>
           </View>
-        </View>
+        </ScrollView>
 
-        <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              backgroundColor: theme.colors.background,
+              borderTopColor: theme.colors.outlineVariant,
+              paddingBottom: Math.max(insets.bottom, 12),
+            },
+          ]}
+        >
           <Button mode="contained" onPress={handleSave} disabled={isSaveDisabled}>
             Save expense
           </Button>
@@ -172,11 +283,12 @@ const ParticipantRow = memo(function ParticipantRow({ name, selected, onToggle }
   }, [name, onToggle]);
 
   return (
-    <Checkbox.Item
-      label={name}
-      status={selected ? 'checked' : 'unchecked'}
-      onPress={handleToggle}
-    />
+    <View style={styles.participantRow}>
+      <Pressable onPress={handleToggle} style={styles.participantLabelArea}>
+        <Text variant="titleMedium">{name}</Text>
+      </Pressable>
+      <Checkbox status={selected ? 'checked' : 'unchecked'} onPress={handleToggle} />
+    </View>
   );
 });
 
@@ -210,15 +322,57 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   form: {
-    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
   },
-  amountInput: {
-    marginBottom: 24,
+  formContentGrow: {
+    flexGrow: 1,
   },
-  input: {
+  amountInputContainer: {
+    minHeight: 56,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 16,
+  },
+  amountCurrency: {
+    marginRight: 8,
+  },
+  amountInlineInput: {
+    flex: 1,
+    height: 52,
+  },
+  amountInlineInputContent: {
+    fontSize: 36,
+    paddingHorizontal: 0,
+  },
+  hiddenUnderline: {
+    display: 'none',
+  },
+  titleInputContainer: {
+    minHeight: 56,
+    paddingHorizontal: 0,
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  titleInlineInput: {
+    height: 52,
+  },
+  titleInlineInputContent: {
+    paddingHorizontal: 0,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  categoryChip: {
+    flex: 1,
+    minHeight: 72,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   section: {
     marginBottom: 16,
@@ -226,9 +380,33 @@ const styles = StyleSheet.create({
   sectionLabel: {
     marginBottom: 8,
   },
+  selectField: {
+    minHeight: 50,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  participantsCard: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  participantRow: {
+    minHeight: 50,
+    paddingLeft: 14,
+    paddingRight: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  participantLabelArea: {
+    flex: 1,
+    paddingVertical: 12,
+  },
   bottomBar: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   sheetContent: {
     paddingHorizontal: 16,
