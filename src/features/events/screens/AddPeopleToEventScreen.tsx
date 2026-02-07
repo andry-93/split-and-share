@@ -7,6 +7,7 @@ import { EventsStackParamList } from '../../../navigation/types';
 import { usePeopleState } from '../../../state/people/peopleContext';
 import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
 import { PersonItem } from '../../people/types/people';
+import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 
 type AddPeopleToEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddPeopleToEvent'>;
 
@@ -130,6 +131,8 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
   selected,
   onToggle,
 }: SelectablePersonRowProps) {
+  const theme = useTheme();
+  const avatarColors = getInitialsAvatarColors(theme.dark);
   const initials = person.name
     .split(' ')
     .filter(Boolean)
@@ -143,7 +146,12 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
 
   return (
     <View style={[styles.row, alreadyAdded ? styles.rowMuted : null]}>
-      <Avatar.Text size={40} label={initials || '?'} style={styles.avatar} />
+      <Avatar.Text
+        size={40}
+        label={initials || '?'}
+        style={[styles.avatar, { backgroundColor: avatarColors.backgroundColor }]}
+        color={avatarColors.labelColor}
+      />
       <View style={styles.rowText}>
         <Text variant="titleMedium">{person.name}</Text>
         {alreadyAdded ? (

@@ -1,6 +1,7 @@
 import React, { ReactNode, memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Avatar, Text, useTheme } from 'react-native-paper';
+import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 
 type PersonListRowProps = {
   name: string;
@@ -22,6 +23,7 @@ export const PersonListRow = memo(function PersonListRow({
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
+  const avatarColors = getInitialsAvatarColors(theme.dark);
 
   return (
     <View
@@ -36,7 +38,12 @@ export const PersonListRow = memo(function PersonListRow({
       ]}
     >
       <View style={styles.identity}>
-        <Avatar.Text size={40} label={initials || '?'} style={styles.avatar} />
+        <Avatar.Text
+          size={40}
+          label={initials || '?'}
+          style={[styles.avatar, { backgroundColor: avatarColors.backgroundColor }]}
+          color={avatarColors.labelColor}
+        />
         <View style={styles.textWrap}>
           <Text variant="titleMedium">{name}</Text>
           {contact ? <Text variant="bodyMedium">{contact}</Text> : null}

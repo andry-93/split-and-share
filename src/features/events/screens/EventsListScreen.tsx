@@ -5,16 +5,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
 import { useEventsState } from '../../../state/events/eventsContext';
+import { useSettingsState } from '../../../state/settings/settingsContext';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { EventItem } from '../types/events';
+import { formatCurrencyAmount, normalizeCurrencyCode } from '../../../shared/utils/currency';
 
 type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
 export function EventsListScreen({ navigation }: EventsListScreenProps) {
   const theme = useTheme();
   const { events } = useEventsState();
+  const settings = useSettingsState();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 250);
+  const currencyCode = useMemo(() => normalizeCurrencyCode(settings.currency), [settings.currency]);
 
   const handlePressEvent = useCallback(
     (eventId: string) => {
@@ -25,9 +29,9 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
 
   const renderEventItem = useCallback(
     ({ item, index }: { item: EventItem; index: number }) => (
-      <EventCard event={item} index={index} onPress={handlePressEvent} />
+      <EventCard event={item} index={index} onPress={handlePressEvent} currencyCode={currencyCode} />
     ),
-    [handlePressEvent],
+    [currencyCode, handlePressEvent],
   );
 
   const filteredEvents = useMemo(() => {
@@ -76,7 +80,12 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
         }
       />
 
-      <FAB icon="plus" style={styles.fab} onPress={handleAddEvent} />
+      <FAB
+        icon="plus"
+        style={[styles.fab, styles.fabNoShadow, { backgroundColor: '#2563FF' }]}
+        color="#FFFFFF"
+        onPress={handleAddEvent}
+      />
     </SafeAreaView>
   );
 }
@@ -85,18 +94,15 @@ type EventCardProps = {
   event: EventItem;
   index: number;
   onPress: (eventId: string) => void;
+  currencyCode: string;
 };
-
-function formatMoney(value: number) {
-  return `$${value.toFixed(2)}`;
-}
 
 function buildEventDate(index: number) {
   const day = 5 + index * 5;
   return `Dec ${day}, 2024`;
 }
 
-const EventCard = memo(function EventCard({ event, index, onPress }: EventCardProps) {
+const EventCard = memo(function EventCard({ event, index, onPress, currencyCode }: EventCardProps) {
   const theme = useTheme();
   const handlePress = useCallback(() => {
     onPress(event.id);
@@ -107,13 +113,13 @@ const EventCard = memo(function EventCard({ event, index, onPress }: EventCardPr
   );
   const status = useMemo(() => {
     if (index % 3 === 0) {
-      return { text: `You get ${formatMoney(total * 0.15)}`, tone: 'positive' as const };
+      return { text: `You get ${formatCurrencyAmount(currencyCode, total * 0.15)}`, tone: 'positive' as const };
     }
     if (index % 3 === 1) {
-      return { text: `You owe ${formatMoney(total * 0.28)}`, tone: 'negative' as const };
+      return { text: `You owe ${formatCurrencyAmount(currencyCode, total * 0.28)}`, tone: 'negative' as const };
     }
     return { text: 'Settled', tone: 'neutral' as const };
-  }, [index, total]);
+  }, [currencyCode, index, total]);
 
   const statusStyle = useMemo(() => {
     if (status.tone === 'positive') {
@@ -159,7 +165,7 @@ const EventCard = memo(function EventCard({ event, index, onPress }: EventCardPr
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
               Total
             </Text>
-            <Text variant="titleMedium">{formatMoney(total)}</Text>
+            <Text variant="titleMedium">{formatCurrencyAmount(currencyCode, total)}</Text>
           </View>
           <View style={[styles.statusPill, { backgroundColor: statusStyle.backgroundColor, borderColor: statusStyle.borderColor }]}>
             <Text variant="labelSmall" style={{ color: statusStyle.color }}>
@@ -244,5 +250,12 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fabNoShadow: {
+    elevation: 0,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
   },
 });

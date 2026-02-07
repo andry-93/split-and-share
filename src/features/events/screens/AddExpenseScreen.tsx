@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, Checkbox, Divider, Icon, List, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
+import { Appbar, Button, Checkbox, Divider, Icon, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
@@ -8,6 +8,8 @@ import { EventsStackParamList } from '../../../navigation/types';
 import { useEventsActions } from '../../../state/events/eventsContext';
 import { useSettingsState } from '../../../state/settings/settingsContext';
 import { OutlinedFieldContainer } from '../../../shared/ui/OutlinedFieldContainer';
+import { BottomSheetSingleSelectRow } from '../../../shared/ui/BottomSheetSingleSelectRow';
+import { normalizeCurrencyCode } from '../../../shared/utils/currency';
 
 const participants = ['Alice Johnson', 'Bob Smith', 'Charlie Davis'];
 const categoryOptions = [
@@ -34,19 +36,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   const [errorMessage, setErrorMessage] = useState('');
 
   const selectedSet = useMemo(() => new Set(selectedParticipants), [selectedParticipants]);
-  const selectedCurrency = useMemo(() => {
-    switch (settings.currency) {
-      case 'EUR':
-        return 'EUR';
-      case 'GBP':
-        return 'GBP';
-      case 'RUB':
-        return 'RUB';
-      case 'USD':
-      default:
-        return '$';
-    }
-  }, [settings.currency]);
+  const selectedCurrency = useMemo(() => normalizeCurrencyCode(settings.currency), [settings.currency]);
 
   const isSaveDisabled = useMemo(() => {
     return amount.trim().length === 0 || title.trim().length === 0;
@@ -83,8 +73,14 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   );
 
   const renderPaidByOption = useCallback(
-    (name: string) => (
-      <PaidByOptionRow key={name} name={name} selected={paidBy === name} onSelect={handleSelectPaidBy} />
+    (name: string, index: number) => (
+      <PaidByOptionRow
+        key={name}
+        name={name}
+        selected={paidBy === name}
+        onSelect={handleSelectPaidBy}
+        isLast={index === participants.length - 1}
+      />
     ),
     [handleSelectPaidBy, paidBy],
   );
@@ -296,20 +292,20 @@ type PaidByOptionRowProps = {
   name: string;
   selected: boolean;
   onSelect: (name: string) => void;
+  isLast: boolean;
 };
 
-const PaidByOptionRow = memo(function PaidByOptionRow({ name, selected, onSelect }: PaidByOptionRowProps) {
-  const theme = useTheme();
+const PaidByOptionRow = memo(function PaidByOptionRow({ name, selected, onSelect, isLast }: PaidByOptionRowProps) {
   const handleSelect = useCallback(() => {
     onSelect(name);
   }, [name, onSelect]);
 
   return (
-    <List.Item
-      title={name}
+    <BottomSheetSingleSelectRow
+      label={name}
+      selected={selected}
       onPress={handleSelect}
-      titleStyle={{ color: theme.colors.onSurface }}
-      left={(props) => (selected ? <List.Icon {...props} icon="check" /> : null)}
+      isLast={isLast}
     />
   );
 });

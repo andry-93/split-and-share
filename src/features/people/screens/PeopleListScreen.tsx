@@ -84,7 +84,12 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
         }
       />
 
-      <FAB icon="plus" style={styles.fab} onPress={handleOpenSheet} />
+      <FAB
+        icon="plus"
+        style={[styles.fab, styles.fabNoShadow, { backgroundColor: '#2563FF' }]}
+        color="#FFFFFF"
+        onPress={handleOpenSheet}
+      />
       <AddPersonActionSheet
         ref={sheetRef}
         onAddManual={handleAddManual}
@@ -137,5 +142,12 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fabNoShadow: {
+    elevation: 0,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
   },
 });

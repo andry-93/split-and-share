@@ -36,15 +36,17 @@ export const AddPersonActionSheet = forwardRef<BottomSheetModal, AddPersonAction
             description="Enter details manually"
             left={(props) => <List.Icon {...props} icon="account-plus" />}
             onPress={onAddManual}
+            style={styles.fullBleedRow}
             titleStyle={{ color: theme.colors.onSurface }}
             descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
           />
-          <Divider />
+          <Divider style={styles.fullBleedDivider} />
           <List.Item
             title="Import from contacts"
             description="Select from your phone contacts"
             left={(props) => <List.Icon {...props} icon="account-box" />}
             onPress={onImportContacts}
+            style={styles.fullBleedRow}
             titleStyle={{ color: theme.colors.onSurface }}
             descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
           />
@@ -63,5 +65,11 @@ const styles = StyleSheet.create({
   },
   title: {
     marginBottom: 8,
+  },
+  fullBleedRow: {
+    marginHorizontal: -16,
+  },
+  fullBleedDivider: {
+    marginHorizontal: -16,
   },
 });

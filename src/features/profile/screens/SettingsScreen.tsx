@@ -7,16 +7,11 @@ import { useSettingsActions, useSettingsState } from '../../../state/settings/se
 import type { SettingsState } from '../../../state/settings/settingsTypes';
 import appPackage from '../../../../package.json';
 import { CustomToggleGroup } from '../../../shared/ui/CustomToggleGroup';
+import { BottomSheetSingleSelectRow } from '../../../shared/ui/BottomSheetSingleSelectRow';
+import { normalizeCurrencyCode } from '../../../shared/utils/currency';
 
 const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
 const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'];
-
-const currencyLabels: Record<string, string> = {
-  USD: 'USD ($)',
-  EUR: 'EUR (€)',
-  GBP: 'GBP (£)',
-  RUB: 'RUB (₽)',
-};
 
 export function SettingsScreen() {
   const theme = useTheme();
@@ -58,26 +53,28 @@ export function SettingsScreen() {
   );
 
   const renderLanguageOption = useCallback(
-    (option: string) => (
+    (option: string, index: number) => (
       <OptionRow
         key={option}
         title={option}
         value={option}
         selected={settings.language === option}
         onSelect={handleSelectLanguage}
+        isLast={index === languageOptions.length - 1}
       />
     ),
     [handleSelectLanguage, settings.language],
   );
 
   const renderCurrencyOption = useCallback(
-    (option: string) => (
+    (option: string, index: number) => (
       <OptionRow
         key={option}
-        title={currencyLabels[option] ?? option}
+        title={normalizeCurrencyCode(option)}
         value={option}
         selected={settings.currency === option}
         onSelect={handleSelectCurrency}
+        isLast={index === currencyOptions.length - 1}
       />
     ),
     [handleSelectCurrency, settings.currency],
@@ -96,15 +93,15 @@ export function SettingsScreen() {
         <List.Item
           title="Language"
           description={settings.language}
-          style={styles.fullBleedRow}
+          style={[styles.fullBleedRow, styles.compactRow]}
           right={(props) => <List.Icon {...props} icon="chevron-right" />}
           onPress={handleOpenLanguage}
         />
         <Divider style={styles.fullBleedDivider} />
         <List.Item
           title="Currency"
-          description={currencyLabels[settings.currency] ?? settings.currency}
-          style={styles.fullBleedRow}
+          description={normalizeCurrencyCode(settings.currency)}
+          style={[styles.fullBleedRow, styles.compactRow]}
           right={(props) => <List.Icon {...props} icon="chevron-right" />}
           onPress={handleOpenCurrency}
         />
@@ -126,7 +123,7 @@ export function SettingsScreen() {
         <Text variant="labelLarge" style={styles.sectionLabel}>
           About
         </Text>
-        <List.Item title="Version" description={appPackage.version} style={styles.fullBleedRow} />
+        <List.Item title="Version" description={appPackage.version} style={[styles.fullBleedRow, styles.compactRow]} />
       </View>
 
       <BottomSheetModal
@@ -177,21 +174,20 @@ type OptionRowProps = {
   value: string;
   selected: boolean;
   onSelect: (value: string) => void;
+  isLast: boolean;
 };
 
-const OptionRow = memo(function OptionRow({ title, value, selected, onSelect }: OptionRowProps) {
-  const theme = useTheme();
+const OptionRow = memo(function OptionRow({ title, value, selected, onSelect, isLast }: OptionRowProps) {
   const handleSelect = useCallback(() => {
     onSelect(value);
   }, [onSelect, value]);
 
   return (
-    <List.Item
-      title={title}
+    <BottomSheetSingleSelectRow
+      label={title}
+      selected={selected}
       onPress={handleSelect}
-      style={{ backgroundColor: theme.colors.surface }}
-      titleStyle={{ color: theme.colors.onSurface }}
-      left={(props) => (selected ? <List.Icon {...props} icon="check" color={theme.colors.primary} /> : null)}
+      isLast={isLast}
     />
   );
 });
@@ -202,15 +198,19 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    gap: 12,
+    paddingTop: 8,
+    gap: 8,
   },
   sectionLabel: {
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 2,
   },
   fullBleedRow: {
     marginHorizontal: -16,
+  },
+  compactRow: {
+    minHeight: 52,
+    paddingVertical: 2,
   },
   fullBleedDivider: {
     marginHorizontal: -16,

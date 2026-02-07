@@ -19,6 +19,7 @@ import {
 } from '../../../state/events/eventsSelectors';
 import { useSettingsState } from '../../../state/settings/settingsContext';
 import { CustomToggleGroup } from '../../../shared/ui/CustomToggleGroup';
+import { formatCurrencyAmount, normalizeCurrencyCode } from '../../../shared/utils/currency';
 
 type EventDetailsScreenProps = NativeStackScreenProps<EventsStackParamList, 'EventDetails'>;
 
@@ -49,22 +50,10 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const totalAmount = useMemo(() => selectTotalAmount(event), [event]);
   const participantsCount = useMemo(() => selectParticipantsCount(event), [event]);
   const expensesCount = useMemo(() => selectExpensesCount(event), [event]);
-  const currencySymbol = useMemo(() => {
-    switch (settings.currency) {
-      case 'EUR':
-        return 'EUR';
-      case 'GBP':
-        return 'GBP';
-      case 'RUB':
-        return 'RUB';
-      case 'USD':
-      default:
-        return '$';
-    }
-  }, [settings.currency]);
+  const currencyCode = useMemo(() => normalizeCurrencyCode(settings.currency), [settings.currency]);
   const totalAmountDisplay = useMemo(
-    () => `${currencySymbol}${totalAmount.toFixed(2)}`,
-    [currencySymbol, totalAmount],
+    () => formatCurrencyAmount(currencyCode, totalAmount),
+    [currencyCode, totalAmount],
   );
 
   if (!event) {
@@ -175,8 +164,8 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   );
 
   const renderExpenseItem = useCallback(
-    ({ item }: { item: ExpenseItem }) => <ExpenseCard expense={item} currencySymbol={currencySymbol} />,
-    [currencySymbol],
+    ({ item }: { item: ExpenseItem }) => <ExpenseCard expense={item} currencyCode={currencyCode} />,
+    [currencyCode],
   );
 
   const participantBalanceMap = useMemo(() => {
@@ -198,11 +187,11 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
       <ParticipantRow
         participant={item}
         balance={participantBalanceMap.get(item.id) ?? 0}
-        currencySymbol={currencySymbol}
+        currencyCode={currencyCode}
         withDivider={index < event.participants.length - 1}
       />
     ),
-    [currencySymbol, event.participants.length, participantBalanceMap],
+    [currencyCode, event.participants.length, participantBalanceMap],
   );
 
   const renderDebtItem = useCallback(
@@ -346,11 +335,17 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
       {activeTab === 'expenses' ? (
         <FAB
           icon="plus"
-          style={styles.fab}
+          style={[styles.fab, styles.fabNoShadow, { backgroundColor: '#2563FF' }]}
+          color="#FFFFFF"
           onPress={handleAddExpense}
         />
       ) : activeTab === 'people' ? (
-        <FAB icon="plus" style={styles.fab} onPress={handleAddPeople} />
+        <FAB
+          icon="plus"
+          style={[styles.fab, styles.fabNoShadow, { backgroundColor: '#2563FF' }]}
+          color="#FFFFFF"
+          onPress={handleAddPeople}
+        />
       ) : null}
     </SafeAreaView>
   );
@@ -367,10 +362,10 @@ const SummaryMetric = memo(function SummaryMetric({ label, value }: SummaryMetri
 
 type ExpenseCardProps = {
   expense: ExpenseItem;
-  currencySymbol: string;
+  currencyCode: string;
 };
 
-const ExpenseCard = memo(function ExpenseCard({ expense, currencySymbol }: ExpenseCardProps) {
+const ExpenseCard = memo(function ExpenseCard({ expense, currencyCode }: ExpenseCardProps) {
   const theme = useTheme();
 
   return (
@@ -391,7 +386,7 @@ const ExpenseCard = memo(function ExpenseCard({ expense, currencySymbol }: Expen
           </Text>
         </View>
         <Text variant="titleMedium" style={styles.amount}>
-          {currencySymbol}{expense.amount.toFixed(2)}
+          {formatCurrencyAmount(currencyCode, expense.amount)}
         </Text>
       </Card.Content>
     </Card>
@@ -401,24 +396,24 @@ const ExpenseCard = memo(function ExpenseCard({ expense, currencySymbol }: Expen
 type ParticipantRowProps = {
   participant: ParticipantItem;
   balance: number;
-  currencySymbol: string;
+  currencyCode: string;
   withDivider: boolean;
 };
 
 const ParticipantRow = memo(function ParticipantRow({
   participant,
   balance,
-  currencySymbol,
+  currencyCode,
   withDivider,
 }: ParticipantRowProps) {
   const theme = useTheme();
   const absoluteBalance = Math.abs(balance);
   const formattedBalance =
     balance > 0
-      ? `+${currencySymbol}${absoluteBalance.toFixed(2)}`
+      ? `+${formatCurrencyAmount(currencyCode, absoluteBalance)}`
       : balance < 0
-        ? `-${currencySymbol}${absoluteBalance.toFixed(2)}`
-        : `${currencySymbol}0.00`;
+        ? `-${formatCurrencyAmount(currencyCode, absoluteBalance)}`
+        : formatCurrencyAmount(currencyCode, 0);
 
   const balanceStyle = balance > 0
     ? {
@@ -650,6 +645,13 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fabNoShadow: {
+    elevation: 0,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
   },
   missingState: {
     flex: 1,

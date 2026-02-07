@@ -6,6 +6,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
 import { mockContacts, MockContact } from '../data/mockContacts';
 import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
+import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 
 type ContactsPickerScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsPicker'>;
 
@@ -138,6 +139,8 @@ type ContactRowProps = {
 };
 
 const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, onToggle }: ContactRowProps) {
+  const theme = useTheme();
+  const avatarColors = getInitialsAvatarColors(theme.dark);
   const initials = contact.name
     .split(' ')
     .filter(Boolean)
@@ -151,7 +154,12 @@ const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, o
 
   return (
     <View style={[styles.row, alreadyAdded ? styles.rowMuted : null]}>
-      <Avatar.Text size={40} label={initials || '?'} style={styles.avatar} />
+      <Avatar.Text
+        size={40}
+        label={initials || '?'}
+        style={[styles.avatar, { backgroundColor: avatarColors.backgroundColor }]}
+        color={avatarColors.labelColor}
+      />
       <View style={styles.rowText}>
         <Text variant="titleMedium">{contact.name}</Text>
         <Text variant="bodyMedium">{contact.contact}</Text>

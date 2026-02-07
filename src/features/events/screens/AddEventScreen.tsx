@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, NativeModules, Platform, Pressable, ScrollView, StyleSheet, View, useColorScheme } from 'react-native';
-import { Appbar, Button, Icon, List, Modal, Portal, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
+import { Appbar, Button, Icon, Modal, Portal, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
@@ -8,15 +8,17 @@ import { EventsStackParamList } from '../../../navigation/types';
 import { useEventsActions } from '../../../state/events/eventsContext';
 import { useSettingsActions, useSettingsState } from '../../../state/settings/settingsContext';
 import { OutlinedFieldContainer } from '../../../shared/ui/OutlinedFieldContainer';
+import { BottomSheetSingleSelectRow } from '../../../shared/ui/BottomSheetSingleSelectRow';
+import { normalizeCurrencyCode } from '../../../shared/utils/currency';
 
 type AddEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddEvent'>;
 const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'] as const;
 
 const currencyLabels: Record<(typeof currencyOptions)[number], string> = {
-  USD: '$   USD - US Dollar',
-  EUR: 'EUR   EUR - Euro',
-  GBP: 'GBP   GBP - British Pound',
-  RUB: 'RUB   RUB - Russian Ruble',
+  USD: 'USD',
+  EUR: 'EUR',
+  GBP: 'GBP',
+  RUB: 'RUB',
 };
 
 function formatDate(value: Date) {
@@ -83,12 +85,13 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
   );
 
   const renderCurrencyOption = useCallback(
-    (value: (typeof currencyOptions)[number]) => (
+    (value: (typeof currencyOptions)[number], index: number) => (
       <CurrencyOptionRow
         key={value}
         value={value}
         selected={selectedCurrency === value}
         onSelect={handleSelectCurrency}
+        isLast={index === currencyOptions.length - 1}
       />
     ),
     [handleSelectCurrency, selectedCurrency],
@@ -203,7 +206,7 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
           <OutlinedFieldContainer style={styles.selectFieldContainer}>
             <Pressable onPress={openCurrencyPicker} style={styles.selectField}>
               <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
-                {currencyLabels[selectedCurrency]}
+                {normalizeCurrencyCode(currencyLabels[selectedCurrency])}
               </Text>
               <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
             </Pressable>
@@ -313,20 +316,25 @@ type CurrencyOptionRowProps = {
   value: (typeof currencyOptions)[number];
   selected: boolean;
   onSelect: (value: (typeof currencyOptions)[number]) => void;
+  isLast: boolean;
 };
 
-const CurrencyOptionRow = React.memo(function CurrencyOptionRow({ value, selected, onSelect }: CurrencyOptionRowProps) {
-  const theme = useTheme();
+const CurrencyOptionRow = React.memo(function CurrencyOptionRow({
+  value,
+  selected,
+  onSelect,
+  isLast,
+}: CurrencyOptionRowProps) {
   const handleSelect = useCallback(() => {
     onSelect(value);
   }, [onSelect, value]);
 
   return (
-    <List.Item
-      title={currencyLabels[value]}
+    <BottomSheetSingleSelectRow
+      label={currencyLabels[value]}
+      selected={selected}
       onPress={handleSelect}
-      titleStyle={{ color: theme.colors.onSurface }}
-      left={(props) => (selected ? <List.Icon {...props} icon="check" /> : null)}
+      isLast={isLast}
     />
   );
 });
