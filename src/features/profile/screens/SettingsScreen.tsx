@@ -1,11 +1,12 @@
 import React, { memo, useCallback, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Appbar, Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useSettingsActions, useSettingsState } from '../../../state/settings/settingsContext';
 import type { SettingsState } from '../../../state/settings/settingsTypes';
 import appPackage from '../../../../package.json';
+import { CustomToggleGroup } from '../../../shared/ui/CustomToggleGroup';
 
 const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
 const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'];
@@ -111,31 +112,16 @@ export function SettingsScreen() {
         <Text variant="labelLarge" style={styles.sectionLabel}>
           Appearance
         </Text>
-        <View
-          style={[
-            styles.appearanceToggle,
-            {
-              backgroundColor: theme.colors.elevation.level2,
-              borderColor: theme.colors.outlineVariant,
-            },
+        <CustomToggleGroup
+          value={settings.theme}
+          onChange={handleThemeChange}
+          options={[
+            { value: 'system', label: 'System' },
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
           ]}
-        >
-          <ListItemToggle
-            label="System"
-            selected={settings.theme === 'system'}
-            onPress={() => handleThemeChange('system')}
-          />
-          <ListItemToggle
-            label="Light"
-            selected={settings.theme === 'light'}
-            onPress={() => handleThemeChange('light')}
-          />
-          <ListItemToggle
-            label="Dark"
-            selected={settings.theme === 'dark'}
-            onPress={() => handleThemeChange('dark')}
-          />
-        </View>
+          sizeMode="equal"
+        />
 
         <Text variant="labelLarge" style={styles.sectionLabel}>
           About
@@ -193,12 +179,6 @@ type OptionRowProps = {
   onSelect: (value: string) => void;
 };
 
-type ListItemToggleProps = {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-};
-
 const OptionRow = memo(function OptionRow({ title, value, selected, onSelect }: OptionRowProps) {
   const theme = useTheme();
   const handleSelect = useCallback(() => {
@@ -213,39 +193,6 @@ const OptionRow = memo(function OptionRow({ title, value, selected, onSelect }: 
       titleStyle={{ color: theme.colors.onSurface }}
       left={(props) => (selected ? <List.Icon {...props} icon="check" color={theme.colors.primary} /> : null)}
     />
-  );
-});
-
-const ListItemToggle = memo(function ListItemToggle({
-  label,
-  selected,
-  onPress,
-}: ListItemToggleProps) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.appearanceToggleItem,
-        {
-          backgroundColor: selected ? theme.colors.elevation.level3 : 'transparent',
-          borderRadius: selected ? 8 : 0,
-        },
-      ]}
-    >
-      <Text
-        variant="labelLarge"
-        numberOfLines={1}
-        ellipsizeMode="tail"
-        style={[
-          styles.appearanceToggleLabel,
-          { color: selected ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 });
 
@@ -267,28 +214,6 @@ const styles = StyleSheet.create({
   },
   fullBleedDivider: {
     marginHorizontal: -16,
-  },
-  appearanceToggle: {
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 5,
-    flexDirection: 'row',
-    gap: 6,
-    alignItems: 'center',
-  },
-  appearanceToggleItem: {
-    flex: 1,
-    minHeight: 40,
-    minWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  appearanceToggleLabel: {
-    textAlign: 'center',
-    fontWeight: '700',
-    letterSpacing: 0.1,
-    flexShrink: 1,
   },
   sheetContent: {
     paddingHorizontal: 16,

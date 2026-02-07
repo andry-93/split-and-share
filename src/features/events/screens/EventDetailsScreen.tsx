@@ -18,6 +18,7 @@ import {
   selectExpensesCount,
 } from '../../../state/events/eventsSelectors';
 import { useSettingsState } from '../../../state/settings/settingsContext';
+import { CustomToggleGroup } from '../../../shared/ui/CustomToggleGroup';
 
 type EventDetailsScreenProps = NativeStackScreenProps<EventsStackParamList, 'EventDetails'>;
 
@@ -110,58 +111,43 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
 
         <View
           style={[
-            styles.tabsToggle,
+            styles.topTabBar,
             {
-              backgroundColor: theme.colors.elevation.level2,
-              borderColor: theme.colors.outlineVariant,
-              borderWidth: StyleSheet.hairlineWidth,
+              backgroundColor: theme.colors.surface,
+              borderTopColor: theme.colors.outlineVariant,
+              borderBottomColor: theme.colors.outlineVariant,
             },
           ]}
         >
           <Pressable
             onPress={() => handleTabChange('expenses')}
-            style={[
-              styles.tabsItem,
-              activeTab === 'expenses' ? { backgroundColor: theme.colors.elevation.level3 } : null,
-            ]}
+            style={[styles.topTabItem, activeTab === 'expenses' ? { borderBottomColor: theme.colors.primary } : null]}
           >
             <Text
-              variant="labelLarge"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={[styles.tabsLabel, { color: activeTab === 'expenses' ? theme.colors.onSurface : theme.colors.onSurfaceVariant }]}
+              variant="titleMedium"
+              style={[styles.topTabLabel, { color: activeTab === 'expenses' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}
             >
               Expenses
             </Text>
           </Pressable>
           <Pressable
             onPress={() => handleTabChange('debts')}
-            style={[
-              styles.tabsItem,
-              activeTab === 'debts' ? { backgroundColor: theme.colors.elevation.level3 } : null,
-            ]}
+            style={[styles.topTabItem, activeTab === 'debts' ? { borderBottomColor: theme.colors.primary } : null]}
           >
             <Text
-              variant="labelLarge"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={[styles.tabsLabel, { color: activeTab === 'debts' ? theme.colors.onSurface : theme.colors.onSurfaceVariant }]}
+              variant="titleMedium"
+              style={[styles.topTabLabel, { color: activeTab === 'debts' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}
             >
               Debts
             </Text>
           </Pressable>
           <Pressable
             onPress={() => handleTabChange('people')}
-            style={[
-              styles.tabsItem,
-              activeTab === 'people' ? { backgroundColor: theme.colors.elevation.level3 } : null,
-            ]}
+            style={[styles.topTabItem, activeTab === 'people' ? { borderBottomColor: theme.colors.primary } : null]}
           >
             <Text
-              variant="labelLarge"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={[styles.tabsLabel, { color: activeTab === 'people' ? theme.colors.onSurface : theme.colors.onSurfaceVariant }]}
+              variant="titleMedium"
+              style={[styles.topTabLabel, { color: activeTab === 'people' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}
             >
               People
             </Text>
@@ -174,11 +160,9 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
       expensesCount,
       handleTabChange,
       participantsCount,
-      theme.colors.elevation.level2,
-      theme.colors.elevation.level3,
-      theme.colors.onSurface,
       theme.colors.onSurfaceVariant,
       theme.colors.outlineVariant,
+      theme.colors.primary,
       totalAmountDisplay,
     ],
   );
@@ -239,54 +223,23 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
           style={[
             styles.debtsModeToggle,
             {
-              backgroundColor: theme.colors.elevation.level2,
-              borderColor: theme.colors.outlineVariant,
-              borderWidth: StyleSheet.hairlineWidth,
+              backgroundColor: 'transparent',
             },
           ]}
         >
-          <Pressable
-            onPress={() => setDebtsMode('raw')}
-            style={[
-              styles.debtsModeItem,
-              debtsMode === 'raw' ? { backgroundColor: theme.colors.elevation.level3 } : null,
+          <CustomToggleGroup
+            value={debtsMode}
+            onChange={(value) => setDebtsMode(value)}
+            options={[
+              { value: 'raw', label: 'Raw' },
+              { value: 'simplified', label: 'Simplified' },
             ]}
-          >
-            <Text
-              variant="labelLarge"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={[
-                styles.debtsModeLabel,
-                { color: debtsMode === 'raw' ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
-              ]}
-            >
-              Raw
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setDebtsMode('simplified')}
-            style={[
-              styles.debtsModeItem,
-              debtsMode === 'simplified' ? { backgroundColor: theme.colors.elevation.level3 } : null,
-            ]}
-          >
-            <Text
-              variant="labelLarge"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={[
-                styles.debtsModeLabel,
-                { color: debtsMode === 'simplified' ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
-              ]}
-            >
-              Simplified
-            </Text>
-          </Pressable>
+            sizeMode="content"
+          />
         </View>
       </View>
     ),
-    [debtsMode, header, theme.colors.elevation.level2, theme.colors.elevation.level3, theme.colors.onSurface, theme.colors.onSurfaceVariant, theme.colors.outlineVariant],
+    [debtsMode, header],
   );
 
   const handleAddExpense = useCallback(() => {
@@ -591,7 +544,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     marginTop: -12,
     marginHorizontal: -16,
-    marginBottom: 12,
+    marginBottom: 0,
     borderRadius: 0,
     borderWidth: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -608,59 +561,27 @@ const styles = StyleSheet.create({
   metric: {
     flex: 1,
   },
-  tabsToggle: {
-    marginHorizontal: 16,
+  topTabBar: {
+    marginHorizontal: -16,
     marginBottom: 12,
-    borderRadius: 10,
-    padding: 5,
-    maxWidth: '100%',
     flexDirection: 'row',
-    gap: 6,
-    alignSelf: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  tabsItem: {
-    minHeight: 40,
-    minWidth: 0,
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+  topTabItem: {
+    width: '33.3333%',
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-  tabsLabel: {
-    fontWeight: '700',
-    letterSpacing: 0.1,
-    flexShrink: 1,
+  topTabLabel: {
+    fontWeight: '600',
   },
   debtsModeToggle: {
     marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 10,
-    padding: 5,
-    maxWidth: '100%',
-    flexDirection: 'row',
-    gap: 6,
     alignSelf: 'center',
-  },
-  debtsModeItem: {
-    minHeight: 40,
-    minWidth: 0,
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  debtsModeLabel: {
-    fontWeight: '700',
-    letterSpacing: 0.1,
-    flexShrink: 1,
   },
   card: {
     marginBottom: 12,
