@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Appbar, Avatar, Button, Checkbox, Searchbar, Text, useTheme } from 'react-native-paper';
+import { Avatar, Button, Checkbox, Searchbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
@@ -8,6 +8,7 @@ import { usePeopleState } from '../../../state/people/peopleContext';
 import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
 import { PersonItem } from '../../people/types/people';
 import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
 type AddPeopleToEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddPeopleToEvent'>;
 
@@ -57,35 +58,31 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
   }, [addPeopleToEvent, navigation, people, route.params.eventId, selectedIds]);
 
   const renderPersonItem = useCallback(
-    ({ item }: { item: PersonItem }) => (
+    ({ item, index }: { item: PersonItem; index: number }) => (
       <SelectablePersonRow
         person={item}
         alreadyAdded={participantIds.has(item.id)}
         selected={selectedSet.has(item.id)}
+        withDivider={index < filteredPeople.length - 1}
         onToggle={toggleSelect}
       />
     ),
-    [participantIds, selectedSet, toggleSelect],
-  );
-
-  const header = useMemo(
-    () => (
-      <Searchbar
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search people"
-        style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
-      />
-    ),
-    [query, theme.colors.outlineVariant],
+    [filteredPeople.length, participantIds, selectedSet, toggleSelect],
   );
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="Add people" />
-      </Appbar.Header>
+      <AppHeader title="Add people" onBackPress={() => navigation.goBack()} />
+
+      {!allAdded ? (
+        <Searchbar
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search people"
+          style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
+          inputStyle={styles.searchInput}
+        />
+      ) : null}
 
       {allAdded ? (
         <View style={styles.emptyState}>
@@ -93,23 +90,43 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
           <Text variant="bodyMedium">All people are already part of this event.</Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredPeople}
-          keyExtractor={(item) => item.id}
-          style={styles.list}
-          removeClippedSubviews
-          initialNumToRender={12}
-          maxToRenderPerBatch={12}
-          windowSize={5}
-          contentContainerStyle={styles.listContent}
-          ListHeaderComponent={header}
-          renderItem={renderPersonItem}
-        />
+        <View style={styles.listWrapper}>
+          <View
+            style={[
+              styles.listContainer,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.outlineVariant,
+              },
+            ]}
+          >
+            <FlatList
+              data={filteredPeople}
+              keyExtractor={(item) => item.id}
+              style={styles.list}
+              removeClippedSubviews
+              initialNumToRender={12}
+              maxToRenderPerBatch={12}
+              windowSize={5}
+              contentContainerStyle={styles.listContent}
+              renderItem={renderPersonItem}
+            />
+          </View>
+        </View>
       )}
 
       {!allAdded ? (
-        <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}> 
-          <Button mode="contained" onPress={handleAdd} disabled={selectedCount === 0}>
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              backgroundColor: theme.colors.surface,
+              borderTopColor: theme.colors.outlineVariant,
+              paddingBottom: Math.max(insets.bottom, 12),
+            },
+          ]}
+        >
+          <Button mode="contained" onPress={handleAdd} disabled={selectedCount === 0} style={styles.actionButton}>
             {selectedCount > 0 ? `Add selected (${selectedCount})` : 'Add selected'}
           </Button>
         </View>
@@ -122,6 +139,7 @@ type SelectablePersonRowProps = {
   person: PersonItem;
   alreadyAdded: boolean;
   selected: boolean;
+  withDivider: boolean;
   onToggle: (personId: string) => void;
 };
 
@@ -129,6 +147,7 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
   person,
   alreadyAdded,
   selected,
+  withDivider,
   onToggle,
 }: SelectablePersonRowProps) {
   const theme = useTheme();
@@ -145,7 +164,18 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
   }, [onToggle, person.id]);
 
   return (
-    <View style={[styles.row, alreadyAdded ? styles.rowMuted : null]}>
+    <View
+      style={[
+        styles.row,
+        alreadyAdded ? styles.rowMuted : null,
+        withDivider
+          ? {
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: theme.colors.outlineVariant,
+            }
+          : null,
+      ]}
+    >
       <Avatar.Text
         size={40}
         label={initials || '?'}
@@ -170,17 +200,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   search: {
+    marginHorizontal: 16,
     marginBottom: 12,
+    height: 50,
     borderRadius: 10,
     overflow: 'hidden',
   },
+  searchInput: {
+    marginVertical: 0,
+    minHeight: 0,
+    paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
   list: {
+    flexGrow: 0,
+  },
+  listWrapper: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 96,
+  },
+  listContainer: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 96,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   row: {
     flexDirection: 'row',
@@ -208,6 +257,10 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  actionButton: {
+    borderRadius: 12,
   },
 });

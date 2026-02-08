@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Appbar, Divider, List, Text, useTheme } from 'react-native-paper';
+import { Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useSettingsActions, useSettingsState } from '../../../state/settings/settingsContext';
@@ -9,6 +9,7 @@ import appPackage from '../../../../package.json';
 import { CustomToggleGroup } from '../../../shared/ui/CustomToggleGroup';
 import { BottomSheetSingleSelectRow } from '../../../shared/ui/BottomSheetSingleSelectRow';
 import { normalizeCurrencyCode } from '../../../shared/utils/currency';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
 const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
 const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'];
@@ -82,9 +83,7 @@ export function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.Content title="Settings" />
-      </Appbar.Header>
+      <AppHeader title="Settings" />
 
       <View style={styles.content}>
         <Text variant="labelLarge" style={styles.sectionLabel}>
@@ -198,7 +197,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 0,
     gap: 8,
   },
   sectionLabel: {

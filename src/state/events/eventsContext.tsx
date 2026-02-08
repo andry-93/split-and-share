@@ -45,7 +45,7 @@ export function useEventsActions() {
 
   return useMemo(
     () => ({
-      createEvent: (payload: { name: string; description?: string }) => {
+      createEvent: (payload: { name: string; description?: string; currency?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
           throw new Error('Event name is required.');
@@ -57,6 +57,7 @@ export function useEventsActions() {
             id: `event-${String(uuid.v4())}`,
             name: trimmedName,
             description: payload.description?.trim() || undefined,
+            currency: payload.currency,
           },
         });
       },

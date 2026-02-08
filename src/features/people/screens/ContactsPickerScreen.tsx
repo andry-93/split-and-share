@@ -1,12 +1,13 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Appbar, Avatar, Button, Checkbox, Searchbar, Text, useTheme } from 'react-native-paper';
+import { Avatar, Button, Checkbox, Searchbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
 import { mockContacts, MockContact } from '../data/mockContacts';
 import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
 import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
 type ContactsPickerScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsPicker'>;
 
@@ -79,51 +80,65 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   );
 
   const renderContactItem = useCallback(
-    ({ item }: { item: MockContact }) => (
+    ({ item, index }: { item: MockContact; index: number }) => (
       <ContactRow
         contact={item}
         alreadyAdded={isAlreadyAdded(item)}
         selected={selectedSet.has(item.id)}
+        withDivider={index < filteredContacts.length - 1}
         onToggle={handleToggle}
       />
     ),
-    [handleToggle, isAlreadyAdded, selectedSet],
+    [filteredContacts.length, handleToggle, isAlreadyAdded, selectedSet],
   );
 
-  const header = useMemo(
-    () => (
+  return (
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
+      <AppHeader title="Select contacts" onBackPress={handleBack} />
+
       <Searchbar
         value={query}
         onChangeText={setQuery}
         placeholder="Search contacts"
         style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
-      />
-    ),
-    [query, theme.colors.outlineVariant],
-  );
-
-  return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.BackAction onPress={handleBack} />
-        <Appbar.Content title="Select contacts" />
-      </Appbar.Header>
-
-      <FlatList
-        data={filteredContacts}
-        keyExtractor={(item) => item.id}
-        style={styles.list}
-        removeClippedSubviews
-        initialNumToRender={12}
-        maxToRenderPerBatch={12}
-        windowSize={5}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={header}
-        renderItem={renderContactItem}
+        inputStyle={styles.searchInput}
       />
 
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <Button mode="contained" onPress={handleAdd} disabled={selectedCount === 0}>
+      <View style={styles.listWrapper}>
+        <View
+          style={[
+            styles.listContainer,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.outlineVariant,
+            },
+          ]}
+        >
+          <FlatList
+            data={filteredContacts}
+            keyExtractor={(item) => item.id}
+            style={styles.list}
+            removeClippedSubviews
+            initialNumToRender={12}
+            maxToRenderPerBatch={12}
+            windowSize={5}
+            contentContainerStyle={styles.listContent}
+            renderItem={renderContactItem}
+          />
+        </View>
+      </View>
+
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            backgroundColor: theme.colors.surface,
+            borderTopColor: theme.colors.outlineVariant,
+            paddingBottom: Math.max(insets.bottom, 12),
+          },
+        ]}
+      >
+        <Button mode="contained" onPress={handleAdd} disabled={selectedCount === 0} style={styles.actionButton}>
           {selectedCount > 0 ? `Add selected (${selectedCount})` : 'Add selected'}
         </Button>
       </View>
@@ -135,10 +150,11 @@ type ContactRowProps = {
   contact: MockContact;
   alreadyAdded: boolean;
   selected: boolean;
+  withDivider: boolean;
   onToggle: (contactId: string) => void;
 };
 
-const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, onToggle }: ContactRowProps) {
+const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, withDivider, onToggle }: ContactRowProps) {
   const theme = useTheme();
   const avatarColors = getInitialsAvatarColors(theme.dark);
   const initials = contact.name
@@ -153,7 +169,18 @@ const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, o
   }, [contact.id, onToggle]);
 
   return (
-    <View style={[styles.row, alreadyAdded ? styles.rowMuted : null]}>
+    <View
+      style={[
+        styles.row,
+        alreadyAdded ? styles.rowMuted : null,
+        withDivider
+          ? {
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: theme.colors.outlineVariant,
+            }
+          : null,
+      ]}
+    >
       <Avatar.Text
         size={40}
         label={initials || '?'}
@@ -179,17 +206,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   search: {
+    marginHorizontal: 16,
     marginBottom: 12,
+    height: 50,
     borderRadius: 10,
     overflow: 'hidden',
   },
+  searchInput: {
+    marginVertical: 0,
+    minHeight: 0,
+    paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
   list: {
+    flexGrow: 0,
+  },
+  listWrapper: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  listContainer: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 96,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   row: {
     flexDirection: 'row',
@@ -210,6 +256,10 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  actionButton: {
+    borderRadius: 12,
   },
 });

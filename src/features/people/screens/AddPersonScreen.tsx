@@ -1,11 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
+import { Button, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
 import { usePeopleActions } from '../../../state/people/peopleContext';
 import { OutlinedFieldContainer } from '../../../shared/ui/OutlinedFieldContainer';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
 type AddPersonScreenProps = NativeStackScreenProps<PeopleStackParamList, 'AddPerson'>;
 
@@ -53,10 +54,7 @@ export function AddPersonScreen({ navigation }: AddPersonScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.BackAction onPress={handleBack} />
-        <Appbar.Content title="Add Person" />
-      </Appbar.Header>
+      <AppHeader title="Add Person" onBackPress={handleBack} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -120,6 +118,7 @@ export function AddPersonScreen({ navigation }: AddPersonScreenProps) {
           style={[
             styles.bottomBar,
             {
+              backgroundColor: theme.colors.surface,
               borderTopColor: theme.colors.outlineVariant,
               paddingBottom: Math.max(insets.bottom, 12),
             },
@@ -147,7 +146,7 @@ const styles = StyleSheet.create({
   },
   form: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 0,
   },
   fieldLabel: {
     marginBottom: 8,

@@ -1,9 +1,10 @@
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Appbar, Button, Icon, Text, useTheme } from 'react-native-paper';
+import { Button, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
 type ContactsAccessScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsAccess'>;
 
@@ -14,10 +15,7 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.BackAction onPress={handleBack} />
-        <Appbar.Content title="Contacts access" />
-      </Appbar.Header>
+      <AppHeader title="Contacts access" onBackPress={handleBack} />
 
       <View style={styles.content}>
         <View style={[styles.iconCircle, { backgroundColor: theme.colors.surfaceVariant }]}>
@@ -34,7 +32,15 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
         </Text>
       </View>
 
-      <View style={[styles.actions, { borderTopColor: theme.colors.outlineVariant }]}>
+      <View
+        style={[
+          styles.actions,
+          {
+            backgroundColor: theme.colors.surface,
+            borderTopColor: theme.colors.outlineVariant,
+          },
+        ]}
+      >
         <Button mode="contained" onPress={handleContinue} style={styles.primaryButton}>
           Continue
         </Button>

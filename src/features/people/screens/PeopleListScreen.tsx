@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Appbar, FAB, Searchbar, Text, useTheme } from 'react-native-paper';
+import { FAB, Searchbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -10,6 +10,7 @@ import { AddPersonActionSheet } from '../components/AddPersonActionSheet';
 import { PersonListRow } from '../components/PersonListRow';
 import { usePeopleState } from '../../../state/people/peopleContext';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
 type PeopleListScreenProps = NativeStackScreenProps<PeopleStackParamList, 'People'>;
 
@@ -52,37 +53,46 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.Content title="People" />
-      </Appbar.Header>
+      <AppHeader title="People" />
 
       <Searchbar
         value={query}
         onChangeText={setQuery}
         placeholder="Search people"
         style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
+        inputStyle={styles.searchInput}
       />
 
-      <FlatList
-        data={filteredPeople}
-        keyExtractor={(item) => item.id}
-        style={styles.list}
-        removeClippedSubviews
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        contentContainerStyle={[
-          styles.listContent,
-          filteredPeople.length === 0 ? styles.listEmpty : null,
-        ]}
-        renderItem={renderPersonItem}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text variant="titleMedium">No people yet</Text>
-            <Text variant="bodyMedium">Add people to easily split expenses.</Text>
+      {filteredPeople.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text variant="titleMedium">No people yet</Text>
+          <Text variant="bodyMedium">Add people to easily split expenses.</Text>
+        </View>
+      ) : (
+        <View style={styles.listWrapper}>
+          <View
+            style={[
+              styles.listContainer,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.outlineVariant,
+              },
+            ]}
+          >
+            <FlatList
+              data={filteredPeople}
+              keyExtractor={(item) => item.id}
+              style={styles.list}
+              removeClippedSubviews
+              initialNumToRender={10}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              contentContainerStyle={styles.listContent}
+              renderItem={renderPersonItem}
+            />
           </View>
-        }
-      />
+        </View>
+      )}
 
       <FAB
         icon="plus"
@@ -111,20 +121,35 @@ const styles = StyleSheet.create({
   },
   search: {
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 0,
+    height: 50,
     borderRadius: 10,
     overflow: 'hidden',
   },
+  searchInput: {
+    marginVertical: 0,
+    minHeight: 0,
+    paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
   list: {
-    flex: 1,
+    flexGrow: 0,
   },
   listContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 0,
+  },
+  listWrapper: {
+    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 96,
   },
-  listEmpty: {
-    flexGrow: 1,
+  listContainer: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   emptyState: {
     flex: 1,

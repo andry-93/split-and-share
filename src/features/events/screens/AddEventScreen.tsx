@@ -1,15 +1,16 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, NativeModules, Platform, Pressable, ScrollView, StyleSheet, View, useColorScheme } from 'react-native';
-import { Appbar, Button, Icon, Modal, Portal, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
+import { Button, Icon, Modal, Portal, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { EventsStackParamList } from '../../../navigation/types';
 import { useEventsActions } from '../../../state/events/eventsContext';
-import { useSettingsActions, useSettingsState } from '../../../state/settings/settingsContext';
+import { useSettingsState } from '../../../state/settings/settingsContext';
 import { OutlinedFieldContainer } from '../../../shared/ui/OutlinedFieldContainer';
 import { BottomSheetSingleSelectRow } from '../../../shared/ui/BottomSheetSingleSelectRow';
 import { normalizeCurrencyCode } from '../../../shared/utils/currency';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
 type AddEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddEvent'>;
 const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'] as const;
@@ -32,7 +33,6 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
-  const { setCurrency } = useSettingsActions();
   const { createEvent } = useEventsActions();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -61,6 +61,7 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
     }
     return 'USD';
   }, [settings.currency]);
+  const [eventCurrency, setEventCurrency] = useState<(typeof currencyOptions)[number]>(selectedCurrency);
   const systemScheme = useColorScheme() ?? 'dark';
   const resolvedThemeVariant = useMemo<'light' | 'dark'>(
     () => (settings.theme === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : settings.theme),
@@ -78,10 +79,10 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
 
   const handleSelectCurrency = useCallback(
     (value: (typeof currencyOptions)[number]) => {
-      setCurrency(value);
+      setEventCurrency(value);
       currencySheetRef.current?.dismiss();
     },
-    [setCurrency],
+    [],
   );
 
   const renderCurrencyOption = useCallback(
@@ -89,12 +90,12 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
       <CurrencyOptionRow
         key={value}
         value={value}
-        selected={selectedCurrency === value}
+        selected={eventCurrency === value}
         onSelect={handleSelectCurrency}
         isLast={index === currencyOptions.length - 1}
       />
     ),
-    [handleSelectCurrency, selectedCurrency],
+    [eventCurrency, handleSelectCurrency],
   );
 
   const handleOpenDatePicker = useCallback(() => {
@@ -143,20 +144,17 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
 
   const handleCreate = useCallback(() => {
     try {
-      createEvent({ name, description });
+      createEvent({ name, description, currency: eventCurrency });
       navigation.goBack();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create event.';
       setErrorMessage(message);
     }
-  }, [createEvent, description, name, navigation]);
+  }, [createEvent, description, eventCurrency, name, navigation]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.BackAction onPress={handleBack} />
-        <Appbar.Content title="Add Event" />
-      </Appbar.Header>
+      <AppHeader title="Add Event" onBackPress={handleBack} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -206,7 +204,7 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
           <OutlinedFieldContainer style={styles.selectFieldContainer}>
             <Pressable onPress={openCurrencyPicker} style={styles.selectField}>
               <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
-                {normalizeCurrencyCode(currencyLabels[selectedCurrency])}
+                {normalizeCurrencyCode(currencyLabels[eventCurrency])}
               </Text>
               <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
             </Pressable>
@@ -231,7 +229,7 @@ export function AddEventScreen({ navigation }: AddEventScreenProps) {
           style={[
             styles.bottomBar,
             {
-              backgroundColor: theme.colors.background,
+              backgroundColor: theme.colors.surface,
               borderTopColor: theme.colors.outlineVariant,
               paddingBottom: Math.max(insets.bottom, 12),
             },
@@ -348,7 +346,7 @@ const styles = StyleSheet.create({
   },
   form: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 0,
   },
   fieldLabel: {
     marginBottom: 8,

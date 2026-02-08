@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Appbar, Card, FAB, Icon, Searchbar, Text, useTheme } from 'react-native-paper';
+import { Card, FAB, Icon, Searchbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
@@ -9,6 +9,7 @@ import { useSettingsState } from '../../../state/settings/settingsContext';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { EventItem } from '../types/events';
 import { formatCurrencyAmount, normalizeCurrencyCode } from '../../../shared/utils/currency';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
 type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
@@ -29,7 +30,7 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
 
   const renderEventItem = useCallback(
     ({ item, index }: { item: EventItem; index: number }) => (
-      <EventCard event={item} index={index} onPress={handlePressEvent} currencyCode={currencyCode} />
+      <EventCard event={item} index={index} onPress={handlePressEvent} fallbackCurrencyCode={currencyCode} />
     ),
     [currencyCode, handlePressEvent],
   );
@@ -49,15 +50,14 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.Content title="Events" />
-      </Appbar.Header>
+      <AppHeader title="Events" />
 
       <Searchbar
         value={query}
         onChangeText={setQuery}
         placeholder="Search events"
         style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
+        inputStyle={styles.searchInput}
       />
 
       <FlatList
@@ -94,7 +94,7 @@ type EventCardProps = {
   event: EventItem;
   index: number;
   onPress: (eventId: string) => void;
-  currencyCode: string;
+  fallbackCurrencyCode: string;
 };
 
 function buildEventDate(index: number) {
@@ -102,8 +102,12 @@ function buildEventDate(index: number) {
   return `Dec ${day}, 2024`;
 }
 
-const EventCard = memo(function EventCard({ event, index, onPress, currencyCode }: EventCardProps) {
+const EventCard = memo(function EventCard({ event, index, onPress, fallbackCurrencyCode }: EventCardProps) {
   const theme = useTheme();
+  const eventCurrencyCode = useMemo(
+    () => normalizeCurrencyCode(event.currency ?? fallbackCurrencyCode),
+    [event.currency, fallbackCurrencyCode],
+  );
   const handlePress = useCallback(() => {
     onPress(event.id);
   }, [event.id, onPress]);
@@ -113,13 +117,13 @@ const EventCard = memo(function EventCard({ event, index, onPress, currencyCode 
   );
   const status = useMemo(() => {
     if (index % 3 === 0) {
-      return { text: `You get ${formatCurrencyAmount(currencyCode, total * 0.15)}`, tone: 'positive' as const };
+      return { text: `You get ${formatCurrencyAmount(eventCurrencyCode, total * 0.15)}`, tone: 'positive' as const };
     }
     if (index % 3 === 1) {
-      return { text: `You owe ${formatCurrencyAmount(currencyCode, total * 0.28)}`, tone: 'negative' as const };
+      return { text: `You owe ${formatCurrencyAmount(eventCurrencyCode, total * 0.28)}`, tone: 'negative' as const };
     }
     return { text: 'Settled', tone: 'neutral' as const };
-  }, [currencyCode, index, total]);
+  }, [eventCurrencyCode, index, total]);
 
   const statusStyle = useMemo(() => {
     if (status.tone === 'positive') {
@@ -165,7 +169,7 @@ const EventCard = memo(function EventCard({ event, index, onPress, currencyCode 
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
               Total
             </Text>
-            <Text variant="titleMedium">{formatCurrencyAmount(currencyCode, total)}</Text>
+            <Text variant="titleMedium">{formatCurrencyAmount(eventCurrencyCode, total)}</Text>
           </View>
           <View style={[styles.statusPill, { backgroundColor: statusStyle.backgroundColor, borderColor: statusStyle.borderColor }]}>
             <Text variant="labelSmall" style={{ color: statusStyle.color }}>
@@ -184,10 +188,18 @@ const styles = StyleSheet.create({
   },
   search: {
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 0,
     marginBottom: 12,
+    height: 50,
     borderRadius: 10,
     overflow: 'hidden',
+  },
+  searchInput: {
+    marginVertical: 0,
+    minHeight: 0,
+    paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   list: {
     flex: 1,

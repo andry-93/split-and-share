@@ -100,6 +100,55 @@ export function selectSimplifiedDebts(rawDebts: RawDebt[]): SimplifiedDebt[] {
   return transfers;
 }
 
+export function selectDetailedDebts(rawDebts: RawDebt[]): RawDebt[] {
+  if (rawDebts.length === 0) {
+    return [];
+  }
+
+  const pairBalances = new Map<
+    string,
+    { first: ParticipantItem; second: ParticipantItem; firstOwesSecond: number }
+  >();
+
+  rawDebts.forEach((debt) => {
+    const isFromFirst = debt.from.id.localeCompare(debt.to.id) <= 0;
+    const first = isFromFirst ? debt.from : debt.to;
+    const second = isFromFirst ? debt.to : debt.from;
+    const key = `${first.id}|${second.id}`;
+
+    const current = pairBalances.get(key) ?? {
+      first,
+      second,
+      firstOwesSecond: 0,
+    };
+
+    current.firstOwesSecond += isFromFirst ? debt.amount : -debt.amount;
+    pairBalances.set(key, current);
+  });
+
+  return Array.from(pairBalances.values())
+    .filter((entry) => Math.abs(entry.firstOwesSecond) > 0.0001)
+    .map((entry) => {
+      const from = entry.firstOwesSecond > 0 ? entry.first : entry.second;
+      const to = entry.firstOwesSecond > 0 ? entry.second : entry.first;
+
+      return {
+        id: `${from.id}-${to.id}-detailed`,
+        from,
+        to,
+        amount: Math.abs(entry.firstOwesSecond),
+      };
+    })
+    .sort((left, right) => {
+      const byFrom = left.from.name.localeCompare(right.from.name);
+      if (byFrom !== 0) {
+        return byFrom;
+      }
+
+      return left.to.name.localeCompare(right.to.name);
+    });
+}
+
 export function selectSimplifiedTotals(simplifiedDebts: SimplifiedDebt[]) {
   const total = simplifiedDebts.reduce((sum, debt) => sum + debt.amount, 0);
   return {

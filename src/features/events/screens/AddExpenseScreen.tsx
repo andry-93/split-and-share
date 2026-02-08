@@ -1,17 +1,17 @@
-import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, Checkbox, Divider, Icon, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
+import { Button, Checkbox, Divider, Icon, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { EventsStackParamList } from '../../../navigation/types';
-import { useEventsActions } from '../../../state/events/eventsContext';
+import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
 import { useSettingsState } from '../../../state/settings/settingsContext';
 import { OutlinedFieldContainer } from '../../../shared/ui/OutlinedFieldContainer';
 import { BottomSheetSingleSelectRow } from '../../../shared/ui/BottomSheetSingleSelectRow';
 import { normalizeCurrencyCode } from '../../../shared/utils/currency';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 
-const participants = ['Alice Johnson', 'Bob Smith', 'Charlie Davis'];
 const categoryOptions = [
   { id: 'food', label: 'Food', icon: 'cart-outline' },
   { id: 'transport', label: 'Transport', icon: 'car-outline' },
@@ -26,21 +26,47 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
+  const { events } = useEventsState();
   const { addExpense } = useEventsActions();
+  const event = useMemo(
+    () => events.find((item) => item.id === route.params.eventId),
+    [events, route.params.eventId],
+  );
   const [amount, setAmount] = useState('');
   const [title, setTitle] = useState('');
-  const [paidBy, setPaidBy] = useState(participants[0]);
+  const participantNames = useMemo(
+    () => event?.participants.map((participant) => participant.name) ?? [],
+    [event?.participants],
+  );
+  const [paidBy, setPaidBy] = useState(participantNames[0] ?? '');
   const [category, setCategory] = useState<CategoryId>('food');
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(participants);
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(participantNames);
   const sheetRef = useRef<BottomSheetModal>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
   const selectedSet = useMemo(() => new Set(selectedParticipants), [selectedParticipants]);
-  const selectedCurrency = useMemo(() => normalizeCurrencyCode(settings.currency), [settings.currency]);
+  const selectedCurrency = useMemo(
+    () => normalizeCurrencyCode(event?.currency ?? settings.currency),
+    [event?.currency, settings.currency],
+  );
 
   const isSaveDisabled = useMemo(() => {
-    return amount.trim().length === 0 || title.trim().length === 0;
-  }, [amount, title]);
+    return amount.trim().length === 0 || title.trim().length === 0 || paidBy.trim().length === 0;
+  }, [amount, paidBy, title]);
+
+  useEffect(() => {
+    if (participantNames.length === 0) {
+      setPaidBy('');
+      setSelectedParticipants([]);
+      return;
+    }
+
+    setPaidBy((prev) => (participantNames.includes(prev) ? prev : participantNames[0]));
+    setSelectedParticipants((prev) => {
+      const next = prev.filter((name) => participantNames.includes(name));
+      return next.length > 0 ? next : [...participantNames];
+    });
+  }, [participantNames]);
 
   const toggleParticipant = useCallback((name: string) => {
     setSelectedParticipants((prev) =>
@@ -79,14 +105,18 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
         name={name}
         selected={paidBy === name}
         onSelect={handleSelectPaidBy}
-        isLast={index === participants.length - 1}
+        isLast={index === participantNames.length - 1}
       />
     ),
-    [handleSelectPaidBy, paidBy],
+    [handleSelectPaidBy, paidBy, participantNames.length],
   );
 
   const handleSave = useCallback(() => {
     const parsedAmount = Number(amount.replace(',', '.'));
+    if (!paidBy.trim()) {
+      setErrorMessage('Select who paid this expense.');
+      return;
+    }
 
     try {
       addExpense({
@@ -106,10 +136,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="Add Expense" />
-      </Appbar.Header>
+      <AppHeader title="Add Expense" onBackPress={() => navigation.goBack()} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -214,7 +241,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
               Split between
             </Text>
             <OutlinedFieldContainer style={styles.participantsCard}>
-              {participants.map((name, index) => (
+              {participantNames.map((name, index) => (
                 <View key={name}>
                   {index > 0 ? <Divider /> : null}
                   {renderParticipantRow(name)}
@@ -228,7 +255,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           style={[
             styles.bottomBar,
             {
-              backgroundColor: theme.colors.background,
+              backgroundColor: theme.colors.surface,
               borderTopColor: theme.colors.outlineVariant,
               paddingBottom: Math.max(insets.bottom, 12),
             },
@@ -260,7 +287,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           <Text variant="titleMedium" style={[styles.sheetTitle, { color: theme.colors.onSurface }]}>
             Paid by
           </Text>
-          {participants.map(renderPaidByOption)}
+          {participantNames.map(renderPaidByOption)}
         </BottomSheetView>
       </BottomSheetModal>
     </SafeAreaView>
@@ -319,7 +346,7 @@ const styles = StyleSheet.create({
   },
   form: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 0,
   },
   formContentGrow: {
     flexGrow: 1,

@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Appbar, Avatar, Button, Card, FAB, Icon, Text, useTheme } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
 import { ExpenseItem, ParticipantItem } from '../types/events';
@@ -10,15 +10,17 @@ import { useEventsActions, useEventsState } from '../../../state/events/eventsCo
 import {
   RawDebt,
   SimplifiedDebt,
+  selectDetailedDebts,
+  selectExpensesCount,
   selectPaidSimplifiedIds,
+  selectParticipantsCount,
   selectRawDebts,
   selectSimplifiedDebts,
   selectTotalAmount,
-  selectParticipantsCount,
-  selectExpensesCount,
 } from '../../../state/events/eventsSelectors';
 import { useSettingsState } from '../../../state/settings/settingsContext';
 import { CustomToggleGroup } from '../../../shared/ui/CustomToggleGroup';
+import { AppHeader } from '../../../shared/ui/AppHeader';
 import { formatCurrencyAmount, normalizeCurrencyCode } from '../../../shared/utils/currency';
 
 type EventDetailsScreenProps = NativeStackScreenProps<EventsStackParamList, 'EventDetails'>;
@@ -28,14 +30,48 @@ type SummaryMetricProps = {
   value: string;
 };
 
+type ExpenseCardProps = {
+  expense: ExpenseItem;
+  currencyCode: string;
+};
+
+type ParticipantRowProps = {
+  participant: ParticipantItem;
+  balance: number;
+  currencyCode: string;
+  withDivider: boolean;
+};
+
+type DebtRowProps = {
+  debt: RawDebt;
+  currencyCode: string;
+  isLast: boolean;
+};
+
+type SimplifiedDebtRowProps = {
+  debt: SimplifiedDebt;
+  currencyCode: string;
+  isLast: boolean;
+  onMarkPaid: (id: string) => void;
+};
+
+const RAW_LIST_BOTTOM_GAP = 12;
+
+function formatRawDebtAmount(currencyCode: string, amount: number) {
+  return formatCurrencyAmount(currencyCode, amount);
+}
+
 export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const settings = useSettingsState();
   const { events, paidSimplifiedByEvent } = useEventsState();
   const { markSimplifiedPaid } = useEventsActions();
   const event = events.find((item) => item.id === route.params.eventId);
   const [activeTab, setActiveTab] = useState<'expenses' | 'debts' | 'people'>('expenses');
-  const [debtsMode, setDebtsMode] = useState<'raw' | 'simplified'>('raw');
+  const [debtsMode, setDebtsMode] = useState<'detailed' | 'simplified'>('detailed');
+  const [rawViewportHeight, setRawViewportHeight] = useState(0);
+  const [rawContentHeight, setRawContentHeight] = useState(0);
 
   const handleTabChange = useCallback((value: string) => {
     if (value === 'expenses' || value === 'debts' || value === 'people') {
@@ -43,26 +79,14 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     }
   }, []);
 
-  const handleViewRawDebts = useCallback(() => {
-    setDebtsMode('raw');
+  const handleViewDetailedDebts = useCallback(() => {
+    setDebtsMode('detailed');
   }, []);
-
-  const totalAmount = useMemo(() => selectTotalAmount(event), [event]);
-  const participantsCount = useMemo(() => selectParticipantsCount(event), [event]);
-  const expensesCount = useMemo(() => selectExpensesCount(event), [event]);
-  const currencyCode = useMemo(() => normalizeCurrencyCode(settings.currency), [settings.currency]);
-  const totalAmountDisplay = useMemo(
-    () => formatCurrencyAmount(currencyCode, totalAmount),
-    [currencyCode, totalAmount],
-  );
 
   if (!event) {
     return (
-      <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-        <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="Event Details" />
-        </Appbar.Header>
+      <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right']}>
+        <AppHeader title="Event Details" onBackPress={() => navigation.goBack()} />
         <View style={styles.missingState}>
           <Text variant="titleMedium">Event not found</Text>
           <Text variant="bodyMedium">Please go back and choose another event.</Text>
@@ -71,7 +95,22 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     );
   }
 
+  const eventCurrency = event.currency;
+  const currencyCode = useMemo(
+    () => normalizeCurrencyCode(eventCurrency ?? settings.currency),
+    [eventCurrency, settings.currency],
+  );
+
+  const totalAmount = useMemo(() => selectTotalAmount(event), [event]);
+  const participantsCount = useMemo(() => selectParticipantsCount(event), [event]);
+  const expensesCount = useMemo(() => selectExpensesCount(event), [event]);
+  const totalAmountDisplay = useMemo(
+    () => formatCurrencyAmount(currencyCode, totalAmount),
+    [currencyCode, totalAmount],
+  );
+
   const rawDebts = useMemo(() => selectRawDebts(event), [event]);
+  const detailedDebts = useMemo(() => selectDetailedDebts(rawDebts), [rawDebts]);
   const simplifiedDebts = useMemo(() => selectSimplifiedDebts(rawDebts), [rawDebts]);
 
   const paidSimplifiedIds = selectPaidSimplifiedIds({ events, paidSimplifiedByEvent }, event.id);
@@ -81,9 +120,95 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     [paidSet, simplifiedDebts],
   );
 
-  const header = useMemo(
-    () => (
-      <View>
+  const participantBalanceMap = useMemo(() => {
+    const balanceById = new Map<string, number>();
+    event.participants.forEach((participant) => {
+      balanceById.set(participant.id, 0);
+    });
+    rawDebts.forEach((debt) => {
+      balanceById.set(debt.from.id, (balanceById.get(debt.from.id) ?? 0) - debt.amount);
+      balanceById.set(debt.to.id, (balanceById.get(debt.to.id) ?? 0) + debt.amount);
+    });
+    return balanceById;
+  }, [event.participants, rawDebts]);
+
+  const handleMarkPaid = useCallback(
+    (id: string) => {
+      markSimplifiedPaid({ eventId: event.id, debtId: id });
+    },
+    [event.id, markSimplifiedPaid],
+  );
+
+  const handleAddExpense = useCallback(() => {
+    navigation.navigate('AddExpense', { eventId: event.id });
+  }, [event.id, navigation]);
+
+  const handleAddPeople = useCallback(() => {
+    navigation.navigate('AddPeopleToEvent', { eventId: event.id });
+  }, [event.id, navigation]);
+
+  const handleRawViewportLayout = useCallback((layoutEvent: LayoutChangeEvent) => {
+    setRawViewportHeight(layoutEvent.nativeEvent.layout.height);
+  }, []);
+
+  const rawContainerHeight = useMemo(() => {
+    if (rawViewportHeight <= 0) {
+      return undefined;
+    }
+    const maxHeight = Math.max(0, rawViewportHeight - RAW_LIST_BOTTOM_GAP - Math.max(insets.bottom, 0));
+    const nextHeight = rawContentHeight > 0 ? Math.min(rawContentHeight, maxHeight) : maxHeight;
+    return Math.max(1, nextHeight);
+  }, [insets.bottom, rawContentHeight, rawViewportHeight]);
+
+  const renderExpenseItem = useCallback(
+    ({ item }: { item: ExpenseItem }) => <ExpenseCard expense={item} currencyCode={currencyCode} />,
+    [currencyCode],
+  );
+
+  const renderParticipantItem = useCallback(
+    ({ item, index }: { item: ParticipantItem; index: number }) => (
+      <ParticipantRow
+        participant={item}
+        balance={participantBalanceMap.get(item.id) ?? 0}
+        currencyCode={currencyCode}
+        withDivider={index < event.participants.length - 1}
+      />
+    ),
+    [currencyCode, event.participants.length, participantBalanceMap],
+  );
+
+  const renderRawDebtItem = useCallback(
+    ({ item, index }: { item: RawDebt; index: number }) => (
+      <DebtRow
+        debt={item}
+        currencyCode={currencyCode}
+        isLast={index === detailedDebts.length - 1}
+      />
+    ),
+    [currencyCode, detailedDebts.length],
+  );
+
+  const renderSimplifiedDebtItem = useCallback(
+    ({ item, index }: { item: SimplifiedDebt; index: number }) => (
+      <SimplifiedDebtRow
+        debt={item}
+        currencyCode={currencyCode}
+        isLast={index === visibleSimplifiedDebts.length - 1}
+        onMarkPaid={handleMarkPaid}
+      />
+    ),
+    [currencyCode, handleMarkPaid, visibleSimplifiedDebts.length],
+  );
+
+  return (
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right']}>
+      <AppHeader
+        title={event.name}
+        onBackPress={() => navigation.goBack()}
+        rightSlot={<Appbar.Action icon="share-variant" onPress={() => undefined} />}
+      />
+
+      <View style={styles.topSection}>
         <Card
           mode="contained"
           style={[
@@ -112,10 +237,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
             onPress={() => handleTabChange('expenses')}
             style={[styles.topTabItem, activeTab === 'expenses' ? { borderBottomColor: theme.colors.primary } : null]}
           >
-            <Text
-              variant="titleMedium"
-              style={[styles.topTabLabel, { color: activeTab === 'expenses' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}
-            >
+            <Text variant="titleMedium" style={[styles.topTabLabel, { color: activeTab === 'expenses' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>
               Expenses
             </Text>
           </Pressable>
@@ -123,10 +245,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
             onPress={() => handleTabChange('debts')}
             style={[styles.topTabItem, activeTab === 'debts' ? { borderBottomColor: theme.colors.primary } : null]}
           >
-            <Text
-              variant="titleMedium"
-              style={[styles.topTabLabel, { color: activeTab === 'debts' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}
-            >
+            <Text variant="titleMedium" style={[styles.topTabLabel, { color: activeTab === 'debts' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>
               Debts
             </Text>
           </Pressable>
@@ -134,203 +253,154 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
             onPress={() => handleTabChange('people')}
             style={[styles.topTabItem, activeTab === 'people' ? { borderBottomColor: theme.colors.primary } : null]}
           >
-            <Text
-              variant="titleMedium"
-              style={[styles.topTabLabel, { color: activeTab === 'people' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}
-            >
+            <Text variant="titleMedium" style={[styles.topTabLabel, { color: activeTab === 'people' ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>
               People
             </Text>
           </Pressable>
         </View>
       </View>
-    ),
-    [
-      activeTab,
-      expensesCount,
-      handleTabChange,
-      participantsCount,
-      theme.colors.onSurfaceVariant,
-      theme.colors.outlineVariant,
-      theme.colors.primary,
-      totalAmountDisplay,
-    ],
-  );
 
-  const handleMarkPaid = useCallback(
-    (id: string) => {
-      markSimplifiedPaid({ eventId: event.id, debtId: id });
-    },
-    [event.id, markSimplifiedPaid],
-  );
-
-  const renderExpenseItem = useCallback(
-    ({ item }: { item: ExpenseItem }) => <ExpenseCard expense={item} currencyCode={currencyCode} />,
-    [currencyCode],
-  );
-
-  const participantBalanceMap = useMemo(() => {
-    const balanceById = new Map<string, number>();
-    event.participants.forEach((participant) => {
-      balanceById.set(participant.id, 0);
-    });
-
-    rawDebts.forEach((debt) => {
-      balanceById.set(debt.from.id, (balanceById.get(debt.from.id) ?? 0) - debt.amount);
-      balanceById.set(debt.to.id, (balanceById.get(debt.to.id) ?? 0) + debt.amount);
-    });
-
-    return balanceById;
-  }, [event.participants, rawDebts]);
-
-  const renderParticipantItem = useCallback(
-    ({ item, index }: { item: ParticipantItem; index: number }) => (
-      <ParticipantRow
-        participant={item}
-        balance={participantBalanceMap.get(item.id) ?? 0}
-        currencyCode={currencyCode}
-        withDivider={index < event.participants.length - 1}
-      />
-    ),
-    [currencyCode, event.participants.length, participantBalanceMap],
-  );
-
-  const renderDebtItem = useCallback(
-    ({ item }: { item: RawDebt | SimplifiedDebt }) =>
-      debtsMode === 'raw' ? (
-        <DebtRow debt={item as RawDebt} />
-      ) : (
-        <SimplifiedDebtRow debt={item as SimplifiedDebt} onMarkPaid={handleMarkPaid} />
-      ),
-    [debtsMode, handleMarkPaid],
-  );
-
-  const renderDebtHeader = useMemo(
-    () => (
-      <View>
-        {header}
-        <View
-          style={[
-            styles.debtsModeToggle,
-            {
-              backgroundColor: 'transparent',
-            },
-          ]}
-        >
+      {activeTab === 'debts' ? (
+        <View style={styles.debtsModeToggle}>
           <CustomToggleGroup
             value={debtsMode}
             onChange={(value) => setDebtsMode(value)}
             options={[
-              { value: 'raw', label: 'Raw' },
+              { value: 'detailed', label: 'Detailed' },
               { value: 'simplified', label: 'Simplified' },
             ]}
             sizeMode="content"
           />
         </View>
-      </View>
-    ),
-    [debtsMode, header],
-  );
+      ) : null}
 
-  const handleAddExpense = useCallback(() => {
-    navigation.navigate('AddExpense', { eventId: event.id });
-  }, [event.id, navigation]);
-
-  const handleAddPeople = useCallback(() => {
-    navigation.navigate('AddPeopleToEvent', { eventId: event.id });
-  }, [event.id, navigation]);
-
-  return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant }}>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title={event.name} />
-        <Appbar.Action icon="share-variant" onPress={() => undefined} />
-      </Appbar.Header>
-
-      {activeTab === 'expenses' ? (
-        <FlatList
-          data={event.expenses}
-          keyExtractor={(item) => item.id}
-          style={styles.list}
-          removeClippedSubviews
-          initialNumToRender={8}
-          maxToRenderPerBatch={8}
-          windowSize={5}
-          contentContainerStyle={[
-            styles.listContent,
-            event.expenses.length === 0 ? styles.listEmpty : null,
-          ]}
-          ListHeaderComponent={header}
-          renderItem={renderExpenseItem}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text variant="titleMedium">No expenses yet</Text>
-              <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
-            </View>
-          }
-        />
-      ) : activeTab === 'debts' ? (
-        <FlatList
-          data={debtsMode === 'raw' ? rawDebts : visibleSimplifiedDebts}
-          keyExtractor={(item) => item.id}
-          style={styles.list}
-          removeClippedSubviews
-          initialNumToRender={8}
-          maxToRenderPerBatch={8}
-          windowSize={5}
-          contentContainerStyle={[
-            styles.listContent,
-            (debtsMode === 'raw'
-              ? rawDebts.length === 0
-              : visibleSimplifiedDebts.length === 0)
-              ? styles.listEmpty
-              : null,
-          ]}
-          ListHeaderComponent={renderDebtHeader}
-          renderItem={renderDebtItem}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              {debtsMode === 'raw' ? (
-                <>
-                  <Text variant="titleMedium">No debts yet</Text>
-                  <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
-                </>
-              ) : (
-                <View style={styles.allSettled}>
-                  <Icon source="check-circle" size={40} color={theme.colors.onSurfaceVariant} />
-                  <Text variant="titleMedium">All settled</Text>
-                  <Text variant="bodyMedium">Everyone is square.</Text>
-                  <Button mode="text" onPress={handleViewRawDebts}>
-                    View raw debts
-                  </Button>
+      <View style={styles.contentArea}>
+        {activeTab === 'expenses' ? (
+          <FlatList
+            data={event.expenses}
+            keyExtractor={(item) => item.id}
+            style={styles.list}
+            removeClippedSubviews
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={5}
+            contentContainerStyle={[
+              styles.listContent,
+              event.expenses.length === 0 ? styles.listEmpty : null,
+            ]}
+            renderItem={renderExpenseItem}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text variant="titleMedium">No expenses yet</Text>
+                <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
+              </View>
+            }
+          />
+        ) : activeTab === 'debts' ? (
+          debtsMode === 'detailed' ? (
+            detailedDebts.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text variant="titleMedium">No debts yet</Text>
+                <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
+              </View>
+            ) : (
+              <View style={styles.rawListWrapper} onLayout={handleRawViewportLayout}>
+                <View
+                  style={[
+                    styles.rawListContainer,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderColor: theme.colors.outlineVariant,
+                      height: rawContainerHeight,
+                    },
+                  ]}
+                >
+                  <FlatList
+                    data={detailedDebts}
+                    keyExtractor={(item) => item.id}
+                    style={styles.rawList}
+                    removeClippedSubviews
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    onContentSizeChange={(_, height) => setRawContentHeight(height)}
+                    renderItem={renderRawDebtItem}
+                  />
                 </View>
-              )}
+              </View>
+            )
+        ) : (
+          visibleSimplifiedDebts.length === 0 ? (
+            <View style={styles.emptyState}>
+              <View style={styles.allSettled}>
+                <Icon source="check-circle" size={40} color={theme.colors.onSurfaceVariant} />
+                <Text variant="titleMedium">All settled</Text>
+                <Text variant="bodyMedium">Everyone is square.</Text>
+                <Button mode="text" onPress={handleViewDetailedDebts}>
+                  View detailed debts
+                </Button>
+              </View>
             </View>
-          }
-        />
+          ) : (
+            <View style={styles.rawListWrapper} onLayout={handleRawViewportLayout}>
+              <View
+                style={[
+                  styles.rawListContainer,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.outlineVariant,
+                    height: rawContainerHeight,
+                  },
+                ]}
+              >
+                <FlatList
+                  data={visibleSimplifiedDebts}
+                  keyExtractor={(item) => item.id}
+                  style={styles.rawList}
+                  removeClippedSubviews
+                  initialNumToRender={10}
+                  maxToRenderPerBatch={10}
+                  windowSize={5}
+                  onContentSizeChange={(_, height) => setRawContentHeight(height)}
+                  renderItem={renderSimplifiedDebtItem}
+                />
+              </View>
+            </View>
+          )
+        )
       ) : (
-        <FlatList
-          data={event.participants}
-          keyExtractor={(item) => item.id}
-          style={styles.list}
-          removeClippedSubviews
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          contentContainerStyle={[
-            styles.listContent,
-            event.participants.length === 0 ? styles.listEmpty : null,
-          ]}
-          ListHeaderComponent={header}
-          renderItem={renderParticipantItem}
-          ListEmptyComponent={
+          event.participants.length === 0 ? (
             <View style={styles.emptyState}>
               <Text variant="titleMedium">No people in this event</Text>
               <Text variant="bodyMedium">Add people to start splitting expenses.</Text>
             </View>
-          }
-        />
-      )}
+          ) : (
+            <View style={[styles.rawListWrapper, styles.peopleSectionSpacing]}>
+              <View
+                style={[
+                  styles.rawListContainer,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.outlineVariant,
+                  },
+                ]}
+              >
+                <FlatList
+                  data={event.participants}
+                  keyExtractor={(item) => item.id}
+                  style={styles.rawList}
+                  removeClippedSubviews
+                  initialNumToRender={10}
+                  maxToRenderPerBatch={10}
+                  windowSize={5}
+                  contentContainerStyle={styles.peopleListContent}
+                  renderItem={renderParticipantItem}
+                />
+              </View>
+            </View>
+          )
+        )}
+      </View>
 
       {activeTab === 'expenses' ? (
         <FAB
@@ -360,11 +430,6 @@ const SummaryMetric = memo(function SummaryMetric({ label, value }: SummaryMetri
   );
 });
 
-type ExpenseCardProps = {
-  expense: ExpenseItem;
-  currencyCode: string;
-};
-
 const ExpenseCard = memo(function ExpenseCard({ expense, currencyCode }: ExpenseCardProps) {
   const theme = useTheme();
 
@@ -392,13 +457,6 @@ const ExpenseCard = memo(function ExpenseCard({ expense, currencyCode }: Expense
     </Card>
   );
 });
-
-type ParticipantRowProps = {
-  participant: ParticipantItem;
-  balance: number;
-  currencyCode: string;
-  withDivider: boolean;
-};
 
 const ParticipantRow = memo(function ParticipantRow({
   participant,
@@ -451,73 +509,61 @@ const ParticipantRow = memo(function ParticipantRow({
   );
 });
 
-type DebtRowProps = {
-  debt: RawDebt;
-};
-
-const DebtRow = memo(function DebtRow({ debt }: DebtRowProps) {
-  const fromInitials = debt.from.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
+const DebtRow = memo(function DebtRow({ debt, currencyCode, isLast }: DebtRowProps) {
+  const theme = useTheme();
 
   return (
-    <Card style={styles.card}>
-      <Card.Content style={styles.cardContent}>
-        <View style={styles.debtRow}>
-          <Avatar.Text size={36} label={fromInitials || '?'} style={styles.avatar} />
-          <View style={styles.debtText}>
-            <Text variant="titleMedium">{debt.from.name}</Text>
-            <Text variant="bodyMedium">owes {debt.to.name}</Text>
-          </View>
+    <View>
+      <View style={styles.rawDebtRow}>
+        <View style={styles.rawDebtText}>
+          <Text variant="titleMedium">{debt.from.name}</Text>
+          <Text variant="bodyMedium">owes {debt.to.name}</Text>
         </View>
         <Text variant="titleMedium" style={styles.amount}>
-          {debt.amount}
+          {formatRawDebtAmount(currencyCode, debt.amount)}
         </Text>
-      </Card.Content>
-    </Card>
+      </View>
+      {!isLast ? <View style={[styles.insetDivider, { borderBottomColor: theme.colors.outlineVariant }]} /> : null}
+    </View>
   );
 });
 
-type SimplifiedDebtRowProps = {
-  debt: SimplifiedDebt;
-  onMarkPaid: (id: string) => void;
-};
-
-const SimplifiedDebtRow = memo(function SimplifiedDebtRow({ debt, onMarkPaid }: SimplifiedDebtRowProps) {
-  const fromInitials = debt.from.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-
+const SimplifiedDebtRow = memo(function SimplifiedDebtRow({
+  debt,
+  currencyCode,
+  isLast,
+  onMarkPaid,
+}: SimplifiedDebtRowProps) {
+  const theme = useTheme();
   const handleMarkPaid = useCallback(() => {
     onMarkPaid(debt.id);
   }, [debt.id, onMarkPaid]);
 
   return (
-    <Card style={styles.card}>
-      <Card.Content style={styles.cardContent}>
-        <View style={styles.debtRow}>
-          <Avatar.Text size={36} label={fromInitials || '?'} style={styles.avatar} />
-          <View style={styles.debtText}>
-            <Text variant="titleMedium">{debt.from.name}</Text>
-            <Text variant="bodyMedium">pay {debt.to.name}</Text>
-          </View>
+    <View>
+      <View style={styles.rawDebtRow}>
+        <View style={styles.rawDebtText}>
+          <Text variant="titleMedium">{debt.from.name}</Text>
+          <Text variant="bodyMedium">pay {debt.to.name}</Text>
         </View>
-        <Text variant="titleMedium" style={styles.amount}>
-          {debt.amount}
-        </Text>
-      </Card.Content>
-      <Card.Actions style={styles.debtActions}>
-        <Button mode="text" onPress={handleMarkPaid}>
-          Mark as paid
-        </Button>
-      </Card.Actions>
-    </Card>
+        <View style={styles.simplifiedDebtRight}>
+          <Button
+            mode="contained"
+            onPress={handleMarkPaid}
+            compact
+            style={styles.markPaidButton}
+            contentStyle={styles.markPaidButtonContent}
+            labelStyle={styles.markPaidButtonLabel}
+          >
+            Mark as paid
+          </Button>
+          <Text variant="titleMedium" style={[styles.amount, styles.simplifiedAmount]}>
+            {formatRawDebtAmount(currencyCode, debt.amount)}
+          </Text>
+        </View>
+      </View>
+      {!isLast ? <View style={[styles.insetDivider, { borderBottomColor: theme.colors.outlineVariant }]} /> : null}
+    </View>
   );
 });
 
@@ -525,23 +571,16 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-  list: {
-    flex: 1,
-  },
-  listContent: {
+  topSection: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 96,
-  },
-  listEmpty: {
-    flexGrow: 1,
   },
   summaryCard: {
-    marginTop: -12,
+    marginTop: 0,
     marginHorizontal: -16,
     marginBottom: 0,
     borderRadius: 0,
     borderWidth: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
     elevation: 0,
     shadowColor: 'transparent',
@@ -558,7 +597,7 @@ const styles = StyleSheet.create({
   },
   topTabBar: {
     marginHorizontal: -16,
-    marginBottom: 12,
+    marginBottom: 0,
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
@@ -575,8 +614,29 @@ const styles = StyleSheet.create({
   },
   debtsModeToggle: {
     marginHorizontal: 16,
+    marginTop: 12,
     marginBottom: 12,
     alignSelf: 'center',
+  },
+  contentArea: {
+    flex: 1,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 96,
+  },
+  peopleListContent: {
+    paddingHorizontal: 16,
+  },
+  peopleSectionSpacing: {
+    paddingTop: 12,
+  },
+  listEmpty: {
+    flexGrow: 1,
   },
   card: {
     marginBottom: 12,
@@ -635,6 +695,52 @@ const styles = StyleSheet.create({
   },
   debtActions: {
     justifyContent: 'flex-end',
+  },
+  rawListWrapper: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 96,
+  },
+  rawListContainer: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  rawList: {
+    flexGrow: 0,
+  },
+  rawDebtRow: {
+    minHeight: 72,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rawDebtText: {
+    flex: 1,
+    marginRight: 12,
+  },
+  insetDivider: {
+    marginHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  simplifiedDebtRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  simplifiedAmount: {
+    marginTop: 2,
+  },
+  markPaidButton: {
+    minHeight: 30,
+  },
+  markPaidButtonContent: {
+    minHeight: 30,
+    paddingHorizontal: 8,
+  },
+  markPaidButtonLabel: {
+    marginVertical: 0,
   },
   fab: {
     position: 'absolute',

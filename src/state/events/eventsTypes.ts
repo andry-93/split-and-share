@@ -6,7 +6,7 @@ export type EventsState = {
 };
 
 export type EventsAction =
-  | { type: 'events/create'; payload: { id: string; name: string; description?: string } }
+  | { type: 'events/create'; payload: { id: string; name: string; description?: string; currency?: string } }
   | { type: 'events/addExpense'; payload: { eventId: string; expense: { id: string; title: string; amount: number; paidBy: string } } }
   | { type: 'events/addParticipants'; payload: { eventId: string; participants: ParticipantItem[] } }
   | { type: 'events/markSimplifiedPaid'; payload: { eventId: string; debtId: string } }

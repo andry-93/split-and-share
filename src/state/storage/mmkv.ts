@@ -1,4 +1,4 @@
-import type { MMKV } from 'react-native-mmkv';
+import type { MMKV as MMKVInstance } from 'react-native-mmkv';
 
 type StorageLike = {
   getString: (key: string) => string | undefined;
@@ -17,7 +17,9 @@ const fallbackStorage: StorageLike = {
 let storageInstance: StorageLike = fallbackStorage;
 
 try {
-  const { MMKV } = require('react-native-mmkv') as { MMKV: typeof MMKV };
+  const { MMKV } = require('react-native-mmkv') as {
+    MMKV: new (...args: never[]) => MMKVInstance;
+  };
   storageInstance = new MMKV();
 } catch {
   storageInstance = fallbackStorage;
