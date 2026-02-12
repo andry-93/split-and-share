@@ -72,12 +72,12 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   });
 
   const handleMarkSimplifiedPaid = useCallback(
-    (debt: SimplifiedDebt) => {
+    (debt: SimplifiedDebt, amount: number) => {
       registerPayment({
         eventId: event.id,
         fromId: debt.from.id,
         toId: debt.to.id,
-        amount: debt.amount,
+        amount,
         source: 'simplified',
       });
     },
@@ -85,12 +85,12 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   );
 
   const handleMarkDetailedPaid = useCallback(
-    (debt: RawDebt) => {
+    (debt: RawDebt, amount: number) => {
       registerPayment({
         eventId: event.id,
         fromId: debt.from.id,
         toId: debt.to.id,
-        amount: debt.amount,
+        amount,
         source: 'detailed',
       });
     },
@@ -198,4 +198,3 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     </SafeAreaView>
   );
 }
-

@@ -1,10 +1,14 @@
-import React, { memo, useCallback } from 'react';
-import { LayoutChangeEvent, View } from 'react-native';
+import React, { memo, useCallback, useRef, useState } from 'react';
+import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
+import { TextInput as RNTextInput } from 'react-native';
 import { RawDebt, SimplifiedDebt } from '../../../../state/events/eventsSelectors';
 import { AppList } from '../../../../shared/ui/AppList';
+import { AppConfirm } from '../../../../shared/ui/AppConfirm';
 import { CustomToggleGroup } from '../../../../shared/ui/CustomToggleGroup';
-import { formatCurrencyAmount } from '../../../../shared/utils/currency';
+import { formatCurrencyAmount, roundMoney } from '../../../../shared/utils/currency';
+import { OutlinedFieldContainer } from '../../../../shared/ui/OutlinedFieldContainer';
+import { useAutofocusWithRetry } from '../../../../shared/hooks/useAutofocusWithRetry';
 import { eventDetailsStyles as styles } from './styles';
 
 type DebtsPanelProps = {
@@ -18,8 +22,8 @@ type DebtsPanelProps = {
   baseSimplifiedCount: number;
   paidSimplifiedCount: number;
   currencyCode: string;
-  onMarkDetailedPaid: (debt: RawDebt) => void;
-  onMarkSimplifiedPaid: (debt: SimplifiedDebt) => void;
+  onMarkDetailedPaid: (debt: RawDebt, amount: number) => void;
+  onMarkSimplifiedPaid: (debt: SimplifiedDebt, amount: number) => void;
   rawContainerHeight?: number;
   onViewportLayout: (event: LayoutChangeEvent) => void;
   onHintLayout: (height: number) => void;
@@ -45,19 +49,85 @@ export const DebtsPanel = memo(function DebtsPanel({
   onContentSizeChange,
 }: DebtsPanelProps) {
   const theme = useTheme();
+  const amountInputRef = useRef<RNTextInput | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<
+    { mode: 'detailed'; debt: RawDebt } | { mode: 'simplified'; debt: SimplifiedDebt } | null
+  >(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const { focusWithRetry: focusAmountInputWithRetry } = useAutofocusWithRetry({
+    ref: amountInputRef,
+    enabled: Boolean(pendingPayment),
+  });
+
+  const openDetailedPaymentConfirm = useCallback((debt: RawDebt) => {
+    setPendingPayment({ mode: 'detailed', debt });
+    setPaymentAmount(roundMoney(debt.amount).toFixed(2));
+    setPaymentError('');
+  }, []);
+
+  const openSimplifiedPaymentConfirm = useCallback((debt: SimplifiedDebt) => {
+    setPendingPayment({ mode: 'simplified', debt });
+    setPaymentAmount(roundMoney(debt.amount).toFixed(2));
+    setPaymentError('');
+  }, []);
+
+  const closePaymentConfirm = useCallback(() => {
+    setPendingPayment(null);
+    setPaymentError('');
+  }, []);
+
+  const handleConfirmShow = useCallback(() => {
+    focusAmountInputWithRetry();
+  }, [focusAmountInputWithRetry]);
+
+  const handleConfirmPayment = useCallback(() => {
+    if (!pendingPayment) {
+      return;
+    }
+
+    const parsed = Number(paymentAmount.replace(',', '.').trim());
+    const rounded = roundMoney(parsed);
+    const maxAmount = roundMoney(pendingPayment.debt.amount);
+
+    if (!Number.isFinite(parsed) || rounded <= 0) {
+      setPaymentError('Enter a valid amount.');
+      return;
+    }
+
+    if (rounded > maxAmount + 0.00001) {
+      setPaymentError(`Amount cannot exceed ${formatCurrencyAmount(currencyCode, maxAmount)}.`);
+      return;
+    }
+
+    if (pendingPayment.mode === 'detailed') {
+      onMarkDetailedPaid(pendingPayment.debt, rounded);
+    } else {
+      onMarkSimplifiedPaid(pendingPayment.debt, rounded);
+    }
+
+    closePaymentConfirm();
+  }, [
+    closePaymentConfirm,
+    currencyCode,
+    onMarkDetailedPaid,
+    onMarkSimplifiedPaid,
+    paymentAmount,
+    pendingPayment,
+  ]);
 
   const renderRawDebtItem = useCallback(
     ({ item }: { item: RawDebt }) => (
-      <DetailedDebtRow debt={item} currencyCode={currencyCode} onMarkPaid={onMarkDetailedPaid} />
+      <DetailedDebtRow debt={item} currencyCode={currencyCode} onMarkPaid={openDetailedPaymentConfirm} />
     ),
-    [currencyCode, onMarkDetailedPaid],
+    [currencyCode, openDetailedPaymentConfirm],
   );
 
   const renderSimplifiedDebtItem = useCallback(
     ({ item }: { item: SimplifiedDebt }) => (
-      <SimplifiedDebtRow debt={item} currencyCode={currencyCode} onMarkPaid={onMarkSimplifiedPaid} />
+      <SimplifiedDebtRow debt={item} currencyCode={currencyCode} onMarkPaid={openSimplifiedPaymentConfirm} />
     ),
-    [currencyCode, onMarkSimplifiedPaid],
+    [currencyCode, openSimplifiedPaymentConfirm],
   );
 
   return (
@@ -122,6 +192,59 @@ export const DebtsPanel = memo(function DebtsPanel({
           renderItem={renderSimplifiedDebtItem}
         />
       )}
+
+      <AppConfirm
+        visible={Boolean(pendingPayment)}
+        title="Mark as paid"
+        onDismiss={closePaymentConfirm}
+        onConfirm={handleConfirmPayment}
+        onShow={handleConfirmShow}
+        confirmText="Save payment"
+      >
+        {pendingPayment ? (
+          <View style={localStyles.sheetContent}>
+            <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              Transfer
+            </Text>
+            <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+              {pendingPayment.debt.from.name} {pendingPayment.mode === 'detailed' ? 'owes' : 'pays'}{' '}
+              {pendingPayment.debt.to.name}
+            </Text>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              Remaining: {formatCurrencyAmount(currencyCode, pendingPayment.debt.amount)}
+            </Text>
+            <Text variant="labelLarge" style={localStyles.amountLabel}>
+              Amount ({currencyCode})
+            </Text>
+            <OutlinedFieldContainer style={localStyles.amountFieldContainer}>
+              <RNTextInput
+                ref={amountInputRef}
+                autoFocus
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+                showSoftInputOnFocus
+                value={paymentAmount}
+                onChangeText={setPaymentAmount}
+                style={[
+                  localStyles.amountField,
+                  localStyles.amountFieldContent,
+                  {
+                    color: theme.colors.onSurface,
+                  },
+                ]}
+                placeholder="0.00"
+                placeholderTextColor={theme.colors.onSurfaceVariant}
+                selectionColor={theme.colors.primary}
+              />
+            </OutlinedFieldContainer>
+            {paymentError ? (
+              <Text variant="bodySmall" style={{ color: theme.colors.error }}>
+                {paymentError}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+      </AppConfirm>
     </View>
   );
 });
@@ -294,3 +417,27 @@ const SimplifiedDebtRow = memo(function SimplifiedDebtRow({
   );
 });
 
+const localStyles = StyleSheet.create({
+  sheetContent: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+  amountLabel: {
+    marginTop: 4,
+  },
+  amountFieldContainer: {
+    minHeight: 56,
+    justifyContent: 'center',
+  },
+  amountField: {
+    height: 52,
+    backgroundColor: 'transparent',
+    fontSize: 24,
+    fontWeight: '600',
+    paddingVertical: 0,
+    textAlignVertical: 'center',
+  },
+  amountFieldContent: {
+    paddingHorizontal: 12,
+  },
+});

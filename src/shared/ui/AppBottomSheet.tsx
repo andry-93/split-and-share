@@ -1,5 +1,5 @@
 import React, { forwardRef, useMemo } from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Text, useTheme } from 'react-native-paper';
 
@@ -19,6 +19,10 @@ export const AppBottomSheet = forwardRef<BottomSheetModal, AppBottomSheetProps>(
         ref={ref}
         snapPoints={resolvedSnapPoints}
         enablePanDownToClose
+        keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'extend'}
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
+        enableBlurKeyboardOnGesture={false}
         backdropComponent={(props) => (
           <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />
         )}
@@ -51,4 +55,3 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
-
