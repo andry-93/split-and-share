@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Appearance, BackHandler, Platform, StatusBar, useColorScheme } from 'react-native';
+import { Appearance, BackHandler, NativeModules, Platform, StatusBar, useColorScheme } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider, Snackbar } from 'react-native-paper';
 import {
   NavigationContainer,
@@ -151,7 +151,38 @@ function AppShell() {
     };
   }, [navigationRef]);
 
-  const systemScheme = useColorScheme() ?? Appearance.getColorScheme() ?? 'dark';
+  const androidUiModeScheme = useMemo<'light' | 'dark' | null>(() => {
+    if (Platform.OS !== 'android') {
+      return null;
+    }
+
+    const rawUiMode = NativeModules.PlatformConstants?.uiMode;
+    if (typeof rawUiMode !== 'string') {
+      return null;
+    }
+
+    const normalized = rawUiMode.toLowerCase();
+    if (normalized.includes('night')) {
+      return 'dark';
+    }
+    if (normalized.includes('normal')) {
+      return 'light';
+    }
+
+    return null;
+  }, []);
+  const rnScheme = useColorScheme();
+  const appearanceScheme = Appearance.getColorScheme();
+  const systemScheme = useMemo<'light' | 'dark'>(() => {
+    const candidates = [rnScheme, appearanceScheme, androidUiModeScheme];
+    if (candidates.includes('dark')) {
+      return 'dark';
+    }
+    if (candidates.includes('light')) {
+      return 'light';
+    }
+    return 'light';
+  }, [androidUiModeScheme, appearanceScheme, rnScheme]);
   const resolvedScheme = useMemo<'light' | 'dark'>(() => {
     if (settings.theme === 'system') {
       return systemScheme === 'dark' ? 'dark' : 'light';

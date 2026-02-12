@@ -1,17 +1,70 @@
-import React, { useCallback } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Button, Icon, Text, useTheme } from 'react-native-paper';
+import React, { useCallback, useEffect, useState } from 'react';
+import { AppState, AppStateStatus, StyleSheet, View } from 'react-native';
+import { Button, Icon, Snackbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { PeopleStackParamList } from '../../../navigation/types';
 import { AppHeader } from '../../../shared/ui/AppHeader';
+import { getContactsPermissionStatus, requestContactsPermission } from '../services/contactsPermission';
 
 type ContactsAccessScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsAccess'>;
 
 export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) {
   const theme = useTheme();
+  const [errorMessage, setErrorMessage] = useState('');
   const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-  const handleContinue = useCallback(() => navigation.navigate('ImportContactsPicker'), [navigation]);
+  const navigateToPicker = useCallback(() => {
+    navigation.replace('ImportContactsPicker');
+  }, [navigation]);
+  const checkPermissionAndNavigate = useCallback(async () => {
+    const status = await getContactsPermissionStatus();
+    if (status === 'granted') {
+      navigateToPicker();
+      return true;
+    }
+    return false;
+  }, [navigateToPicker]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void (async () => {
+        if (!active) {
+          return;
+        }
+        await checkPermissionAndNavigate();
+      })();
+
+      return () => {
+        active = false;
+      };
+    }, [checkPermissionAndNavigate]),
+  );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') {
+        void checkPermissionAndNavigate();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [checkPermissionAndNavigate]);
+
+  const handleContinue = useCallback(async () => {
+    const status = await requestContactsPermission();
+    if (status === 'granted') {
+      navigateToPicker();
+      return;
+    }
+
+    if (status === 'unavailable') {
+      setErrorMessage('Contacts permission is unavailable on this device.');
+    }
+  }, [navigateToPicker]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
@@ -48,6 +101,10 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
           Not now
         </Button>
       </View>
+
+      <Snackbar visible={errorMessage.length > 0} onDismiss={() => setErrorMessage('')}>
+        {errorMessage}
+      </Snackbar>
     </SafeAreaView>
   );
 }

@@ -16,6 +16,7 @@ import { DraggableFab } from '../../../shared/ui/DraggableFab';
 import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
 import { useDismissBottomSheetsOnBlur } from '../../../shared/hooks/useDismissBottomSheetsOnBlur';
 import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '../../../shared/utils/people';
+import { getContactsPermissionStatus } from '../services/contactsPermission';
 
 type PeopleListScreenProps = NativeStackScreenProps<PeopleStackParamList, 'People'>;
 
@@ -43,8 +44,13 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
     [navigation],
   );
 
-  const handleImportContacts = useCallback(() => {
+  const handleImportContacts = useCallback(async () => {
     sheetRef.current?.dismiss();
+    const status = await getContactsPermissionStatus();
+    if (status === 'granted') {
+      navigation.navigate('ImportContactsPicker');
+      return;
+    }
     navigation.navigate('ImportContactsAccess');
   }, [navigation]);
 

@@ -1,16 +1,44 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Checkbox, Text, useTheme } from 'react-native-paper';
+import * as Contacts from 'expo-contacts';
+import { ActivityIndicator, Button, Checkbox, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
-import { mockContacts, MockContact } from '../data/mockContacts';
 import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
 import { AppHeader } from '../../../shared/ui/AppHeader';
 import { AppList } from '../../../shared/ui/AppList';
 import { PersonListRow } from '../components/PersonListRow';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
+import { getContactsPermissionStatus } from '../services/contactsPermission';
+
+type DeviceContact = {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+};
+
+function normalizeContact(item: Contacts.Contact): DeviceContact | null {
+  const runtimeContact = item as Contacts.Contact & { id?: string; rawId?: string };
+  const runtimeId = runtimeContact.id ?? runtimeContact.rawId;
+  const name = item.name?.trim() || `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim();
+  const phone = item.phoneNumbers?.[0]?.number?.trim();
+  const email = item.emails?.[0]?.email?.trim();
+  const fallbackName = name || phone || email;
+
+  if (!runtimeId || !fallbackName) {
+    return null;
+  }
+
+  return {
+    id: runtimeId,
+    name: fallbackName,
+    phone: phone || undefined,
+    email: email || undefined,
+  };
+}
 
 type ContactsPickerScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsPicker'>;
 
@@ -21,11 +49,47 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   const { addPeople } = usePeopleActions();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 250);
+  const [contacts, setContacts] = useState<DeviceContact[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
+
+  const loadContacts = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      const permission = await getContactsPermissionStatus();
+      if (permission !== 'granted') {
+        navigation.replace('ImportContactsAccess');
+        return;
+      }
+
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.FirstName, Contacts.Fields.LastName, Contacts.Fields.Name, Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
+      });
+
+      const normalized = data
+        .map(normalizeContact)
+        .filter((item): item is DeviceContact => Boolean(item));
+
+      setContacts(normalized);
+      setSelectedIds([]);
+    } catch {
+      setErrorMessage('Unable to load contacts. Please try again.');
+      setContacts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation]);
+
+  useEffect(() => {
+    void loadContacts();
+  }, [loadContacts]);
 
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const peopleLookup = useMemo(() => {
@@ -54,11 +118,11 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   const filteredContacts = useMemo(() => {
     const normalized = debouncedQuery.trim().toLowerCase();
     if (!normalized) {
-      return mockContacts;
+      return contacts;
     }
 
-    return mockContacts.filter((contact) => contact.name.toLowerCase().includes(normalized));
-  }, [debouncedQuery]);
+    return contacts.filter((contact) => contact.name.toLowerCase().includes(normalized));
+  }, [contacts, debouncedQuery]);
 
   const selectedCount = selectedIds.length;
 
@@ -69,7 +133,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   }, []);
 
   const handleAdd = useCallback(() => {
-    const selectedContacts = mockContacts.filter((contact) => selectedIds.includes(contact.id));
+    const selectedContacts = contacts.filter((contact) => selectedIds.includes(contact.id));
     addPeople({
       people: selectedContacts.map((contact) => ({
         name: contact.name,
@@ -78,10 +142,10 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
       })),
     });
     navigation.navigate('People');
-  }, [addPeople, navigation, selectedIds]);
+  }, [addPeople, contacts, navigation, selectedIds]);
 
   const isAlreadyAdded = useCallback(
-    (contact: MockContact) => {
+    (contact: DeviceContact) => {
       const normalizedName = contact.name.trim().toLowerCase();
       const normalizedPhone = contact.phone?.trim().toLowerCase();
       const normalizedEmail = contact.email?.trim().toLowerCase();
@@ -100,7 +164,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   );
 
   const renderContactItem = useCallback(
-    ({ item }: { item: MockContact }) => (
+    ({ item }: { item: DeviceContact }) => (
       <ContactRow
         contact={item}
         alreadyAdded={isAlreadyAdded(item)}
@@ -122,18 +186,31 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
         style={styles.search}
       />
 
-      <View style={styles.listWrapper}>
-        <AppList
-          data={filteredContacts}
-          keyExtractor={(item) => item.id}
-          listStyle={styles.list}
-          contentContainerStyle={styles.listContent}
-          initialNumToRender={12}
-          maxToRenderPerBatch={12}
-          windowSize={5}
-          renderItem={({ item }) => renderContactItem({ item })}
-        />
-      </View>
+      {loading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator />
+        </View>
+      ) : errorMessage ? (
+        <View style={styles.emptyState}>
+          <Text variant="bodyMedium">{errorMessage}</Text>
+          <Button mode="outlined" onPress={() => void loadContacts()}>
+            Retry
+          </Button>
+        </View>
+      ) : (
+        <View style={styles.listWrapper}>
+          <AppList
+            data={filteredContacts}
+            keyExtractor={(item) => item.id}
+            listStyle={styles.list}
+            contentContainerStyle={styles.listContent}
+            initialNumToRender={12}
+            maxToRenderPerBatch={12}
+            windowSize={5}
+            renderItem={({ item }) => renderContactItem({ item })}
+          />
+        </View>
+      )}
 
       <View
         style={[
@@ -154,7 +231,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
 }
 
 type ContactRowProps = {
-  contact: MockContact;
+  contact: DeviceContact;
   alreadyAdded: boolean;
   selected: boolean;
   onToggle: (contactId: string) => void;
@@ -197,6 +274,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingTop: 0,
     paddingBottom: 0,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 24,
   },
   bottomBar: {
     paddingHorizontal: 16,

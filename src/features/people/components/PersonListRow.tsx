@@ -3,6 +3,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Avatar, Text, useTheme } from 'react-native-paper';
 import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 import { getPreferredPersonContact } from '../../../shared/utils/people';
+import { getListPressedBackground } from '../../../shared/ui/listPressState';
+
+function sanitizeAvatarLabel(value: string): string {
+  return value.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2);
+}
 
 type PersonListRowProps = {
   name: string;
@@ -27,13 +32,14 @@ export const PersonListRow = memo(function PersonListRow({
 }: PersonListRowProps) {
   const theme = useTheme();
   const contact = getPreferredPersonContact({ phone, email });
-  const currentUserBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
+  const currentUserBackground = getListPressedBackground(theme.dark);
   const initials = name
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
+  const avatarLabel = sanitizeAvatarLabel(initials || '?') || '?';
   const avatarColors = getInitialsAvatarColors(theme.dark);
 
   const content = (
@@ -47,7 +53,7 @@ export const PersonListRow = memo(function PersonListRow({
       <View style={styles.identity}>
         <Avatar.Text
           size={40}
-          label={initials || '?'}
+          label={avatarLabel}
           style={[styles.avatar, { backgroundColor: avatarColors.backgroundColor }]}
           color={avatarColors.labelColor}
         />

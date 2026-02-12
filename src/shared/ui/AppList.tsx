@@ -1,6 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { FlatList, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
+import { getListPressedBackground } from './listPressState';
 
 type RenderItemParams<T> = {
   item: T;
@@ -60,14 +61,14 @@ function AppListBase<T>({
         <Pressable
           disabled={!onPress}
           onPress={onPress}
-          android_ripple={onPress ? { color: theme.colors.surfaceVariant } : undefined}
+          android_ripple={onPress ? { color: getListPressedBackground(theme.dark) } : undefined}
           style={({ pressed }) => [
             styles.defaultRow,
             {
               paddingHorizontal: itemHorizontalPadding,
               paddingVertical: itemVerticalPadding,
             },
-            pressed ? { backgroundColor: theme.colors.surfaceVariant } : null,
+            pressed ? { backgroundColor: getListPressedBackground(theme.dark) } : null,
           ]}
         >
           <Text variant="titleMedium">{text}</Text>
