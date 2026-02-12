@@ -3,4 +3,5 @@ export type PersonItem = {
   name: string;
   contact?: string;
   note?: string;
+  isMe?: boolean;
 };

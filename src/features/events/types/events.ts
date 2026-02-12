@@ -12,10 +12,12 @@ export type ExpenseItem = {
   title: string;
   amount: number;
   paidBy: string;
+  paidById?: string;
 };
 
 export type ParticipantItem = {
   id: string;
   name: string;
   contact?: string;
+  isMe?: boolean;
 };

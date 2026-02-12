@@ -4,19 +4,25 @@ import { Button, Snackbar, Text, TextInput, useTheme } from 'react-native-paper'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
-import { usePeopleActions } from '../../../state/people/peopleContext';
+import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
 import { OutlinedFieldContainer } from '../../../shared/ui/OutlinedFieldContainer';
 import { AppHeader } from '../../../shared/ui/AppHeader';
 
 type AddPersonScreenProps = NativeStackScreenProps<PeopleStackParamList, 'AddPerson'>;
 
-export function AddPersonScreen({ navigation }: AddPersonScreenProps) {
+export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { addPerson } = usePeopleActions();
-  const [name, setName] = useState('');
-  const [contact, setContact] = useState('');
-  const [note, setNote] = useState('');
+  const { people } = usePeopleState();
+  const { addPerson, updatePerson } = usePeopleActions();
+  const editingPerson = useMemo(
+    () => (route.params?.personId ? people.find((person) => person.id === route.params?.personId) : undefined),
+    [people, route.params?.personId],
+  );
+  const isEditMode = Boolean(editingPerson);
+  const [name, setName] = useState(editingPerson?.name ?? '');
+  const [contact, setContact] = useState(editingPerson?.contact ?? '');
+  const [note, setNote] = useState(editingPerson?.note ?? '');
   const [errorMessage, setErrorMessage] = useState('');
 
   const isDisabled = useMemo(() => name.trim().length === 0, [name]);
@@ -44,17 +50,21 @@ export function AddPersonScreen({ navigation }: AddPersonScreenProps) {
     }
 
     try {
-      addPerson({ name, contact, note });
+      if (editingPerson) {
+        updatePerson({ id: editingPerson.id, name, contact, note });
+      } else {
+        addPerson({ name, contact, note });
+      }
       navigation.goBack();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to add person.';
       setErrorMessage(message);
     }
-  }, [addPerson, contact, name, navigation, note]);
+  }, [addPerson, contact, editingPerson, name, navigation, note, updatePerson]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title="Add Person" onBackPress={handleBack} />
+      <AppHeader title={isEditMode ? 'Edit Person' : 'Add Person'} onBackPress={handleBack} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -125,7 +135,7 @@ export function AddPersonScreen({ navigation }: AddPersonScreenProps) {
           ]}
         >
           <Button mode="contained" onPress={handleSave} disabled={isDisabled}>
-            Add person
+            {isEditMode ? 'Save changes' : 'Add person'}
           </Button>
         </View>
       </KeyboardAvoidingView>
@@ -153,18 +163,18 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     minHeight: 56,
-    marginBottom: 20,
+    marginBottom: 16,
     justifyContent: 'center',
   },
   inputField: {
     height: 52,
   },
   inputContent: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
   },
   multilineContainer: {
     minHeight: 96,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   multilineField: {
     minHeight: 92,

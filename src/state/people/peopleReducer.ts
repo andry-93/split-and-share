@@ -3,7 +3,7 @@ import { PeopleAction, PeopleState } from './peopleTypes';
 export function peopleReducer(state: PeopleState, action: PeopleAction): PeopleState {
   switch (action.type) {
     case 'people/add': {
-      const { id, name, contact, note } = action.payload;
+      const { id, name, contact, note, isMe } = action.payload;
       return {
         ...state,
         people: [
@@ -12,9 +12,26 @@ export function peopleReducer(state: PeopleState, action: PeopleAction): PeopleS
             name,
             contact,
             note,
+            isMe,
           },
           ...state.people,
         ],
+      };
+    }
+    case 'people/update': {
+      const { id, name, contact, note } = action.payload;
+      return {
+        ...state,
+        people: state.people.map((person) =>
+          person.id === id
+            ? {
+                ...person,
+                name,
+                contact,
+                note,
+              }
+            : person,
+        ),
       };
     }
     case 'people/addMany': {

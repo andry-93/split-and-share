@@ -117,7 +117,11 @@ export function SettingsScreen() {
             { value: 'dark', label: 'Dark' },
           ]}
           sizeMode="equal"
+          variant="segmented"
         />
+        <Text variant="bodySmall" style={[styles.appearanceHint, { color: theme.colors.onSurfaceVariant }]}>
+          System follows your device appearance.
+        </Text>
 
         <Text variant="labelLarge" style={styles.sectionLabel}>
           About
@@ -201,24 +205,28 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionLabel: {
-    marginTop: 4,
-    marginBottom: 2,
+    marginTop: 8,
+    marginBottom: 4,
   },
   fullBleedRow: {
     marginHorizontal: -16,
   },
   compactRow: {
-    minHeight: 52,
-    paddingVertical: 2,
+    minHeight: 56,
+    paddingVertical: 4,
   },
   fullBleedDivider: {
     marginHorizontal: -16,
   },
   sheetContent: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   sheetTitle: {
     marginBottom: 8,
+  },
+  appearanceHint: {
+    marginTop: 4,
+    marginBottom: 4,
   },
 });

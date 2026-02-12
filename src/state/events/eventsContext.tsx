@@ -6,6 +6,7 @@ import { PersonItem } from '../../features/people/types/people';
 import { readJSON, writeJSON } from '../storage/mmkv';
 import { eventsReducer } from './eventsReducer';
 import { EventsAction, EventsState } from './eventsTypes';
+import { createEventPayment, PaymentSource } from './paymentsModel';
 
 const EventsStateContext = createContext<EventsState | undefined>(undefined);
 const EventsDispatchContext = createContext<React.Dispatch<EventsAction> | undefined>(undefined);
@@ -13,9 +14,16 @@ const EventsDispatchContext = createContext<React.Dispatch<EventsAction> | undef
 type PersistedEvents = EventsState;
 function initState(): EventsState {
   const persistedEvents = readJSON<PersistedEvents>('events');
-  return persistedEvents ?? {
+  if (persistedEvents) {
+    return {
+      events: persistedEvents.events ?? initialEvents,
+      paymentsByEvent: persistedEvents.paymentsByEvent ?? {},
+    };
+  }
+
+  return {
     events: initialEvents,
-    paidSimplifiedByEvent: {},
+    paymentsByEvent: {},
   };
 }
 
@@ -61,7 +69,7 @@ export function useEventsActions() {
           },
         });
       },
-      addExpense: (payload: { eventId: string; expense: { title: string; amount: number; paidBy: string } }) => {
+      addExpense: (payload: { eventId: string; expense: { title: string; amount: number; paidBy: string; paidById?: string } }) => {
         const trimmedTitle = payload.expense.title.trim();
         if (!trimmedTitle) {
           throw new Error('Expense title is required.');
@@ -76,6 +84,7 @@ export function useEventsActions() {
           title: trimmedTitle,
           amount: payload.expense.amount,
           paidBy: payload.expense.paidBy,
+          paidById: payload.expense.paidById,
         };
 
         dispatch({
@@ -90,6 +99,7 @@ export function useEventsActions() {
         const participants: ParticipantItem[] = payload.people.map((person) => ({
           id: person.id,
           name: person.name,
+          isMe: person.isMe,
         }));
 
         dispatch({
@@ -100,11 +110,21 @@ export function useEventsActions() {
           },
         });
       },
-      markSimplifiedPaid: (payload: { eventId: string; debtId: string }) => {
-        dispatch({ type: 'events/markSimplifiedPaid', payload });
-      },
-      resetSimplifiedPaid: (payload: { eventId: string }) => {
-        dispatch({ type: 'events/resetSimplifiedPaid', payload });
+      registerPayment: (payload: { eventId: string; fromId: string; toId: string; amount: number; source: PaymentSource }) => {
+        dispatch({
+          type: 'events/registerPayment',
+          payload: {
+            eventId: payload.eventId,
+            payment: createEventPayment({
+              id: `payment-${String(uuid.v4())}`,
+              eventId: payload.eventId,
+              fromId: payload.fromId,
+              toId: payload.toId,
+              amount: payload.amount,
+              source: payload.source,
+            }),
+          },
+        });
       },
     }),
     [dispatch],

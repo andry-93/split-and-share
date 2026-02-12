@@ -1,5 +1,5 @@
 import React, { ReactNode, memo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Avatar, Text, useTheme } from 'react-native-paper';
 import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 
@@ -8,6 +8,7 @@ type PersonListRowProps = {
   contact?: string;
   withDivider?: boolean;
   rightSlot?: ReactNode;
+  onPress?: () => void;
 };
 
 export const PersonListRow = memo(function PersonListRow({
@@ -15,6 +16,7 @@ export const PersonListRow = memo(function PersonListRow({
   contact,
   withDivider = false,
   rightSlot,
+  onPress,
 }: PersonListRowProps) {
   const theme = useTheme();
   const initials = name
@@ -25,18 +27,18 @@ export const PersonListRow = memo(function PersonListRow({
     .join('');
   const avatarColors = getInitialsAvatarColors(theme.dark);
 
-  return (
-    <View
-      style={[
-        styles.row,
-        withDivider
-          ? {
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: theme.colors.outlineVariant,
-            }
-          : null,
-      ]}
-    >
+  const rowStyle = [
+    styles.row,
+    withDivider
+      ? {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: theme.colors.outlineVariant,
+        }
+      : null,
+  ];
+
+  const content = (
+    <>
       <View style={styles.identity}>
         <Avatar.Text
           size={40}
@@ -50,7 +52,23 @@ export const PersonListRow = memo(function PersonListRow({
         </View>
       </View>
       {rightSlot ? <View style={styles.rightSlot}>{rightSlot}</View> : null}
-    </View>
+    </>
+  );
+
+  if (!onPress) {
+    return <View style={rowStyle}>{content}</View>;
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        rowStyle,
+        pressed ? { backgroundColor: theme.colors.surfaceVariant } : null,
+      ]}
+    >
+      {content}
+    </Pressable>
   );
 });
 

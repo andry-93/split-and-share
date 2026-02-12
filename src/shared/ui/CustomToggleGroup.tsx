@@ -12,6 +12,7 @@ type CustomToggleGroupProps<T extends string> = {
   options: ReadonlyArray<ToggleOption<T>>;
   onChange: (value: T) => void;
   sizeMode?: 'equal' | 'content';
+  variant?: 'segmented' | 'chips';
   style?: StyleProp<ViewStyle>;
 };
 
@@ -20,6 +21,7 @@ function CustomToggleGroupBase<T extends string>({
   options,
   onChange,
   sizeMode = 'equal',
+  variant = 'segmented',
   style,
 }: CustomToggleGroupProps<T>) {
   const theme = useTheme();
@@ -34,8 +36,16 @@ function CustomToggleGroupBase<T extends string>({
           onPress={() => onChange(option.value)}
           style={[
             styles.item,
+            variant === 'chips' ? styles.itemChip : null,
             sizeMode === 'equal' ? styles.itemEqual : styles.itemContent,
-            selected ? { backgroundColor: theme.colors.elevation.level3 } : null,
+            variant === 'segmented'
+              ? selected
+                ? { backgroundColor: theme.colors.elevation.level3 }
+                : null
+              : {
+                  backgroundColor: selected ? theme.colors.primaryContainer : theme.colors.surface,
+                  borderColor: selected ? theme.colors.primary : theme.colors.outlineVariant,
+                },
           ]}
         >
           <Text
@@ -44,7 +54,11 @@ function CustomToggleGroupBase<T extends string>({
             ellipsizeMode={sizeMode === 'equal' ? 'tail' : undefined}
             style={[
               styles.label,
-              { color: selected ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
+              variant === 'segmented'
+                ? { color: selected ? theme.colors.onSurface : theme.colors.onSurfaceVariant }
+                : {
+                    color: selected ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant,
+                  },
             ]}
           >
             {option.label}
@@ -55,9 +69,15 @@ function CustomToggleGroupBase<T extends string>({
     [
       onChange,
       sizeMode,
+      variant,
       theme.colors.elevation.level3,
+      theme.colors.onPrimaryContainer,
       theme.colors.onSurface,
       theme.colors.onSurfaceVariant,
+      theme.colors.outlineVariant,
+      theme.colors.primary,
+      theme.colors.primaryContainer,
+      theme.colors.surface,
       value,
     ],
   );
@@ -66,10 +86,12 @@ function CustomToggleGroupBase<T extends string>({
     <View
       style={[
         styles.container,
-        {
-          backgroundColor: theme.colors.elevation.level2,
-          borderColor: theme.colors.outlineVariant,
-        },
+        variant === 'segmented'
+          ? {
+              backgroundColor: theme.colors.elevation.level2,
+              borderColor: theme.colors.outlineVariant,
+            }
+          : styles.containerChips,
         sizeMode === 'content' ? styles.contentContainer : null,
         style,
       ]}
@@ -87,19 +109,30 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 5,
+    padding: 4,
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
     alignItems: 'center',
   },
   contentContainer: {
     alignSelf: 'center',
+  },
+  containerChips: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    padding: 0,
+    gap: 8,
   },
   item: {
     minHeight: 40,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  itemChip: {
+    minHeight: 32,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
   },
   itemEqual: {
     flex: 1,
@@ -112,7 +145,7 @@ const styles = StyleSheet.create({
   },
   label: {
     textAlign: 'center',
-    fontWeight: '700',
-    letterSpacing: 0.1,
+    fontWeight: '600',
+    letterSpacing: 0,
   },
 });

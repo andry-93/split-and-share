@@ -8,11 +8,13 @@ import { ExpenseItem, ParticipantItem } from '../types/events';
 import { PersonListRow } from '../../people/components/PersonListRow';
 import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
 import {
+  PaymentEntry,
   RawDebt,
   SimplifiedDebt,
   selectDetailedDebts,
+  selectEffectiveRawDebts,
   selectExpensesCount,
-  selectPaidSimplifiedIds,
+  selectPayments,
   selectParticipantsCount,
   selectRawDebts,
   selectSimplifiedDebts,
@@ -46,13 +48,19 @@ type DebtRowProps = {
   debt: RawDebt;
   currencyCode: string;
   isLast: boolean;
+  onMarkPaid: (debt: RawDebt) => void;
 };
 
 type SimplifiedDebtRowProps = {
   debt: SimplifiedDebt;
   currencyCode: string;
   isLast: boolean;
-  onMarkPaid: (id: string) => void;
+  onMarkPaid: (debt: SimplifiedDebt) => void;
+};
+
+type DebtProgressHintProps = {
+  totalCount: number;
+  paidCount: number;
 };
 
 const RAW_LIST_BOTTOM_GAP = 12;
@@ -65,8 +73,8 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
-  const { events, paidSimplifiedByEvent } = useEventsState();
-  const { markSimplifiedPaid } = useEventsActions();
+  const { events, paymentsByEvent } = useEventsState();
+  const { registerPayment } = useEventsActions();
   const event = events.find((item) => item.id === route.params.eventId);
   const [activeTab, setActiveTab] = useState<'expenses' | 'debts' | 'people'>('expenses');
   const [debtsMode, setDebtsMode] = useState<'detailed' | 'simplified'>('detailed');
@@ -110,15 +118,18 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   );
 
   const rawDebts = useMemo(() => selectRawDebts(event), [event]);
-  const detailedDebts = useMemo(() => selectDetailedDebts(rawDebts), [rawDebts]);
-  const simplifiedDebts = useMemo(() => selectSimplifiedDebts(rawDebts), [rawDebts]);
-
-  const paidSimplifiedIds = selectPaidSimplifiedIds({ events, paidSimplifiedByEvent }, event.id);
-  const paidSet = useMemo(() => new Set(paidSimplifiedIds), [paidSimplifiedIds]);
-  const visibleSimplifiedDebts = useMemo(
-    () => simplifiedDebts.filter((debt) => !paidSet.has(debt.id)),
-    [paidSet, simplifiedDebts],
+  const payments = useMemo<PaymentEntry[]>(
+    () => selectPayments({ events, paymentsByEvent }, event.id),
+    [event.id, events, paymentsByEvent],
   );
+  const effectiveRawDebts = useMemo(() => selectEffectiveRawDebts(rawDebts, payments), [payments, rawDebts]);
+  const detailedDebts = useMemo(() => selectDetailedDebts(effectiveRawDebts), [effectiveRawDebts]);
+  const simplifiedDebts = useMemo(() => selectSimplifiedDebts(effectiveRawDebts), [effectiveRawDebts]);
+
+  const baseDetailedCount = useMemo(() => selectDetailedDebts(rawDebts).length, [rawDebts]);
+  const baseSimplifiedCount = useMemo(() => selectSimplifiedDebts(rawDebts).length, [rawDebts]);
+  const paidDetailedCount = Math.max(0, baseDetailedCount - detailedDebts.length);
+  const paidSimplifiedCount = Math.max(0, baseSimplifiedCount - simplifiedDebts.length);
 
   const participantBalanceMap = useMemo(() => {
     const balanceById = new Map<string, number>();
@@ -133,10 +144,28 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   }, [event.participants, rawDebts]);
 
   const handleMarkPaid = useCallback(
-    (id: string) => {
-      markSimplifiedPaid({ eventId: event.id, debtId: id });
+    (debt: SimplifiedDebt) => {
+      registerPayment({
+        eventId: event.id,
+        fromId: debt.from.id,
+        toId: debt.to.id,
+        amount: debt.amount,
+        source: 'simplified',
+      });
     },
-    [event.id, markSimplifiedPaid],
+    [event.id, registerPayment],
+  );
+  const handleMarkDetailedPaid = useCallback(
+    (debt: RawDebt) => {
+      registerPayment({
+        eventId: event.id,
+        fromId: debt.from.id,
+        toId: debt.to.id,
+        amount: debt.amount,
+        source: 'detailed',
+      });
+    },
+    [event.id, registerPayment],
   );
 
   const handleAddExpense = useCallback(() => {
@@ -183,9 +212,10 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
         debt={item}
         currencyCode={currencyCode}
         isLast={index === detailedDebts.length - 1}
+        onMarkPaid={handleMarkDetailedPaid}
       />
     ),
-    [currencyCode, detailedDebts.length],
+    [currencyCode, detailedDebts.length, handleMarkDetailedPaid],
   );
 
   const renderSimplifiedDebtItem = useCallback(
@@ -193,11 +223,11 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
       <SimplifiedDebtRow
         debt={item}
         currencyCode={currencyCode}
-        isLast={index === visibleSimplifiedDebts.length - 1}
+        isLast={index === simplifiedDebts.length - 1}
         onMarkPaid={handleMarkPaid}
       />
     ),
-    [currencyCode, handleMarkPaid, visibleSimplifiedDebts.length],
+    [currencyCode, handleMarkPaid, simplifiedDebts.length],
   );
 
   return (
@@ -260,20 +290,6 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
         </View>
       </View>
 
-      {activeTab === 'debts' ? (
-        <View style={styles.debtsModeToggle}>
-          <CustomToggleGroup
-            value={debtsMode}
-            onChange={(value) => setDebtsMode(value)}
-            options={[
-              { value: 'detailed', label: 'Detailed' },
-              { value: 'simplified', label: 'Simplified' },
-            ]}
-            sizeMode="content"
-          />
-        </View>
-      ) : null}
-
       <View style={styles.contentArea}>
         {activeTab === 'expenses' ? (
           <FlatList
@@ -297,77 +313,94 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
             }
           />
         ) : activeTab === 'debts' ? (
-          debtsMode === 'detailed' ? (
-            detailedDebts.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text variant="titleMedium">No debts yet</Text>
-                <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
-              </View>
-            ) : (
-              <View style={styles.rawListWrapper} onLayout={handleRawViewportLayout}>
-                <View
-                  style={[
-                    styles.rawListContainer,
-                    {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.outlineVariant,
-                      height: rawContainerHeight,
-                    },
-                  ]}
-                >
-                  <FlatList
-                    data={detailedDebts}
-                    keyExtractor={(item) => item.id}
-                    style={styles.rawList}
-                    removeClippedSubviews
-                    initialNumToRender={10}
-                    maxToRenderPerBatch={10}
-                    windowSize={5}
-                    onContentSizeChange={(_, height) => setRawContentHeight(height)}
-                    renderItem={renderRawDebtItem}
-                  />
-                </View>
-              </View>
-            )
-        ) : (
-          visibleSimplifiedDebts.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.allSettled}>
-                <Icon source="check-circle" size={40} color={theme.colors.onSurfaceVariant} />
-                <Text variant="titleMedium">All settled</Text>
-                <Text variant="bodyMedium">Everyone is square.</Text>
-                <Button mode="text" onPress={handleViewDetailedDebts}>
-                  View detailed debts
-                </Button>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.rawListWrapper} onLayout={handleRawViewportLayout}>
-              <View
-                style={[
-                  styles.rawListContainer,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    borderColor: theme.colors.outlineVariant,
-                    height: rawContainerHeight,
-                  },
+          <View style={styles.debtsContent}>
+            <View style={styles.debtsHeaderRow}>
+              <Text variant="labelLarge" style={[styles.debtsHeaderLabel, { color: theme.colors.onSurfaceVariant }]}>
+                View
+              </Text>
+              <CustomToggleGroup
+                value={debtsMode}
+                onChange={(value) => setDebtsMode(value)}
+                options={[
+                  { value: 'detailed', label: 'Detailed' },
+                  { value: 'simplified', label: 'Simplified' },
                 ]}
-              >
-                <FlatList
-                  data={visibleSimplifiedDebts}
-                  keyExtractor={(item) => item.id}
-                  style={styles.rawList}
-                  removeClippedSubviews
-                  initialNumToRender={10}
-                  maxToRenderPerBatch={10}
-                  windowSize={5}
-                  onContentSizeChange={(_, height) => setRawContentHeight(height)}
-                  renderItem={renderSimplifiedDebtItem}
-                />
-              </View>
+                sizeMode="content"
+                variant="chips"
+              />
             </View>
-          )
-        )
+
+            {debtsMode === 'detailed' ? (
+              detailedDebts.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text variant="titleMedium">No debts yet</Text>
+                  <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
+                </View>
+              ) : (
+                <View style={styles.rawListWrapper} onLayout={handleRawViewportLayout}>
+                  <DebtProgressHint totalCount={baseDetailedCount} paidCount={paidDetailedCount} />
+                  <View
+                    style={[
+                      styles.rawListContainer,
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.outlineVariant,
+                        height: rawContainerHeight,
+                      },
+                    ]}
+                  >
+                    <FlatList
+                      data={detailedDebts}
+                      keyExtractor={(item) => item.id}
+                      style={styles.rawList}
+                      removeClippedSubviews
+                      initialNumToRender={10}
+                      maxToRenderPerBatch={10}
+                      windowSize={5}
+                      onContentSizeChange={(_, height) => setRawContentHeight(height)}
+                      renderItem={renderRawDebtItem}
+                    />
+                  </View>
+                </View>
+              )
+            ) : (
+              simplifiedDebts.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text variant="titleMedium">No debts yet</Text>
+                  <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
+                  <Button mode="text" onPress={handleViewDetailedDebts}>
+                    View detailed debts
+                  </Button>
+                </View>
+              ) : (
+                <View style={styles.rawListWrapper} onLayout={handleRawViewportLayout}>
+                  <DebtProgressHint totalCount={baseSimplifiedCount} paidCount={paidSimplifiedCount} />
+                  <View
+                    style={[
+                      styles.rawListContainer,
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.outlineVariant,
+                        height: rawContainerHeight,
+                      },
+                    ]}
+                  >
+                    <FlatList
+                      data={simplifiedDebts}
+                      keyExtractor={(item) => item.id}
+                      style={styles.rawList}
+                      removeClippedSubviews
+                      initialNumToRender={10}
+                      maxToRenderPerBatch={10}
+                      windowSize={5}
+                      onContentSizeChange={(_, height) => setRawContentHeight(height)}
+                      renderItem={renderSimplifiedDebtItem}
+                    />
+                  </View>
+                </View>
+              )
+            )}
+          </View>
       ) : (
           event.participants.length === 0 ? (
             <View style={styles.emptyState}>
@@ -430,6 +463,34 @@ const SummaryMetric = memo(function SummaryMetric({ label, value }: SummaryMetri
   );
 });
 
+const DebtProgressHint = memo(function DebtProgressHint({ totalCount, paidCount }: DebtProgressHintProps) {
+  const theme = useTheme();
+  const isAllPaid = paidCount >= totalCount;
+
+  return (
+    <View
+      style={[
+        styles.simplifiedHint,
+        {
+          backgroundColor: isAllPaid ? theme.colors.primaryContainer : theme.colors.secondaryContainer,
+          borderColor: theme.colors.outlineVariant,
+        },
+      ]}
+    >
+      <Text
+        variant="labelMedium"
+        style={{ color: isAllPaid ? theme.colors.onPrimaryContainer : theme.colors.onSecondaryContainer }}
+      >
+        {isAllPaid
+          ? `All ${totalCount} transfers are marked as paid.`
+          : paidCount > 0
+            ? `${paidCount} paid, ${totalCount - paidCount} left to mark.`
+            : 'Mark transfers as paid when they are completed.'}
+      </Text>
+    </View>
+  );
+});
+
 const ExpenseCard = memo(function ExpenseCard({ expense, currencyCode }: ExpenseCardProps) {
   const theme = useTheme();
 
@@ -441,7 +502,7 @@ const ExpenseCard = memo(function ExpenseCard({ expense, currencyCode }: Expense
       <Card.Content style={styles.cardContent}>
         <View style={styles.expenseLeading}>
           <View style={[styles.expenseIconCircle, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Icon source="cart-outline" size={18} color={theme.colors.primary} />
+            <Icon source="cart-outline" size={20} color={theme.colors.primary} />
           </View>
         </View>
         <View style={styles.cardText}>
@@ -509,8 +570,11 @@ const ParticipantRow = memo(function ParticipantRow({
   );
 });
 
-const DebtRow = memo(function DebtRow({ debt, currencyCode, isLast }: DebtRowProps) {
+const DebtRow = memo(function DebtRow({ debt, currencyCode, isLast, onMarkPaid }: DebtRowProps) {
   const theme = useTheme();
+  const handleMarkPaid = useCallback(() => {
+    onMarkPaid(debt);
+  }, [debt, onMarkPaid]);
 
   return (
     <View>
@@ -519,9 +583,21 @@ const DebtRow = memo(function DebtRow({ debt, currencyCode, isLast }: DebtRowPro
           <Text variant="titleMedium">{debt.from.name}</Text>
           <Text variant="bodyMedium">owes {debt.to.name}</Text>
         </View>
-        <Text variant="titleMedium" style={styles.amount}>
-          {formatRawDebtAmount(currencyCode, debt.amount)}
-        </Text>
+        <View style={styles.simplifiedDebtRight}>
+          <Text variant="titleMedium" style={[styles.amount, styles.simplifiedAmount]}>
+            {formatRawDebtAmount(currencyCode, debt.amount)}
+          </Text>
+          <Button
+            mode="text"
+            onPress={handleMarkPaid}
+            compact
+            style={styles.markPaidButton}
+            contentStyle={styles.markPaidButtonContent}
+            labelStyle={[styles.markPaidButtonLabel, { color: theme.colors.primary }]}
+          >
+            Mark as paid
+          </Button>
+        </View>
       </View>
       {!isLast ? <View style={[styles.insetDivider, { borderBottomColor: theme.colors.outlineVariant }]} /> : null}
     </View>
@@ -536,30 +612,30 @@ const SimplifiedDebtRow = memo(function SimplifiedDebtRow({
 }: SimplifiedDebtRowProps) {
   const theme = useTheme();
   const handleMarkPaid = useCallback(() => {
-    onMarkPaid(debt.id);
-  }, [debt.id, onMarkPaid]);
+    onMarkPaid(debt);
+  }, [debt, onMarkPaid]);
 
   return (
     <View>
       <View style={styles.rawDebtRow}>
         <View style={styles.rawDebtText}>
           <Text variant="titleMedium">{debt.from.name}</Text>
-          <Text variant="bodyMedium">pay {debt.to.name}</Text>
+          <Text variant="bodyMedium">pays {debt.to.name}</Text>
         </View>
         <View style={styles.simplifiedDebtRight}>
+          <Text variant="titleMedium" style={[styles.amount, styles.simplifiedAmount]}>
+            {formatRawDebtAmount(currencyCode, debt.amount)}
+          </Text>
           <Button
-            mode="contained"
+            mode="text"
             onPress={handleMarkPaid}
             compact
             style={styles.markPaidButton}
             contentStyle={styles.markPaidButtonContent}
-            labelStyle={styles.markPaidButtonLabel}
+            labelStyle={[styles.markPaidButtonLabel, { color: theme.colors.primary }]}
           >
             Mark as paid
           </Button>
-          <Text variant="titleMedium" style={[styles.amount, styles.simplifiedAmount]}>
-            {formatRawDebtAmount(currencyCode, debt.amount)}
-          </Text>
         </View>
       </View>
       {!isLast ? <View style={[styles.insetDivider, { borderBottomColor: theme.colors.outlineVariant }]} /> : null}
@@ -612,14 +688,24 @@ const styles = StyleSheet.create({
   topTabLabel: {
     fontWeight: '600',
   },
-  debtsModeToggle: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 12,
-    alignSelf: 'center',
-  },
   contentArea: {
     flex: 1,
+  },
+  debtsContent: {
+    flex: 1,
+    paddingTop: 12,
+  },
+  debtsHeaderRow: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  debtsHeaderLabel: {
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   list: {
     flex: 1,
@@ -646,10 +732,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   expenseLeading: {
-    marginRight: 10,
+    marginRight: 12,
   },
   expenseIconCircle: {
     width: 40,
@@ -671,35 +757,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 24,
   },
-  allSettled: {
-    alignItems: 'center',
-    gap: 8,
-  },
   balancePill: {
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  avatar: {
-    marginRight: 12,
-  },
-  debtRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
-  },
-  debtText: {
-    flex: 1,
-  },
-  debtActions: {
-    justifyContent: 'flex-end',
+    paddingVertical: 4,
   },
   rawListWrapper: {
     flex: 1,
     paddingHorizontal: 16,
     paddingBottom: 96,
+  },
+  simplifiedHint: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 8,
   },
   rawListContainer: {
     borderWidth: StyleSheet.hairlineWidth,
@@ -730,17 +804,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   simplifiedAmount: {
-    marginTop: 2,
+    marginBottom: 4,
   },
   markPaidButton: {
-    minHeight: 30,
+    minHeight: 28,
+    marginRight: -10,
   },
   markPaidButtonContent: {
-    minHeight: 30,
-    paddingHorizontal: 8,
+    minHeight: 28,
+    paddingHorizontal: 6,
   },
   markPaidButtonLabel: {
     marginVertical: 0,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0,
   },
   fab: {
     position: 'absolute',

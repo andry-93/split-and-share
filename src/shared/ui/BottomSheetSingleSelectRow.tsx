@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   radio: {
-    marginRight: -8,
+    marginRight: -4,
   },
 });

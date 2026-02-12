@@ -19,7 +19,7 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
 
       <View style={styles.content}>
         <View style={[styles.iconCircle, { backgroundColor: theme.colors.surfaceVariant }]}>
-          <Icon source="account-group" size={32} color={theme.colors.primary} />
+          <Icon source="account-group" size={36} color={theme.colors.primary} />
         </View>
         <Text variant="headlineSmall" style={styles.title}>
           Access Your Contacts
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
     paddingTop: 24,
     gap: 12,
   },
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   actions: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 24,
     paddingTop: 16,
     gap: 12,

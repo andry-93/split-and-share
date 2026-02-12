@@ -5,5 +5,6 @@ export type PeopleState = {
 };
 
 export type PeopleAction =
-  | { type: 'people/add'; payload: { id: string; name: string; contact?: string; note?: string } }
+  | { type: 'people/add'; payload: { id: string; name: string; contact?: string; note?: string; isMe?: boolean } }
+  | { type: 'people/update'; payload: { id: string; name: string; contact?: string; note?: string } }
   | { type: 'people/addMany'; payload: { people: PersonItem[] } };

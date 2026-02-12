@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   search: {
     marginHorizontal: 16,
     marginBottom: 12,
-    height: 50,
+    height: 52,
     borderRadius: 10,
     overflow: 'hidden',
   },

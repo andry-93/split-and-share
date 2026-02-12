@@ -3,16 +3,33 @@ import uuid from 'react-native-uuid';
 import { initialPeople } from '../../features/people/data/initialPeople';
 import { PersonItem } from '../../features/people/types/people';
 import { readJSON, writeJSON } from '../storage/mmkv';
+import { selectCurrentUser } from './peopleSelectors';
 import { peopleReducer } from './peopleReducer';
 import { PeopleAction, PeopleState } from './peopleTypes';
 
 const PeopleStateContext = createContext<PeopleState | undefined>(undefined);
 const PeopleDispatchContext = createContext<React.Dispatch<PeopleAction> | undefined>(undefined);
 
+function normalizePeople(people: PersonItem[]): PersonItem[] {
+  if (!Array.isArray(people) || people.length === 0) {
+    return initialPeople;
+  }
+
+  const currentUser = selectCurrentUser(people);
+  if (!currentUser) {
+    return initialPeople;
+  }
+
+  return people.map((person) => ({
+    ...person,
+    isMe: person.id === currentUser.id,
+  }));
+}
+
 function initState(): PeopleState {
   const persistedPeople = readJSON<PersonItem[]>('people');
   return {
-    people: Array.isArray(persistedPeople) ? persistedPeople : initialPeople,
+    people: normalizePeople(Array.isArray(persistedPeople) ? persistedPeople : initialPeople),
   };
 }
 
@@ -58,6 +75,22 @@ export function usePeopleActions() {
             name: trimmedName,
             contact: trimmedContact || undefined,
             note: trimmedNote || undefined,
+          },
+        });
+      },
+      updatePerson: (payload: { id: string; name: string; contact?: string; note?: string }) => {
+        const trimmedName = payload.name.trim();
+        if (!trimmedName) {
+          throw new Error('Name is required.');
+        }
+
+        dispatch({
+          type: 'people/update',
+          payload: {
+            id: payload.id,
+            name: trimmedName,
+            contact: payload.contact?.trim() || undefined,
+            note: payload.note?.trim() || undefined,
           },
         });
       },

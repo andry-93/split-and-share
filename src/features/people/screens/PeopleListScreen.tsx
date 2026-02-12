@@ -30,6 +30,13 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
     navigation.navigate('AddPerson');
   }, [navigation]);
 
+  const handleEditPerson = useCallback(
+    (personId: string) => {
+      navigation.navigate("AddPerson", { personId });
+    },
+    [navigation],
+  );
+
   const handleImportContacts = useCallback(() => {
     sheetRef.current?.dismiss();
     navigation.navigate('ImportContactsAccess');
@@ -46,7 +53,11 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
 
   const renderPersonItem = useCallback(
     ({ item, index }: { item: PersonItem; index: number }) => (
-      <PersonRow person={item} withDivider={index < filteredPeople.length - 1} />
+      <PersonRow
+        person={item}
+        withDivider={index < filteredPeople.length - 1}
+        onPress={() => handleEditPerson(item.id)}
+      />
     ),
     [filteredPeople.length],
   );
@@ -109,9 +120,22 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
   );
 }
 
-const PersonRow = memo(function PersonRow({ person, withDivider }: { person: PersonItem; withDivider: boolean }) {
+const PersonRow = memo(function PersonRow({
+  person,
+  withDivider,
+  onPress,
+}: {
+  person: PersonItem;
+  withDivider: boolean;
+  onPress: () => void;
+}) {
   return (
-    <PersonListRow name={person.name} contact={person.contact} withDivider={withDivider} />
+    <PersonListRow
+      name={person.name}
+      contact={person.contact}
+      withDivider={withDivider}
+      onPress={onPress}
+    />
   );
 });
 
@@ -122,7 +146,7 @@ const styles = StyleSheet.create({
   search: {
     marginHorizontal: 16,
     marginTop: 0,
-    height: 50,
+    height: 52,
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -156,7 +180,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 24,
-    gap: 6,
+    gap: 8,
   },
   fab: {
     position: 'absolute',

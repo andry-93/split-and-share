@@ -5,6 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
 import { useEventsState } from '../../../state/events/eventsContext';
+import { PaymentEntry, selectEffectiveRawDebts, selectPayments, selectRawDebts, selectTotalAmount } from '../../../state/events/eventsSelectors';
+import { usePeopleState } from '../../../state/people/peopleContext';
+import { selectCurrentUser } from '../../../state/people/peopleSelectors';
 import { useSettingsState } from '../../../state/settings/settingsContext';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { EventItem } from '../types/events';
@@ -15,11 +18,13 @@ type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Event
 
 export function EventsListScreen({ navigation }: EventsListScreenProps) {
   const theme = useTheme();
-  const { events } = useEventsState();
+  const { events, paymentsByEvent } = useEventsState();
+  const { people } = usePeopleState();
   const settings = useSettingsState();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 250);
   const currencyCode = useMemo(() => normalizeCurrencyCode(settings.currency), [settings.currency]);
+  const currentUserId = useMemo(() => selectCurrentUser(people)?.id, [people]);
 
   const handlePressEvent = useCallback(
     (eventId: string) => {
@@ -30,9 +35,16 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
 
   const renderEventItem = useCallback(
     ({ item, index }: { item: EventItem; index: number }) => (
-      <EventCard event={item} index={index} onPress={handlePressEvent} fallbackCurrencyCode={currencyCode} />
+      <EventCard
+        event={item}
+        index={index}
+        onPress={handlePressEvent}
+        fallbackCurrencyCode={currencyCode}
+        payments={selectPayments({ events, paymentsByEvent }, item.id)}
+        currentUserId={currentUserId}
+      />
     ),
-    [currencyCode, handlePressEvent],
+    [currencyCode, currentUserId, events, handlePressEvent, paymentsByEvent],
   );
 
   const filteredEvents = useMemo(() => {
@@ -95,6 +107,8 @@ type EventCardProps = {
   index: number;
   onPress: (eventId: string) => void;
   fallbackCurrencyCode: string;
+  payments: PaymentEntry[];
+  currentUserId?: string;
 };
 
 function buildEventDate(index: number) {
@@ -102,7 +116,7 @@ function buildEventDate(index: number) {
   return `Dec ${day}, 2024`;
 }
 
-const EventCard = memo(function EventCard({ event, index, onPress, fallbackCurrencyCode }: EventCardProps) {
+const EventCard = memo(function EventCard({ event, index, onPress, fallbackCurrencyCode, payments, currentUserId }: EventCardProps) {
   const theme = useTheme();
   const eventCurrencyCode = useMemo(
     () => normalizeCurrencyCode(event.currency ?? fallbackCurrencyCode),
@@ -111,19 +125,33 @@ const EventCard = memo(function EventCard({ event, index, onPress, fallbackCurre
   const handlePress = useCallback(() => {
     onPress(event.id);
   }, [event.id, onPress]);
-  const total = useMemo(
-    () => event.expenses.reduce((sum, expense) => sum + expense.amount, 0),
-    [event.expenses],
-  );
+  const total = useMemo(() => selectTotalAmount(event), [event]);
+  const rawDebts = useMemo(() => selectRawDebts(event), [event]);
+  const effectiveDebts = useMemo(() => selectEffectiveRawDebts(rawDebts, payments), [payments, rawDebts]);
   const status = useMemo(() => {
-    if (index % 3 === 0) {
-      return { text: `You get ${formatCurrencyAmount(eventCurrencyCode, total * 0.15)}`, tone: 'positive' as const };
+    const currentUser = event.participants.find((participant) => participant.id === currentUserId);
+    if (!currentUser) {
+      return { text: 'Settled', tone: 'neutral' as const };
     }
-    if (index % 3 === 1) {
-      return { text: `You owe ${formatCurrencyAmount(eventCurrencyCode, total * 0.28)}`, tone: 'negative' as const };
+
+    let balance = 0;
+    effectiveDebts.forEach((debt) => {
+      if (debt.from.id === currentUser.id) {
+        balance -= debt.amount;
+      }
+      if (debt.to.id === currentUser.id) {
+        balance += debt.amount;
+      }
+    });
+
+    if (Math.abs(balance) < 0.005) {
+      return { text: 'Settled', tone: 'neutral' as const };
     }
-    return { text: 'Settled', tone: 'neutral' as const };
-  }, [eventCurrencyCode, index, total]);
+    if (balance > 0) {
+      return { text: `You get ${formatCurrencyAmount(eventCurrencyCode, balance)}`, tone: 'positive' as const };
+    }
+    return { text: `You owe ${formatCurrencyAmount(eventCurrencyCode, Math.abs(balance))}`, tone: 'negative' as const };
+  }, [currentUserId, effectiveDebts, event.participants, eventCurrencyCode]);
 
   const statusStyle = useMemo(() => {
     if (status.tone === 'positive') {
@@ -158,7 +186,7 @@ const EventCard = memo(function EventCard({ event, index, onPress, fallbackCurre
           {event.name}
         </Text>
         <View style={styles.dateRow}>
-          <Icon source="calendar-blank-outline" size={16} color={theme.colors.onSurfaceVariant} />
+          <Icon source="calendar-blank-outline" size={18} color={theme.colors.onSurfaceVariant} />
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
             {buildEventDate(index)}
           </Text>
@@ -190,7 +218,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 0,
     marginBottom: 12,
-    height: 50,
+    height: 52,
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -223,10 +251,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   cardContent: {
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   cardTitle: {
-    marginBottom: 6,
+    marginBottom: 8,
   },
   dateRow: {
     flexDirection: 'row',
@@ -246,7 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   emptyState: {
     flex: 1,

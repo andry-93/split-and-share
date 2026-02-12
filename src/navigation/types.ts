@@ -8,7 +8,7 @@ export type EventsStackParamList = {
 
 export type PeopleStackParamList = {
   People: undefined;
-  AddPerson: undefined;
+  AddPerson: { personId?: string } | undefined;
   ImportContactsAccess: undefined;
   ImportContactsPicker: undefined;
 };

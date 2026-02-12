@@ -34,13 +34,17 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   );
   const [amount, setAmount] = useState('');
   const [title, setTitle] = useState('');
-  const participantNames = useMemo(
-    () => event?.participants.map((participant) => participant.name) ?? [],
+  const participantOptions = useMemo(
+    () => event?.participants.map((participant) => ({ id: participant.id, name: participant.name })) ?? [],
     [event?.participants],
   );
-  const [paidBy, setPaidBy] = useState(participantNames[0] ?? '');
+  const participantNames = useMemo(
+    () => participantOptions.map((participant) => participant.name),
+    [participantOptions],
+  );
+  const [paidById, setPaidById] = useState(participantOptions[0]?.id ?? '');
   const [category, setCategory] = useState<CategoryId>('food');
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(participantNames);
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(participantOptions.map((participant) => participant.name));
   const sheetRef = useRef<BottomSheetModal>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -49,24 +53,29 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     () => normalizeCurrencyCode(event?.currency ?? settings.currency),
     [event?.currency, settings.currency],
   );
+  const paidBy = useMemo(
+    () => participantOptions.find((participant) => participant.id === paidById)?.name ?? '',
+    [paidById, participantOptions],
+  );
 
   const isSaveDisabled = useMemo(() => {
-    return amount.trim().length === 0 || title.trim().length === 0 || paidBy.trim().length === 0;
-  }, [amount, paidBy, title]);
+    return amount.trim().length === 0 || title.trim().length === 0 || paidById.trim().length === 0;
+  }, [amount, paidById, title]);
 
   useEffect(() => {
-    if (participantNames.length === 0) {
-      setPaidBy('');
+    if (participantOptions.length === 0) {
+      setPaidById('');
       setSelectedParticipants([]);
       return;
     }
 
-    setPaidBy((prev) => (participantNames.includes(prev) ? prev : participantNames[0]));
+    const participantIds = new Set(participantOptions.map((participant) => participant.id));
+    setPaidById((prev) => (participantIds.has(prev) ? prev : participantOptions[0].id));
     setSelectedParticipants((prev) => {
       const next = prev.filter((name) => participantNames.includes(name));
       return next.length > 0 ? next : [...participantNames];
     });
-  }, [participantNames]);
+  }, [participantOptions]);
 
   const toggleParticipant = useCallback((name: string) => {
     setSelectedParticipants((prev) =>
@@ -81,8 +90,8 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     requestAnimationFrame(() => sheetRef.current?.present());
   }, []);
 
-  const handleSelectPaidBy = useCallback((name: string) => {
-    setPaidBy(name);
+  const handleSelectPaidBy = useCallback((id: string) => {
+    setPaidById(id);
     sheetRef.current?.dismiss();
   }, []);
 
@@ -99,24 +108,25 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   );
 
   const renderPaidByOption = useCallback(
-    (name: string, index: number) => (
+    (participant: { id: string; name: string }, index: number) => (
       <PaidByOptionRow
-        key={name}
-        name={name}
-        selected={paidBy === name}
+        key={participant.id}
+        id={participant.id}
+        name={participant.name}
+        selected={paidById === participant.id}
         onSelect={handleSelectPaidBy}
         isLast={index === participantNames.length - 1}
       />
     ),
-    [handleSelectPaidBy, paidBy, participantNames.length],
+    [handleSelectPaidBy, paidById, participantNames.length],
   );
 
   const handleSave = useCallback(() => {
     const parsedAmount = Number(amount.replace(',', '.'));
-    if (!paidBy.trim()) {
-      setErrorMessage('Select who paid this expense.');
-      return;
-    }
+      if (!paidBy.trim()) {
+        setErrorMessage('Select who paid this expense.');
+        return;
+      }
 
     try {
       addExpense({
@@ -125,6 +135,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           title,
           amount: parsedAmount,
           paidBy,
+          paidById,
         },
       });
       navigation.goBack();
@@ -132,7 +143,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
       const message = error instanceof Error ? error.message : 'Unable to save expense.';
       setErrorMessage(message);
     }
-  }, [addExpense, amount, navigation, paidBy, route.params.eventId, title]);
+  }, [addExpense, amount, navigation, paidBy, paidById, route.params.eventId, title]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
@@ -287,7 +298,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           <Text variant="titleMedium" style={[styles.sheetTitle, { color: theme.colors.onSurface }]}>
             Paid by
           </Text>
-          {participantNames.map(renderPaidByOption)}
+          {participantOptions.map(renderPaidByOption)}
         </BottomSheetView>
       </BottomSheetModal>
     </SafeAreaView>
@@ -316,16 +327,17 @@ const ParticipantRow = memo(function ParticipantRow({ name, selected, onToggle }
 });
 
 type PaidByOptionRowProps = {
+  id: string;
   name: string;
   selected: boolean;
-  onSelect: (name: string) => void;
+  onSelect: (id: string) => void;
   isLast: boolean;
 };
 
-const PaidByOptionRow = memo(function PaidByOptionRow({ name, selected, onSelect, isLast }: PaidByOptionRowProps) {
+const PaidByOptionRow = memo(function PaidByOptionRow({ id, name, selected, onSelect, isLast }: PaidByOptionRowProps) {
   const handleSelect = useCallback(() => {
-    onSelect(name);
-  }, [name, onSelect]);
+    onSelect(id);
+  }, [id, onSelect]);
 
   return (
     <BottomSheetSingleSelectRow
@@ -353,7 +365,7 @@ const styles = StyleSheet.create({
   },
   amountInputContainer: {
     minHeight: 56,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
@@ -395,7 +407,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
   },
   section: {
     marginBottom: 16,
@@ -404,8 +416,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectField: {
-    minHeight: 50,
-    paddingHorizontal: 14,
+    minHeight: 52,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -415,8 +427,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   participantRow: {
-    minHeight: 50,
-    paddingLeft: 14,
+    minHeight: 52,
+    paddingLeft: 12,
     paddingRight: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -433,7 +445,7 @@ const styles = StyleSheet.create({
   },
   sheetContent: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   sheetTitle: {
     marginBottom: 8,

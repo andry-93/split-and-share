@@ -36,6 +36,8 @@ export const AddPersonActionSheet = forwardRef<BottomSheetModal, AddPersonAction
             description="Enter details manually"
             left={(props) => <List.Icon {...props} icon="account-plus" />}
             onPress={onAddManual}
+            style={styles.insetItem}
+            contentStyle={styles.itemContent}
             titleStyle={{ color: theme.colors.onSurface }}
             descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
           />
@@ -45,6 +47,8 @@ export const AddPersonActionSheet = forwardRef<BottomSheetModal, AddPersonAction
             description="Select from your phone contacts"
             left={(props) => <List.Icon {...props} icon="account-box" />}
             onPress={onImportContacts}
+            style={styles.insetItem}
+            contentStyle={styles.itemContent}
             titleStyle={{ color: theme.colors.onSurface }}
             descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
           />
@@ -59,11 +63,18 @@ AddPersonActionSheet.displayName = 'AddPersonActionSheet';
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 0,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   title: {
     paddingHorizontal: 16,
     marginBottom: 8,
+  },
+  insetItem: {
+    marginHorizontal: 16,
+    borderRadius: 12,
+  },
+  itemContent: {
+    paddingVertical: 2,
   },
   insetDivider: {
     marginHorizontal: 16,

@@ -353,31 +353,31 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     minHeight: 56,
-    marginBottom: 20,
+    marginBottom: 16,
     justifyContent: 'center',
   },
   inputField: {
     height: 52,
   },
   inputContent: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
   },
   multilineContainer: {
     minHeight: 96,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   multilineField: {
     minHeight: 92,
   },
   selectField: {
     minHeight: 56,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   selectFieldContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   dateIcons: {
     flexDirection: 'row',
@@ -393,13 +393,13 @@ const styles = StyleSheet.create({
   },
   sheetContent: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   sheetTitle: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   iosPickerModal: {
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 16,

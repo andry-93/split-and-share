@@ -31,8 +31,8 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
               }
             : event,
         ),
-        paidSimplifiedByEvent: {
-          ...state.paidSimplifiedByEvent,
+        paymentsByEvent: {
+          ...state.paymentsByEvent,
           [eventId]: [],
         },
       };
@@ -55,29 +55,23 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
               }
             : event,
         ),
+        paymentsByEvent: {
+          ...state.paymentsByEvent,
+          [eventId]: [],
+        },
       };
     }
-    case 'events/markSimplifiedPaid': {
-      const { eventId, debtId } = action.payload;
-      const current = state.paidSimplifiedByEvent[eventId] ?? [];
-      if (current.includes(debtId)) {
+    case 'events/registerPayment': {
+      const { eventId, payment } = action.payload;
+      const current = state.paymentsByEvent[eventId] ?? [];
+      if (current.some((item) => item.id === payment.id)) {
         return state;
       }
       return {
         ...state,
-        paidSimplifiedByEvent: {
-          ...state.paidSimplifiedByEvent,
-          [eventId]: [...current, debtId],
-        },
-      };
-    }
-    case 'events/resetSimplifiedPaid': {
-      const { eventId } = action.payload;
-      return {
-        ...state,
-        paidSimplifiedByEvent: {
-          ...state.paidSimplifiedByEvent,
-          [eventId]: [],
+        paymentsByEvent: {
+          ...state.paymentsByEvent,
+          [eventId]: [...current, payment],
         },
       };
     }
