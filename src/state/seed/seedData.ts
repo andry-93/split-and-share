@@ -4,7 +4,8 @@ import { PersonItem } from '../../features/people/types/people';
 export type SeedPerson = {
   id: string;
   name: string;
-  contact?: string;
+  phone?: string;
+  email?: string;
   note?: string;
   isMe?: boolean;
 };
@@ -28,11 +29,11 @@ export type SeedEvent = {
 };
 
 const peopleSeed: SeedPerson[] = [
-  { id: 'person-me', name: 'Me', contact: 'me@example.com', isMe: true },
-  { id: 'person-1', name: 'Alice Johnson', contact: 'alice@example.com' },
-  { id: 'person-2', name: 'Bob Lee', contact: '+1 555 0134' },
+  { id: 'person-me', name: 'Me', email: 'me@example.com', isMe: true },
+  { id: 'person-1', name: 'Alice Johnson', email: 'alice@example.com' },
+  { id: 'person-2', name: 'Bob Lee', phone: '+1 555 0134' },
   { id: 'person-3', name: 'Charlie Kim' },
-  { id: 'person-4', name: 'Dana Patel', contact: 'dana@example.com' },
+  { id: 'person-4', name: 'Dana Patel', email: 'dana@example.com' },
 ];
 
 const eventsSeed: SeedEvent[] = [
@@ -94,7 +95,8 @@ function mapParticipant(person: SeedPerson): ParticipantItem {
   return {
     id: person.id,
     name: person.name,
-    contact: person.contact,
+    phone: person.phone,
+    email: person.email,
     isMe: person.isMe,
   };
 }
@@ -103,7 +105,8 @@ export function createInitialPeopleSeed(): PersonItem[] {
   return peopleSeed.map((person) => ({
     id: person.id,
     name: person.name,
-    contact: person.contact,
+    phone: person.phone,
+    email: person.email,
     note: person.note,
     isMe: person.isMe,
   }));

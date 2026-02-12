@@ -32,6 +32,17 @@ function initState(): PeopleState {
   };
 }
 
+function splitLegacyContact(contact?: string) {
+  const normalized = normalizeOptionalText(contact);
+  if (!normalized) {
+    return { phone: undefined, email: undefined };
+  }
+  if (normalized.includes('@')) {
+    return { phone: undefined, email: normalized };
+  }
+  return { phone: normalized, email: undefined };
+}
+
 export function PeopleProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(peopleReducer, undefined, initState);
 
@@ -58,13 +69,14 @@ export function usePeopleActions() {
 
   return useMemo(
     () => ({
-      addPerson: (payload: { name: string; contact?: string; note?: string }) => {
+      addPerson: (payload: { name: string; phone?: string; email?: string; note?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
           throw new Error('Name is required.');
         }
 
-        const trimmedContact = payload.contact?.trim();
+        const trimmedPhone = payload.phone?.trim();
+        const trimmedEmail = payload.email?.trim();
         const trimmedNote = payload.note?.trim();
 
         dispatch({
@@ -72,12 +84,13 @@ export function usePeopleActions() {
           payload: {
             id: createEntityId('person'),
             name: trimmedName,
-            contact: normalizeOptionalText(trimmedContact),
+            phone: normalizeOptionalText(trimmedPhone),
+            email: normalizeOptionalText(trimmedEmail),
             note: normalizeOptionalText(trimmedNote),
           },
         });
       },
-      updatePerson: (payload: { id: string; name: string; contact?: string; note?: string }) => {
+      updatePerson: (payload: { id: string; name: string; phone?: string; email?: string; note?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
           throw new Error('Name is required.');
@@ -88,18 +101,22 @@ export function usePeopleActions() {
           payload: {
             id: payload.id,
             name: trimmedName,
-            contact: normalizeOptionalText(payload.contact),
+            phone: normalizeOptionalText(payload.phone),
+            email: normalizeOptionalText(payload.email),
             note: normalizeOptionalText(payload.note),
           },
         });
       },
-      addPeople: (payload: { people: { name: string; contact?: string; crypto?: string }[] }) => {
-        const nextPeople: PersonItem[] = payload.people.map((person) => ({
-          id: createEntityId('person'),
-          name: person.name,
-          // Keep backward compatibility if caller used `crypto` by mistake.
-          contact: normalizeOptionalText(person.contact ?? person.crypto),
-        }));
+      addPeople: (payload: { people: { name: string; phone?: string; email?: string; contact?: string; crypto?: string }[] }) => {
+        const nextPeople: PersonItem[] = payload.people.map((person) => {
+          const legacy = splitLegacyContact(person.contact);
+          return {
+            id: createEntityId('person'),
+            name: person.name,
+            phone: normalizeOptionalText(person.phone ?? person.crypto) ?? legacy.phone,
+            email: normalizeOptionalText(person.email) ?? legacy.email,
+          };
+        });
 
         dispatch({ type: 'people/addMany', payload: { people: nextPeople } });
       },

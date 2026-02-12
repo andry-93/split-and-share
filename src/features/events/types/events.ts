@@ -19,6 +19,7 @@ export type ExpenseItem = {
 export type ParticipantItem = {
   id: string;
   name: string;
-  contact?: string;
+  phone?: string;
+  email?: string;
   isMe?: boolean;
 };

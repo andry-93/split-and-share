@@ -76,21 +76,31 @@ export function SettingsScreen() {
         <Text variant="labelLarge" style={styles.sectionLabel}>
           Preferences
         </Text>
-        <List.Item
-          title="Language"
-          description={settings.language}
-          style={[styles.fullBleedRow, styles.compactRow]}
-          right={(props) => <List.Icon {...props} icon="chevron-right" />}
-          onPress={handleOpenLanguage}
-        />
-        <Divider style={styles.fullBleedDivider} />
-        <List.Item
-          title="Currency"
-          description={normalizeCurrencyCode(settings.currency)}
-          style={[styles.fullBleedRow, styles.compactRow]}
-          right={(props) => <List.Icon {...props} icon="chevron-right" />}
-          onPress={handleOpenCurrency}
-        />
+        <View
+          style={[
+            styles.preferencesContainer,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.outlineVariant,
+            },
+          ]}
+        >
+          <List.Item
+            title="Language"
+            description={settings.language}
+            style={styles.compactRow}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={handleOpenLanguage}
+          />
+          <Divider style={styles.preferencesDivider} />
+          <List.Item
+            title="Currency"
+            description={normalizeCurrencyCode(settings.currency)}
+            style={styles.compactRow}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={handleOpenCurrency}
+          />
+        </View>
 
         <Text variant="labelLarge" style={styles.sectionLabel}>
           Appearance
@@ -150,6 +160,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
+  preferencesContainer: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   fullBleedRow: {
     marginHorizontal: -16,
   },
@@ -157,8 +172,8 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingVertical: 4,
   },
-  fullBleedDivider: {
-    marginHorizontal: -16,
+  preferencesDivider: {
+    marginHorizontal: 16,
   },
   appearanceHint: {
     marginTop: 4,

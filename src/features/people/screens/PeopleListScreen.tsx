@@ -123,7 +123,8 @@ const PersonRow = memo(function PersonRow({
   return (
     <PersonListRow
       name={person.name}
-      contact={person.contact}
+      phone={person.phone}
+      email={person.email}
       isCurrentUser={isCurrentUserPerson(person)}
       onPress={onPress}
     />

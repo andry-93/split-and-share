@@ -30,20 +30,25 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const peopleLookup = useMemo(() => {
     const nameSet = new Set<string>();
-    const contactSet = new Set<string>();
+    const phoneSet = new Set<string>();
+    const emailSet = new Set<string>();
 
     people.forEach((person) => {
       const normalizedName = person.name.trim().toLowerCase();
       if (normalizedName) {
         nameSet.add(normalizedName);
       }
-      const normalizedContact = person.contact?.trim().toLowerCase();
-      if (normalizedContact) {
-        contactSet.add(normalizedContact);
+      const normalizedPhone = person.phone?.trim().toLowerCase();
+      if (normalizedPhone) {
+        phoneSet.add(normalizedPhone);
+      }
+      const normalizedEmail = person.email?.trim().toLowerCase();
+      if (normalizedEmail) {
+        emailSet.add(normalizedEmail);
       }
     });
 
-    return { nameSet, contactSet };
+    return { nameSet, phoneSet, emailSet };
   }, [people]);
 
   const filteredContacts = useMemo(() => {
@@ -65,16 +70,27 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
 
   const handleAdd = useCallback(() => {
     const selectedContacts = mockContacts.filter((contact) => selectedIds.includes(contact.id));
-    addPeople({ people: selectedContacts.map((contact) => ({ name: contact.name, contact: contact.contact })) });
+    addPeople({
+      people: selectedContacts.map((contact) => ({
+        name: contact.name,
+        phone: contact.phone,
+        email: contact.email,
+      })),
+    });
     navigation.navigate('People');
   }, [addPeople, navigation, selectedIds]);
 
   const isAlreadyAdded = useCallback(
     (contact: MockContact) => {
       const normalizedName = contact.name.trim().toLowerCase();
-      const normalizedContact = contact.contact.trim().toLowerCase();
+      const normalizedPhone = contact.phone?.trim().toLowerCase();
+      const normalizedEmail = contact.email?.trim().toLowerCase();
 
-      if (normalizedContact && peopleLookup.contactSet.has(normalizedContact)) {
+      if (normalizedPhone && peopleLookup.phoneSet.has(normalizedPhone)) {
+        return true;
+      }
+
+      if (normalizedEmail && peopleLookup.emailSet.has(normalizedEmail)) {
         return true;
       }
 
@@ -152,7 +168,8 @@ const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, o
   return (
     <PersonListRow
       name={contact.name}
-      contact={contact.contact}
+      phone={contact.phone}
+      email={contact.email}
       metaText={alreadyAdded ? 'Already added' : undefined}
       muted={alreadyAdded}
       rightSlot={<Checkbox status={selected ? 'checked' : 'unchecked'} disabled={alreadyAdded} onPress={handlePress} />}

@@ -149,7 +149,8 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
   return (
     <PersonListRow
       name={person.name}
-      contact={person.contact}
+      phone={person.phone}
+      email={person.email}
       metaText={alreadyAdded ? 'Already added' : undefined}
       muted={alreadyAdded}
       isCurrentUser={isCurrentUserPerson(person)}

@@ -24,3 +24,28 @@ export function validatePersonContact(value: string) {
   return { isValid: true } as const;
 }
 
+export function validatePersonPhone(value: string) {
+  const normalized = value.trim();
+  if (!normalized) {
+    return { isValid: true } as const;
+  }
+
+  if (!PHONE_PATTERN.test(normalized)) {
+    return { isValid: false, message: 'Please enter a valid phone number.' } as const;
+  }
+
+  return { isValid: true } as const;
+}
+
+export function validatePersonEmail(value: string) {
+  const normalized = value.trim();
+  if (!normalized) {
+    return { isValid: true } as const;
+  }
+
+  if (!EMAIL_PATTERN.test(normalized)) {
+    return { isValid: false, message: 'Please enter a valid email.' } as const;
+  }
+
+  return { isValid: true } as const;
+}

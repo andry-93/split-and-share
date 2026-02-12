@@ -18,6 +18,40 @@ function isPersonItem(value: unknown): value is PersonItem {
   return typeof value.id === 'string' && typeof value.name === 'string';
 }
 
+function toNormalizedPerson(value: unknown): PersonItem | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  if (typeof value.id !== 'string' || typeof value.name !== 'string') {
+    return null;
+  }
+
+  const legacyContact = typeof value.contact === 'string' ? value.contact.trim() : '';
+  const phone =
+    typeof value.phone === 'string'
+      ? value.phone.trim()
+      : legacyContact && !legacyContact.includes('@')
+        ? legacyContact
+        : undefined;
+  const email =
+    typeof value.email === 'string'
+      ? value.email.trim()
+      : legacyContact && legacyContact.includes('@')
+        ? legacyContact
+        : undefined;
+  const note = typeof value.note === 'string' ? value.note.trim() : undefined;
+  const isMe = typeof value.isMe === 'boolean' ? value.isMe : undefined;
+
+  return {
+    id: value.id,
+    name: value.name,
+    phone: phone || undefined,
+    email: email || undefined,
+    note: note || undefined,
+    isMe,
+  };
+}
+
 function isEventItem(value: unknown): value is EventItem {
   if (!isRecord(value)) {
     return false;
@@ -70,7 +104,7 @@ export function parsePeopleState(value: unknown): PeopleState {
   const fallback = createDefaultPeopleState();
 
   if (Array.isArray(value)) {
-    const people = value.filter(isPersonItem);
+    const people = value.map(toNormalizedPerson).filter((person): person is PersonItem => Boolean(person));
     return {
       people: people.length > 0 ? people : fallback.people,
     };
@@ -80,7 +114,9 @@ export function parsePeopleState(value: unknown): PeopleState {
     return fallback;
   }
 
-  const people = value.people.filter(isPersonItem);
+  const people = value.people
+    .map(toNormalizedPerson)
+    .filter((person): person is PersonItem => Boolean(person));
   return {
     people: people.length > 0 ? people : fallback.people,
   };
@@ -112,4 +148,3 @@ export function parseEventsState(value: unknown): EventsState {
     paymentsByEvent,
   };
 }
-

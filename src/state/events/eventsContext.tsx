@@ -91,6 +91,8 @@ export function useEventsActions() {
         const participants: ParticipantItem[] = payload.people.map((person) => ({
           id: person.id,
           name: person.name,
+          phone: person.phone,
+          email: person.email,
           isMe: person.isMe,
         }));
 

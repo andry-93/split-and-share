@@ -3,6 +3,11 @@ type PersonLike = {
   isMe?: boolean;
 };
 
+type PersonContactLike = {
+  phone?: string;
+  email?: string;
+};
+
 export function isCurrentUserPerson(person: PersonLike): boolean {
   if (person.isMe) {
     return true;
@@ -24,4 +29,18 @@ export function sortPeopleWithCurrentUserFirst<T extends PersonLike>(people: rea
 
     return left.name.localeCompare(right.name, 'en', { sensitivity: 'base' });
   });
+}
+
+export function getPreferredPersonContact(person: PersonContactLike): string | undefined {
+  const phone = person.phone?.trim();
+  if (phone) {
+    return phone;
+  }
+
+  const email = person.email?.trim();
+  if (email) {
+    return email;
+  }
+
+  return undefined;
 }

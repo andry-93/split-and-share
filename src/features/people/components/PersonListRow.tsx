@@ -2,10 +2,12 @@ import React, { ReactNode, memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Avatar, Text, useTheme } from 'react-native-paper';
 import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
+import { getPreferredPersonContact } from '../../../shared/utils/people';
 
 type PersonListRowProps = {
   name: string;
-  contact?: string;
+  phone?: string;
+  email?: string;
   metaText?: string;
   muted?: boolean;
   isCurrentUser?: boolean;
@@ -15,7 +17,8 @@ type PersonListRowProps = {
 
 export const PersonListRow = memo(function PersonListRow({
   name,
-  contact,
+  phone,
+  email,
   metaText,
   muted = false,
   isCurrentUser = false,
@@ -23,6 +26,7 @@ export const PersonListRow = memo(function PersonListRow({
   onPress,
 }: PersonListRowProps) {
   const theme = useTheme();
+  const contact = getPreferredPersonContact({ phone, email });
   const currentUserBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
   const initials = name
     .split(' ')

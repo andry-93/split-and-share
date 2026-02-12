@@ -6,7 +6,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
 import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
 import { AppHeader } from '../../../shared/ui/AppHeader';
-import { validatePersonContact } from '../../../shared/utils/validation';
+import { validatePersonEmail, validatePersonPhone } from '../../../shared/utils/validation';
 import { addPersonStyles as featureStyles } from '../components/add-person/styles';
 import { NameField } from '../components/add-person/NameField';
 import { ContactField } from '../components/add-person/ContactField';
@@ -26,15 +26,17 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
   );
   const isEditMode = Boolean(editingPerson);
   const [name, setName] = useState(editingPerson?.name ?? '');
-  const [contact, setContact] = useState(editingPerson?.contact ?? '');
+  const [phone, setPhone] = useState(editingPerson?.phone ?? '');
+  const [email, setEmail] = useState(editingPerson?.email ?? '');
   const [note, setNote] = useState(editingPerson?.note ?? '');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     setName(editingPerson?.name ?? '');
-    setContact(editingPerson?.contact ?? '');
+    setPhone(editingPerson?.phone ?? '');
+    setEmail(editingPerson?.email ?? '');
     setNote(editingPerson?.note ?? '');
-  }, [editingPerson?.contact, editingPerson?.name, editingPerson?.note, editingPerson?.id]);
+  }, [editingPerson?.email, editingPerson?.id, editingPerson?.name, editingPerson?.note, editingPerson?.phone]);
 
   const isDisabled = useMemo(() => name.trim().length === 0, [name]);
 
@@ -43,17 +45,23 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
   }, [navigation]);
 
   const handleSave = useCallback(() => {
-    const contactValidation = validatePersonContact(contact);
-    if (!contactValidation.isValid) {
-      setErrorMessage(contactValidation.message);
+    const phoneValidation = validatePersonPhone(phone);
+    if (!phoneValidation.isValid) {
+      setErrorMessage(phoneValidation.message);
+      return;
+    }
+
+    const emailValidation = validatePersonEmail(email);
+    if (!emailValidation.isValid) {
+      setErrorMessage(emailValidation.message);
       return;
     }
 
     try {
       if (editingPerson) {
-        updatePerson({ id: editingPerson.id, name, contact, note });
+        updatePerson({ id: editingPerson.id, name, phone, email, note });
       } else {
-        addPerson({ name, contact, note });
+        addPerson({ name, phone, email, note });
       }
       navigation.goBack();
     } catch (error) {
@@ -61,7 +69,7 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
       const message = error instanceof Error ? error.message : fallbackMessage;
       setErrorMessage(message);
     }
-  }, [addPerson, contact, editingPerson, name, navigation, note, updatePerson]);
+  }, [addPerson, editingPerson, email, name, navigation, note, phone, updatePerson]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
@@ -79,7 +87,21 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
         >
           <NameField value={name} onChangeText={setName} />
 
-          <ContactField value={contact} onChangeText={setContact} />
+          <ContactField
+            label="Phone"
+            placeholder="Phone"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+          />
+
+          <ContactField
+            label="Email"
+            placeholder="Email"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
 
           <NoteField value={note} onChangeText={setNote} />
         </ScrollView>

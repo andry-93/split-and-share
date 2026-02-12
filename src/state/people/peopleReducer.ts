@@ -3,14 +3,15 @@ import { PeopleAction, PeopleState } from './peopleTypes';
 export function peopleReducer(state: PeopleState, action: PeopleAction): PeopleState {
   switch (action.type) {
     case 'people/add': {
-      const { id, name, contact, note, isMe } = action.payload;
+      const { id, name, phone, email, note, isMe } = action.payload;
       return {
         ...state,
         people: [
           {
             id,
             name,
-            contact,
+            phone,
+            email,
             note,
             isMe,
           },
@@ -19,7 +20,7 @@ export function peopleReducer(state: PeopleState, action: PeopleAction): PeopleS
       };
     }
     case 'people/update': {
-      const { id, name, contact, note } = action.payload;
+      const { id, name, phone, email, note } = action.payload;
       return {
         ...state,
         people: state.people.map((person) =>
@@ -27,7 +28,8 @@ export function peopleReducer(state: PeopleState, action: PeopleAction): PeopleS
             ? {
                 ...person,
                 name,
-                contact,
+                phone,
+                email,
                 note,
               }
             : person,
@@ -36,10 +38,12 @@ export function peopleReducer(state: PeopleState, action: PeopleAction): PeopleS
     }
     case 'people/addMany': {
       const existing = new Set(
-        state.people.map((person) => `${person.name.toLowerCase()}|${person.contact ?? ''}`),
+        state.people.map(
+          (person) => `${person.name.toLowerCase()}|${person.phone?.toLowerCase() ?? ''}|${person.email?.toLowerCase() ?? ''}`,
+        ),
       );
       const nextPeople = action.payload.people.filter((person) => {
-        const key = `${person.name.toLowerCase()}|${person.contact ?? ''}`;
+        const key = `${person.name.toLowerCase()}|${person.phone?.toLowerCase() ?? ''}|${person.email?.toLowerCase() ?? ''}`;
         if (existing.has(key)) {
           return false;
         }

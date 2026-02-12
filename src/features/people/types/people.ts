@@ -1,7 +1,8 @@
 export type PersonItem = {
   id: string;
   name: string;
-  contact?: string;
+  phone?: string;
+  email?: string;
   note?: string;
   isMe?: boolean;
 };

@@ -4,22 +4,33 @@ import { OutlinedFieldContainer } from '../../../../shared/ui/OutlinedFieldConta
 import { addPersonStyles as styles } from './styles';
 
 type ContactFieldProps = {
+  label: string;
+  placeholder: string;
   value: string;
   onChangeText: (value: string) => void;
+  keyboardType?: 'default' | 'email-address' | 'phone-pad';
 };
 
-export const ContactField = memo(function ContactField({ value, onChangeText }: ContactFieldProps) {
+export const ContactField = memo(function ContactField({
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType = 'default',
+}: ContactFieldProps) {
   return (
     <>
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Phone or email
+        {label}
       </Text>
       <OutlinedFieldContainer style={styles.inputContainer}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          autoCapitalize="none"
           mode="flat"
-          placeholder="Phone or email"
+          placeholder={placeholder}
           style={[styles.inputField, styles.transparentInput]}
           contentStyle={styles.inputContent}
           underlineStyle={styles.hiddenUnderline}

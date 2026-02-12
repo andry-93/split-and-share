@@ -109,7 +109,8 @@ const ParticipantBalanceRow = memo(function ParticipantBalanceRow({
   return (
     <PersonListRow
       name={participant.name}
-      contact={participant.contact}
+      phone={participant.phone}
+      email={participant.email}
       rightSlot={balanceChip}
       isCurrentUser={isCurrentUserPerson(participant)}
     />
