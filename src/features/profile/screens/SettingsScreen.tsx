@@ -1,15 +1,16 @@
-import React, { memo, useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useSettingsActions, useSettingsState } from '../../../state/settings/settingsContext';
 import type { SettingsState } from '../../../state/settings/settingsTypes';
 import appPackage from '../../../../package.json';
 import { CustomToggleGroup } from '../../../shared/ui/CustomToggleGroup';
-import { BottomSheetSingleSelectRow } from '../../../shared/ui/BottomSheetSingleSelectRow';
 import { normalizeCurrencyCode } from '../../../shared/utils/currency';
 import { AppHeader } from '../../../shared/ui/AppHeader';
+import { AppSingleSelectBottomSheet } from '../../../shared/ui/AppSingleSelectBottomSheet';
+import { useDismissBottomSheetsOnBlur } from '../../../shared/hooks/useDismissBottomSheetsOnBlur';
 
 const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
 const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'];
@@ -20,6 +21,7 @@ export function SettingsScreen() {
   const { setTheme, setLanguage, setCurrency } = useSettingsActions();
   const languageSheetRef = useRef<BottomSheetModal>(null);
   const currencySheetRef = useRef<BottomSheetModal>(null);
+  useDismissBottomSheetsOnBlur([languageSheetRef, currencySheetRef]);
   const snapPoints = useMemo(() => ['40%'], []);
 
   const handleOpenLanguage = useCallback(() => {
@@ -53,32 +55,17 @@ export function SettingsScreen() {
     [setCurrency],
   );
 
-  const renderLanguageOption = useCallback(
-    (option: string, index: number) => (
-      <OptionRow
-        key={option}
-        title={option}
-        value={option}
-        selected={settings.language === option}
-        onSelect={handleSelectLanguage}
-        isLast={index === languageOptions.length - 1}
-      />
-    ),
-    [handleSelectLanguage, settings.language],
+  const languageSheetOptions = useMemo(
+    () => languageOptions.map((option) => ({ value: option, label: option })),
+    [],
   );
-
-  const renderCurrencyOption = useCallback(
-    (option: string, index: number) => (
-      <OptionRow
-        key={option}
-        title={normalizeCurrencyCode(option)}
-        value={option}
-        selected={settings.currency === option}
-        onSelect={handleSelectCurrency}
-        isLast={index === currencyOptions.length - 1}
-      />
-    ),
-    [handleSelectCurrency, settings.currency],
+  const currencySheetOptions = useMemo(
+    () =>
+      currencyOptions.map((option) => ({
+        value: option,
+        label: normalizeCurrencyCode(option),
+      })),
+    [],
   );
 
   return (
@@ -129,71 +116,26 @@ export function SettingsScreen() {
         <List.Item title="Version" description={appPackage.version} style={[styles.fullBleedRow, styles.compactRow]} />
       </View>
 
-      <BottomSheetModal
+      <AppSingleSelectBottomSheet
         ref={languageSheetRef}
+        title="Language"
+        options={languageSheetOptions}
+        selectedValue={settings.language}
+        onSelect={handleSelectLanguage}
         snapPoints={snapPoints}
-        enablePanDownToClose
-        backdropComponent={(props) => <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />}
-        backgroundStyle={{
-          backgroundColor: theme.colors.surface,
-          borderTopLeftRadius: theme.roundness * 3,
-          borderTopRightRadius: theme.roundness * 3,
-        }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.onSurfaceVariant }}
-      >
-        <BottomSheetView style={[styles.sheetContent, { backgroundColor: theme.colors.surface }]}>
-          <Text variant="titleMedium" style={[styles.sheetTitle, { color: theme.colors.onSurface }]}>
-            Language
-          </Text>
-          {languageOptions.map(renderLanguageOption)}
-        </BottomSheetView>
-      </BottomSheetModal>
+      />
 
-      <BottomSheetModal
+      <AppSingleSelectBottomSheet
         ref={currencySheetRef}
+        title="Currency"
+        options={currencySheetOptions}
+        selectedValue={settings.currency}
+        onSelect={handleSelectCurrency}
         snapPoints={snapPoints}
-        enablePanDownToClose
-        backdropComponent={(props) => <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />}
-        backgroundStyle={{
-          backgroundColor: theme.colors.surface,
-          borderTopLeftRadius: theme.roundness * 3,
-          borderTopRightRadius: theme.roundness * 3,
-        }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.onSurfaceVariant }}
-      >
-        <BottomSheetView style={[styles.sheetContent, { backgroundColor: theme.colors.surface }]}>
-          <Text variant="titleMedium" style={[styles.sheetTitle, { color: theme.colors.onSurface }]}>
-            Currency
-          </Text>
-          {currencyOptions.map(renderCurrencyOption)}
-        </BottomSheetView>
-      </BottomSheetModal>
+      />
     </SafeAreaView>
   );
 }
-
-type OptionRowProps = {
-  title: string;
-  value: string;
-  selected: boolean;
-  onSelect: (value: string) => void;
-  isLast: boolean;
-};
-
-const OptionRow = memo(function OptionRow({ title, value, selected, onSelect, isLast }: OptionRowProps) {
-  const handleSelect = useCallback(() => {
-    onSelect(value);
-  }, [onSelect, value]);
-
-  return (
-    <BottomSheetSingleSelectRow
-      label={title}
-      selected={selected}
-      onPress={handleSelect}
-      isLast={isLast}
-    />
-  );
-});
 
 const styles = StyleSheet.create({
   screen: {
@@ -217,13 +159,6 @@ const styles = StyleSheet.create({
   },
   fullBleedDivider: {
     marginHorizontal: -16,
-  },
-  sheetContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  sheetTitle: {
-    marginBottom: 8,
   },
   appearanceHint: {
     marginTop: 4,

@@ -1,30 +1,21 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import uuid from 'react-native-uuid';
-import { EventItem, ExpenseItem, ParticipantItem } from '../../features/events/types/events';
-import { initialEvents } from '../../features/events/data/initialEvents';
+import { ExpenseItem, ParticipantItem } from '../../features/events/types/events';
 import { PersonItem } from '../../features/people/types/people';
 import { readJSON, writeJSON } from '../storage/mmkv';
+import { parseEventsState } from '../storage/guards';
+import { STORAGE_KEYS } from '../storage/storageKeys';
 import { eventsReducer } from './eventsReducer';
 import { EventsAction, EventsState } from './eventsTypes';
 import { createEventPayment, PaymentSource } from './paymentsModel';
+import { createEntityId } from '../../shared/utils/id';
+import { normalizeOptionalText } from '../../shared/utils/validation';
 
 const EventsStateContext = createContext<EventsState | undefined>(undefined);
 const EventsDispatchContext = createContext<React.Dispatch<EventsAction> | undefined>(undefined);
 
-type PersistedEvents = EventsState;
 function initState(): EventsState {
-  const persistedEvents = readJSON<PersistedEvents>('events');
-  if (persistedEvents) {
-    return {
-      events: persistedEvents.events ?? initialEvents,
-      paymentsByEvent: persistedEvents.paymentsByEvent ?? {},
-    };
-  }
-
-  return {
-    events: initialEvents,
-    paymentsByEvent: {},
-  };
+  const persistedEvents = readJSON<unknown>(STORAGE_KEYS.events);
+  return parseEventsState(persistedEvents);
 }
 
 export function EventsProvider({ children }: { children: React.ReactNode }) {
@@ -53,7 +44,7 @@ export function useEventsActions() {
 
   return useMemo(
     () => ({
-      createEvent: (payload: { name: string; description?: string; currency?: string }) => {
+      createEvent: (payload: { name: string; description?: string; currency?: string; date?: string | null }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
           throw new Error('Event name is required.');
@@ -62,10 +53,11 @@ export function useEventsActions() {
         dispatch({
           type: 'events/create',
           payload: {
-            id: `event-${String(uuid.v4())}`,
+            id: createEntityId('event'),
             name: trimmedName,
-            description: payload.description?.trim() || undefined,
+            description: normalizeOptionalText(payload.description),
             currency: payload.currency,
+            date: payload.date ?? null,
           },
         });
       },
@@ -80,7 +72,7 @@ export function useEventsActions() {
         }
 
         const nextExpense: ExpenseItem = {
-          id: `expense-${String(uuid.v4())}`,
+          id: createEntityId('expense'),
           title: trimmedTitle,
           amount: payload.expense.amount,
           paidBy: payload.expense.paidBy,
@@ -116,7 +108,7 @@ export function useEventsActions() {
           payload: {
             eventId: payload.eventId,
             payment: createEventPayment({
-              id: `payment-${String(uuid.v4())}`,
+              id: createEntityId('payment'),
               eventId: payload.eventId,
               fromId: payload.fromId,
               toId: payload.toId,
@@ -132,7 +124,7 @@ export function useEventsActions() {
 }
 
 export function persistEvents(state: EventsState) {
-  writeJSON('events', state);
+  writeJSON(STORAGE_KEYS.events, state);
 }
 
 // selectors moved to eventsSelectors.ts

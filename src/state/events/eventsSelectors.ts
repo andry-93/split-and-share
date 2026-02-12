@@ -125,14 +125,81 @@ export function selectEffectiveRawDebts(rawDebts: RawDebt[], payments: PaymentEn
     return rawDebts;
   }
 
-  const paymentCompensation = payments.map((payment) => {
-    const from = rawDebts.find((debt) => debt.from.id === payment.fromId)?.from;
-    const to = rawDebts.find((debt) => debt.to.id === payment.toId)?.to;
+  const detailedPayments = payments.filter((payment) => payment.source === 'detailed');
+  const simplifiedPayments = payments.filter((payment) => payment.source === 'simplified');
+
+  const participantsById = new Map<string, ParticipantItem>();
+  rawDebts.forEach((debt) => {
+    participantsById.set(debt.from.id, debt.from);
+    participantsById.set(debt.to.id, debt.to);
+  });
+
+  const pairAmountsMinor = new Map<string, number>();
+  const addDirectedAmount = (fromId: string, toId: string, deltaMinor: number) => {
+    const key = `${fromId}|${toId}`;
+    pairAmountsMinor.set(key, (pairAmountsMinor.get(key) ?? 0) + deltaMinor);
+  };
+
+  rawDebts.forEach((debt) => {
+    addDirectedAmount(debt.from.id, debt.to.id, toMinorUnits(debt.amount));
+  });
+
+  detailedPayments.forEach((payment) => {
+    // Payment from debtor to creditor decreases debt in the same direction.
+    addDirectedAmount(payment.fromId, payment.toId, -toMinorUnits(payment.amount));
+  });
+
+  const pairAdjustedDebts: RawDebt[] = [];
+  Array.from(pairAmountsMinor.entries()).forEach(([key, amountMinor], index) => {
+    if (amountMinor === 0) {
+      return;
+    }
+
+    const [leftId, rightId] = key.split('|');
+    if (!leftId || !rightId) {
+      return;
+    }
+
+    if (amountMinor > 0) {
+      const from = participantsById.get(leftId);
+      const to = participantsById.get(rightId);
+      if (!from || !to) {
+        return;
+      }
+      pairAdjustedDebts.push({
+        id: `effective-${from.id}-${to.id}-${index}`,
+        from,
+        to,
+        amount: fromMinorUnits(amountMinor),
+      });
+      return;
+    }
+
+    const from = participantsById.get(rightId);
+    const to = participantsById.get(leftId);
+    if (!from || !to) {
+      return;
+    }
+    pairAdjustedDebts.push({
+      id: `effective-${from.id}-${to.id}-${index}`,
+      from,
+      to,
+      amount: fromMinorUnits(Math.abs(amountMinor)),
+    });
+  });
+
+  if (simplifiedPayments.length === 0) {
+    return pairAdjustedDebts;
+  }
+
+  const paymentCompensation = simplifiedPayments.map((payment) => {
+    const from = participantsById.get(payment.fromId);
+    const to = participantsById.get(payment.toId);
     if (!from || !to) {
       return null;
     }
 
-    // Reverse debt direction to compensate previously owed amounts.
+    // Reverse direction compensates already paid transfer.
     return {
       id: `payment-${payment.id}`,
       from: to,
@@ -141,7 +208,9 @@ export function selectEffectiveRawDebts(rawDebts: RawDebt[], payments: PaymentEn
     } satisfies RawDebt;
   });
 
-  const merged = rawDebts.concat(paymentCompensation.filter((item): item is RawDebt => item !== null));
+  const merged = pairAdjustedDebts.concat(
+    paymentCompensation.filter((item): item is RawDebt => item !== null),
+  );
   if (merged.length === 0) {
     return [];
   }
@@ -269,4 +338,26 @@ export function selectParticipantsCount(event?: EventItem) {
 
 export function selectExpensesCount(event?: EventItem) {
   return event ? event.expenses.length : 0;
+}
+
+export function selectOutstandingTotal(rawDebts: RawDebt[]) {
+  const totalMinor = rawDebts.reduce((sum, debt) => sum + toMinorUnits(debt.amount), 0);
+  return fromMinorUnits(totalMinor);
+}
+
+export function selectOutstandingPeopleCount(rawDebts: RawDebt[]) {
+  if (rawDebts.length === 0) {
+    return 0;
+  }
+
+  const participants = new Set<string>();
+  rawDebts.forEach((debt) => {
+    participants.add(debt.from.id);
+    participants.add(debt.to.id);
+  });
+  return participants.size;
+}
+
+export function selectOutstandingTransfersCount(rawDebts: RawDebt[]) {
+  return selectDetailedDebts(rawDebts).length;
 }

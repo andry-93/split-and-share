@@ -6,7 +6,9 @@ import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 type PersonListRowProps = {
   name: string;
   contact?: string;
-  withDivider?: boolean;
+  metaText?: string;
+  muted?: boolean;
+  isCurrentUser?: boolean;
   rightSlot?: ReactNode;
   onPress?: () => void;
 };
@@ -14,11 +16,14 @@ type PersonListRowProps = {
 export const PersonListRow = memo(function PersonListRow({
   name,
   contact,
-  withDivider = false,
+  metaText,
+  muted = false,
+  isCurrentUser = false,
   rightSlot,
   onPress,
 }: PersonListRowProps) {
   const theme = useTheme();
+  const currentUserBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
   const initials = name
     .split(' ')
     .filter(Boolean)
@@ -27,18 +32,14 @@ export const PersonListRow = memo(function PersonListRow({
     .join('');
   const avatarColors = getInitialsAvatarColors(theme.dark);
 
-  const rowStyle = [
-    styles.row,
-    withDivider
-      ? {
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: theme.colors.outlineVariant,
-        }
-      : null,
-  ];
-
   const content = (
-    <>
+    <View
+      style={[
+        styles.content,
+        muted ? styles.muted : null,
+        isCurrentUser ? [styles.currentUserContent, { backgroundColor: currentUserBackground }] : null,
+      ]}
+    >
       <View style={styles.identity}>
         <Avatar.Text
           size={40}
@@ -47,24 +48,40 @@ export const PersonListRow = memo(function PersonListRow({
           color={avatarColors.labelColor}
         />
         <View style={styles.textWrap}>
-          <Text variant="titleMedium">{name}</Text>
+          <View style={styles.nameRow}>
+            <Text variant="titleMedium">{name}</Text>
+            {isCurrentUser ? (
+              <View style={[styles.youBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer }}>
+                  You
+                </Text>
+              </View>
+            ) : null}
+          </View>
           {contact ? <Text variant="bodyMedium">{contact}</Text> : null}
+          {metaText ? (
+            <Text variant="labelMedium" style={styles.metaText}>
+              {metaText}
+            </Text>
+          ) : null}
         </View>
       </View>
       {rightSlot ? <View style={styles.rightSlot}>{rightSlot}</View> : null}
-    </>
+    </View>
   );
 
   if (!onPress) {
-    return <View style={rowStyle}>{content}</View>;
+    return <View style={styles.row}>{content}</View>;
   }
 
   return (
     <Pressable
       onPress={onPress}
+      hitSlop={4}
       style={({ pressed }) => [
-        rowStyle,
-        pressed ? { backgroundColor: theme.colors.surfaceVariant } : null,
+        styles.row,
+        styles.pressableRow,
+        pressed ? { backgroundColor: currentUserBackground } : null,
       ]}
     >
       {content}
@@ -74,9 +91,18 @@ export const PersonListRow = memo(function PersonListRow({
 
 const styles = StyleSheet.create({
   row: {
+    width: '100%',
+  },
+  pressableRow: {
+    width: '100%',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   identity: {
@@ -93,7 +119,26 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  currentUserContent: {
+    borderRadius: 10,
+  },
+  youBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
   rightSlot: {
     flexShrink: 0,
+  },
+  muted: {
+    opacity: 0.5,
+  },
+  metaText: {
+    marginTop: 4,
   },
 });

@@ -3,7 +3,7 @@ import { EventsAction, EventsState } from './eventsTypes';
 export function eventsReducer(state: EventsState, action: EventsAction): EventsState {
   switch (action.type) {
     case 'events/create': {
-      const { id, name, description, currency } = action.payload;
+      const { id, name, description, currency, date } = action.payload;
       return {
         ...state,
         events: [
@@ -12,6 +12,7 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
             name,
             description,
             currency,
+            date: date ?? null,
             expenses: [],
             participants: [],
           },

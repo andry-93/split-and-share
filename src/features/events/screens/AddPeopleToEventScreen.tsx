@@ -1,14 +1,18 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { Avatar, Button, Checkbox, Searchbar, Text, useTheme } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { Button, Checkbox, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
 import { usePeopleState } from '../../../state/people/peopleContext';
 import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
 import { PersonItem } from '../../people/types/people';
-import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 import { AppHeader } from '../../../shared/ui/AppHeader';
+import { AppList } from '../../../shared/ui/AppList';
+import { PersonListRow } from '../../people/components/PersonListRow';
+import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
+import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
+import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '../../../shared/utils/people';
 
 type AddPeopleToEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddPeopleToEvent'>;
 
@@ -19,6 +23,7 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
   const { events } = useEventsState();
   const { addPeopleToEvent } = useEventsActions();
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, 250);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const event = events.find((item) => item.id === route.params.eventId);
@@ -27,13 +32,15 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const filteredPeople = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalized = debouncedQuery.trim().toLowerCase();
     if (!normalized) {
-      return people;
+      return sortPeopleWithCurrentUserFirst(people);
     }
 
-    return people.filter((person) => person.name.toLowerCase().includes(normalized));
-  }, [people, query]);
+    return sortPeopleWithCurrentUserFirst(
+      people.filter((person) => person.name.toLowerCase().includes(normalized)),
+    );
+  }, [debouncedQuery, people]);
 
   const allAdded = people.length > 0 && people.every((person) => participantIds.has(person.id));
   const selectedCount = selectedIds.length;
@@ -58,16 +65,15 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
   }, [addPeopleToEvent, navigation, people, route.params.eventId, selectedIds]);
 
   const renderPersonItem = useCallback(
-    ({ item, index }: { item: PersonItem; index: number }) => (
+    ({ item }: { item: PersonItem }) => (
       <SelectablePersonRow
         person={item}
         alreadyAdded={participantIds.has(item.id)}
         selected={selectedSet.has(item.id)}
-        withDivider={index < filteredPeople.length - 1}
         onToggle={toggleSelect}
       />
     ),
-    [filteredPeople.length, participantIds, selectedSet, toggleSelect],
+    [participantIds, selectedSet, toggleSelect],
   );
 
   return (
@@ -75,12 +81,11 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
       <AppHeader title="Add people" onBackPress={() => navigation.goBack()} />
 
       {!allAdded ? (
-        <Searchbar
+        <AppSearchbar
           value={query}
           onChangeText={setQuery}
           placeholder="Search people"
-          style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
-          inputStyle={styles.searchInput}
+          style={styles.search}
         />
       ) : null}
 
@@ -91,27 +96,16 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
         </View>
       ) : (
         <View style={styles.listWrapper}>
-          <View
-            style={[
-              styles.listContainer,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.outlineVariant,
-              },
-            ]}
-          >
-            <FlatList
-              data={filteredPeople}
-              keyExtractor={(item) => item.id}
-              style={styles.list}
-              removeClippedSubviews
-              initialNumToRender={12}
-              maxToRenderPerBatch={12}
-              windowSize={5}
-              contentContainerStyle={styles.listContent}
-              renderItem={renderPersonItem}
-            />
-          </View>
+          <AppList
+            data={filteredPeople}
+            keyExtractor={(item) => item.id}
+            listStyle={styles.list}
+            contentContainerStyle={styles.listContent}
+            initialNumToRender={12}
+            maxToRenderPerBatch={12}
+            windowSize={5}
+            renderItem={({ item }) => renderPersonItem({ item })}
+          />
         </View>
       )}
 
@@ -139,7 +133,6 @@ type SelectablePersonRowProps = {
   person: PersonItem;
   alreadyAdded: boolean;
   selected: boolean;
-  withDivider: boolean;
   onToggle: (personId: string) => void;
 };
 
@@ -147,51 +140,21 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
   person,
   alreadyAdded,
   selected,
-  withDivider,
   onToggle,
 }: SelectablePersonRowProps) {
-  const theme = useTheme();
-  const avatarColors = getInitialsAvatarColors(theme.dark);
-  const initials = person.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-
   const handleToggle = useCallback(() => {
     onToggle(person.id);
   }, [onToggle, person.id]);
 
   return (
-    <View
-      style={[
-        styles.row,
-        alreadyAdded ? styles.rowMuted : null,
-        withDivider
-          ? {
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: theme.colors.outlineVariant,
-            }
-          : null,
-      ]}
-    >
-      <Avatar.Text
-        size={40}
-        label={initials || '?'}
-        style={[styles.avatar, { backgroundColor: avatarColors.backgroundColor }]}
-        color={avatarColors.labelColor}
-      />
-      <View style={styles.rowText}>
-        <Text variant="titleMedium">{person.name}</Text>
-        {alreadyAdded ? (
-          <Text variant="labelMedium" style={styles.alreadyAdded}>
-            Already added
-          </Text>
-        ) : null}
-      </View>
-      <Checkbox status={selected ? 'checked' : 'unchecked'} disabled={alreadyAdded} onPress={handleToggle} />
-    </View>
+    <PersonListRow
+      name={person.name}
+      contact={person.contact}
+      metaText={alreadyAdded ? 'Already added' : undefined}
+      muted={alreadyAdded}
+      isCurrentUser={isCurrentUserPerson(person)}
+      rightSlot={<Checkbox status={selected ? 'checked' : 'unchecked'} disabled={alreadyAdded} onPress={handleToggle} />}
+    />
   );
 });
 
@@ -202,16 +165,6 @@ const styles = StyleSheet.create({
   search: {
     marginHorizontal: 16,
     marginBottom: 12,
-    height: 52,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  searchInput: {
-    marginVertical: 0,
-    minHeight: 0,
-    paddingVertical: 0,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
   },
   list: {
     flexGrow: 0,
@@ -221,32 +174,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 96,
   },
-  listContainer: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     paddingTop: 0,
     paddingBottom: 0,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  rowMuted: {
-    opacity: 0.5,
-  },
-  avatar: {
-    marginRight: 12,
-  },
-  rowText: {
-    flex: 1,
-  },
-  alreadyAdded: {
-    marginTop: 4,
   },
   emptyState: {
     flex: 1,

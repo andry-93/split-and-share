@@ -1,15 +1,15 @@
-import { initialEvents } from '../../features/events/data/initialEvents';
-import { initialPeople } from '../../features/people/data/initialPeople';
+import { createDefaultEventsState, createDefaultPeopleState, createDefaultSettingsState } from '../defaultState';
 import { EventsState } from '../events/eventsTypes';
 import { PeopleState } from '../people/peopleTypes';
 import { SettingsState } from '../settings/settingsTypes';
 import { readJSON, storage, writeJSON } from './mmkv';
+import { parseEventsState, parsePeopleState, parseSettingsState } from './guards';
+import { STORAGE_KEYS } from './storageKeys';
 
-const SCHEMA_VERSION_KEY = 'schema_version';
 export const CURRENT_SCHEMA_VERSION = 4;
 
 export function getStoredSchemaVersion() {
-  const version = storage.getString(SCHEMA_VERSION_KEY);
+  const version = storage.getString(STORAGE_KEYS.schemaVersion);
   if (!version) {
     return 0;
   }
@@ -18,98 +18,56 @@ export function getStoredSchemaVersion() {
 }
 
 export function setStoredSchemaVersion(version: number) {
-  storage.set(SCHEMA_VERSION_KEY, String(version));
-}
-
-function defaultSettings(): SettingsState {
-  return {
-    theme: 'system',
-    language: 'English',
-    currency: 'USD',
-  };
-}
-
-function defaultPeople(): PeopleState {
-  return { people: initialPeople };
-}
-
-function defaultEvents(): EventsState {
-  return {
-    events: initialEvents,
-    paymentsByEvent: {},
-  };
-}
-
-function isValidSettings(value: unknown): value is SettingsState {
-  if (!value || typeof value !== 'object') return false;
-  const data = value as SettingsState;
-  return (
-    (data.theme === 'light' || data.theme === 'dark' || data.theme === 'system') &&
-    typeof data.language === 'string' &&
-    typeof data.currency === 'string'
-  );
-}
-
-function isValidPeople(value: unknown): value is PeopleState {
-  if (!value || typeof value !== 'object') return false;
-  const data = value as PeopleState;
-  return Array.isArray(data.people);
-}
-
-function isValidEvents(value: unknown): value is EventsState {
-  if (!value || typeof value !== 'object') return false;
-  const data = value as EventsState;
-  return Array.isArray(data.events) && typeof data.paymentsByEvent === 'object';
+  storage.set(STORAGE_KEYS.schemaVersion, String(version));
 }
 
 function migrateV0toV1() {
   try {
-    const settings = readJSON<SettingsState>('settings');
-    writeJSON('settings', isValidSettings(settings) ? settings : defaultSettings());
+    const settings = readJSON<SettingsState>(STORAGE_KEYS.settings);
+    writeJSON(STORAGE_KEYS.settings, parseSettingsState(settings));
   } catch (error) {
     console.error('[MMKV] settings migration failed', error);
-    writeJSON('settings', defaultSettings());
+    writeJSON(STORAGE_KEYS.settings, createDefaultSettingsState());
   }
 
   try {
-    const people = readJSON<PeopleState>('people');
-    const resolved = isValidPeople(people) ? people : defaultPeople();
-    writeJSON('people', resolved.people);
+    const people = readJSON<PeopleState>(STORAGE_KEYS.people);
+    const resolved = parsePeopleState(people);
+    writeJSON(STORAGE_KEYS.people, resolved.people);
   } catch (error) {
     console.error('[MMKV] people migration failed', error);
-    writeJSON('people', defaultPeople().people);
+    writeJSON(STORAGE_KEYS.people, createDefaultPeopleState().people);
   }
 
   try {
-    const events = readJSON<EventsState>('events');
-    const resolved = isValidEvents(events) ? events : defaultEvents();
-    writeJSON('events', resolved);
+    const events = readJSON<EventsState>(STORAGE_KEYS.events);
+    writeJSON(STORAGE_KEYS.events, parseEventsState(events));
   } catch (error) {
     console.error('[MMKV] events migration failed', error);
-    writeJSON('events', defaultEvents());
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
   }
 }
 
 function migrateV1toV2() {
   try {
-    const events = readJSON<EventsState>('events');
+    const events = readJSON<EventsState>(STORAGE_KEYS.events);
     if (!events || typeof events !== 'object' || !Array.isArray(events.events)) {
-      writeJSON('events', defaultEvents());
+      writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
       return;
     }
 
-    writeJSON('events', events);
+    writeJSON(STORAGE_KEYS.events, parseEventsState(events));
   } catch (error) {
     console.error('[MMKV] events v2 migration failed', error);
-    writeJSON('events', defaultEvents());
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
   }
 }
 
 function migrateV2toV3() {
   try {
-    const events = readJSON<EventsState>('events');
+    const events = readJSON<EventsState>(STORAGE_KEYS.events);
     if (!events || typeof events !== 'object' || !Array.isArray(events.events)) {
-      writeJSON('events', defaultEvents());
+      writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
       return;
     }
 
@@ -119,7 +77,7 @@ function migrateV2toV3() {
       paymentsByEvent?: Record<string, Array<{ id: string; fromId: string; toId: string; amount: number }>>;
     };
 
-    writeJSON('events', {
+    writeJSON(STORAGE_KEYS.events, {
       events: legacy.events,
       paymentsByEvent:
         typeof legacy.paymentsByEvent === 'object' && legacy.paymentsByEvent
@@ -128,15 +86,15 @@ function migrateV2toV3() {
     });
   } catch (error) {
     console.error('[MMKV] events v3 migration failed', error);
-    writeJSON('events', defaultEvents());
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
   }
 }
 
 function migrateV3toV4() {
   try {
-    const events = readJSON<EventsState>('events');
+    const events = readJSON<EventsState>(STORAGE_KEYS.events);
     if (!events || typeof events !== 'object' || !Array.isArray(events.events)) {
-      writeJSON('events', defaultEvents());
+      writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
       return;
     }
 
@@ -173,19 +131,23 @@ function migrateV3toV4() {
       return acc;
     }, {});
 
-    writeJSON('events', {
+    writeJSON(STORAGE_KEYS.events, {
       events: events.events,
       paymentsByEvent: normalizedPaymentsByEvent,
     });
   } catch (error) {
     console.error('[MMKV] events v4 migration failed', error);
-    writeJSON('events', defaultEvents());
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
   }
 }
 
 export function runMigrations() {
   let version = getStoredSchemaVersion();
   if (version === CURRENT_SCHEMA_VERSION) {
+    return;
+  }
+  if (version > CURRENT_SCHEMA_VERSION) {
+    setStoredSchemaVersion(CURRENT_SCHEMA_VERSION);
     return;
   }
 
@@ -209,8 +171,8 @@ export function runMigrations() {
   } catch (error) {
     console.error('[MMKV] migration failed', error);
     setStoredSchemaVersion(CURRENT_SCHEMA_VERSION);
-    writeJSON('settings', defaultSettings());
-    writeJSON('people', defaultPeople().people);
-    writeJSON('events', defaultEvents());
+    writeJSON(STORAGE_KEYS.settings, createDefaultSettingsState());
+    writeJSON(STORAGE_KEYS.people, createDefaultPeopleState().people);
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
   }
 }

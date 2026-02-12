@@ -22,6 +22,7 @@ export type SeedEvent = {
   name: string;
   description?: string;
   currency?: string;
+  date?: string | null;
   participantIds: string[];
   expenses: SeedExpense[];
 };
@@ -40,6 +41,7 @@ const eventsSeed: SeedEvent[] = [
     name: 'Ski Trip',
     description: 'Weekend in the mountains',
     currency: 'USD',
+    date: '2024-12-05T00:00:00.000Z',
     participantIds: ['person-me', 'person-1', 'person-2', 'person-3'],
     expenses: [
       {
@@ -62,6 +64,7 @@ const eventsSeed: SeedEvent[] = [
     id: 'seed-2',
     name: 'Team Dinner',
     currency: 'EUR',
+    date: '2024-12-10T00:00:00.000Z',
     participantIds: ['person-me', 'person-2', 'person-4'],
     expenses: [
       {
@@ -77,6 +80,7 @@ const eventsSeed: SeedEvent[] = [
     id: 'seed-3',
     name: 'Apartment Supplies',
     description: 'Kitchen + cleaning',
+    date: null,
     participantIds: [],
     expenses: [],
   },
@@ -119,6 +123,7 @@ export function createInitialEventsSeed(): EventItem[] {
       name: event.name,
       description: event.description,
       currency: event.currency,
+      date: event.date ?? null,
       participants,
       expenses: event.expenses
         .map((expense) => {

@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { Card, FAB, Icon, Searchbar, Text, useTheme } from 'react-native-paper';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Card, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '../../../navigation/types';
@@ -13,6 +13,9 @@ import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { EventItem } from '../types/events';
 import { formatCurrencyAmount, normalizeCurrencyCode } from '../../../shared/utils/currency';
 import { AppHeader } from '../../../shared/ui/AppHeader';
+import { AppList } from '../../../shared/ui/AppList';
+import { DraggableFab } from '../../../shared/ui/DraggableFab';
+import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
 
 type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
@@ -34,10 +37,9 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
   );
 
   const renderEventItem = useCallback(
-    ({ item, index }: { item: EventItem; index: number }) => (
+    ({ item }: { item: EventItem }) => (
       <EventCard
         event={item}
-        index={index}
         onPress={handlePressEvent}
         fallbackCurrencyCode={currencyCode}
         payments={selectPayments({ events, paymentsByEvent }, item.id)}
@@ -64,39 +66,40 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       <AppHeader title="Events" />
 
-      <Searchbar
+      <AppSearchbar
         value={query}
         onChangeText={setQuery}
         placeholder="Search events"
-        style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
-        inputStyle={styles.searchInput}
+        style={styles.search}
       />
 
-      <FlatList
+      <AppList
         data={filteredEvents}
         keyExtractor={(item) => item.id}
-        style={styles.list}
-        removeClippedSubviews
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
-        windowSize={5}
+        containerStyle={styles.eventsListContainer}
+        listStyle={styles.list}
         contentContainerStyle={[
           styles.listContent,
           filteredEvents.length === 0 ? styles.listEmpty : null,
         ]}
-        renderItem={renderEventItem}
-        ListEmptyComponent={
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        renderItem={({ item }) => renderEventItem({ item })}
+        emptyComponent={
           <View style={styles.emptyState}>
             <Text variant="bodyMedium">No events found</Text>
           </View>
         }
+        showDividers={false}
       />
 
-      <FAB
+      <DraggableFab
         icon="plus"
-        style={[styles.fab, styles.fabNoShadow, { backgroundColor: '#2563FF' }]}
         color="#FFFFFF"
+        backgroundColor="#2563FF"
         onPress={handleAddEvent}
+        topBoundary={124}
       />
     </SafeAreaView>
   );
@@ -104,24 +107,37 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
 
 type EventCardProps = {
   event: EventItem;
-  index: number;
   onPress: (eventId: string) => void;
   fallbackCurrencyCode: string;
   payments: PaymentEntry[];
   currentUserId?: string;
 };
 
-function buildEventDate(index: number) {
-  const day = 5 + index * 5;
-  return `Dec ${day}, 2024`;
+function formatEventDate(dateValue?: string | null) {
+  if (!dateValue) {
+    return '';
+  }
+
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(parsedDate);
 }
 
-const EventCard = memo(function EventCard({ event, index, onPress, fallbackCurrencyCode, payments, currentUserId }: EventCardProps) {
+const EventCard = memo(function EventCard({ event, onPress, fallbackCurrencyCode, payments, currentUserId }: EventCardProps) {
   const theme = useTheme();
+  const pressedCardBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
   const eventCurrencyCode = useMemo(
     () => normalizeCurrencyCode(event.currency ?? fallbackCurrencyCode),
     [event.currency, fallbackCurrencyCode],
   );
+  const eventDate = useMemo(() => formatEventDate(event.date), [event.date]);
   const handlePress = useCallback(() => {
     onPress(event.id);
   }, [event.id, onPress]);
@@ -176,37 +192,50 @@ const EventCard = memo(function EventCard({ event, index, onPress, fallbackCurre
   }, [status.tone, theme.colors.error, theme.colors.errorContainer, theme.colors.onErrorContainer, theme.colors.onSurfaceVariant, theme.colors.outlineVariant, theme.colors.surface]);
 
   return (
-    <Card
-      mode="contained"
-      style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}
-      onPress={handlePress}
-    >
-      <Card.Content style={styles.cardContent}>
-        <Text variant="titleMedium" style={styles.cardTitle}>
-          {event.name}
-        </Text>
-        <View style={styles.dateRow}>
-          <Icon source="calendar-blank-outline" size={18} color={theme.colors.onSurfaceVariant} />
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-            {buildEventDate(index)}
-          </Text>
-        </View>
-        <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />
-        <View style={styles.totalRow}>
-          <View>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              Total
+    <Pressable onPress={handlePress}>
+      {({ pressed }) => (
+        <Card
+          mode="contained"
+          style={[
+            styles.card,
+            {
+              backgroundColor: pressed ? pressedCardBackground : theme.colors.surface,
+              borderColor: theme.colors.outlineVariant,
+            },
+          ]}
+        >
+          <Card.Content style={styles.cardContent}>
+            <Text variant="titleMedium" style={styles.cardTitle}>
+              {event.name}
             </Text>
-            <Text variant="titleMedium">{formatCurrencyAmount(eventCurrencyCode, total)}</Text>
-          </View>
-          <View style={[styles.statusPill, { backgroundColor: statusStyle.backgroundColor, borderColor: statusStyle.borderColor }]}>
-            <Text variant="labelSmall" style={{ color: statusStyle.color }}>
-              {status.text}
-            </Text>
-          </View>
-        </View>
-      </Card.Content>
-    </Card>
+            {eventDate ? (
+              <>
+                <View style={styles.dateRow}>
+                  <Icon source="calendar-blank-outline" size={18} color={theme.colors.onSurfaceVariant} />
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    {eventDate}
+                  </Text>
+                </View>
+                <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />
+              </>
+            ) : null}
+            <View style={styles.totalRow}>
+              <View>
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                  Total
+                </Text>
+                <Text variant="titleMedium">{formatCurrencyAmount(eventCurrencyCode, total)}</Text>
+              </View>
+              <View style={[styles.statusPill, { backgroundColor: statusStyle.backgroundColor, borderColor: statusStyle.borderColor }]}>
+                <Text variant="labelSmall" style={{ color: statusStyle.color }}>
+                  {status.text}
+                </Text>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+      )}
+    </Pressable>
   );
 });
 
@@ -218,24 +247,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 0,
     marginBottom: 12,
-    height: 52,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  searchInput: {
-    marginVertical: 0,
-    minHeight: 0,
-    paddingVertical: 0,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
   },
   list: {
     flex: 1,
   },
+  eventsListContainer: {
+    flex: 1,
+    borderWidth: 0,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    overflow: 'visible',
+  },
   listContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 96,
+    paddingBottom: 12,
   },
   listEmpty: {
     flexGrow: 1,
@@ -244,6 +270,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 12,
+    overflow: 'hidden',
     elevation: 0,
     shadowColor: 'transparent',
     shadowOpacity: 0,
@@ -280,22 +307,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabNoShadow: {
-    elevation: 0,
-    shadowColor: 'transparent',
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
   },
 });

@@ -1,23 +1,16 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
 import { readJSON, writeJSON } from '../storage/mmkv';
+import { parseSettingsState } from '../storage/guards';
+import { STORAGE_KEYS } from '../storage/storageKeys';
 import { settingsReducer } from './settingsReducer';
 import { SettingsAction, SettingsState } from './settingsTypes';
 
 const SettingsStateContext = createContext<SettingsState | undefined>(undefined);
 const SettingsDispatchContext = createContext<React.Dispatch<SettingsAction> | undefined>(undefined);
 
-const defaultState: SettingsState = {
-  theme: 'system',
-  language: 'English',
-  currency: 'USD',
-};
-
 function initState(): SettingsState {
-  const persistedState = readJSON<SettingsState>('settings');
-  if (!persistedState) {
-    return defaultState;
-  }
-  return persistedState;
+  const persistedState = readJSON<unknown>(STORAGE_KEYS.settings);
+  return parseSettingsState(persistedState);
 }
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -61,5 +54,5 @@ export function useSettingsActions() {
 }
 
 export function persistSettings(state: SettingsState) {
-  writeJSON('settings', state);
+  writeJSON(STORAGE_KEYS.settings, state);
 }

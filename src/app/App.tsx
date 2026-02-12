@@ -1,7 +1,12 @@
-import React, { useMemo } from 'react';
-import { Appearance, StatusBar, useColorScheme } from 'react-native';
-import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
-import { NavigationContainer, DarkTheme as NavDarkTheme, DefaultTheme as NavLightTheme } from '@react-navigation/native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Appearance, BackHandler, Platform, StatusBar, useColorScheme } from 'react-native';
+import { MD3DarkTheme, MD3LightTheme, PaperProvider, Snackbar } from 'react-native-paper';
+import {
+  NavigationContainer,
+  DarkTheme as NavDarkTheme,
+  DefaultTheme as NavLightTheme,
+  createNavigationContainerRef,
+} from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -10,6 +15,8 @@ import { AppProviders } from '../state/AppProviders';
 import { MigrationGate } from '../state/storage/MigrationGate';
 import { PersistenceSync } from '../state/storage/PersistenceSync';
 import { useSettingsState } from '../state/settings/settingsContext';
+import { AppErrorBoundary } from '../shared/ui/AppErrorBoundary';
+import { RootTabParamList } from '../navigation/types';
 
 const lightColorOverrides = {
   primary: '#2563FF',
@@ -99,7 +106,52 @@ const darkColorOverrides = {
 
 function AppShell() {
   const settings = useSettingsState();
-  const systemScheme = useColorScheme() ?? Appearance.getColorScheme() ?? 'light';
+  const navigationRef = useMemo(() => createNavigationContainerRef<RootTabParamList>(), []);
+  const [exitHintVisible, setExitHintVisible] = useState(false);
+  const lastBackPressAtRef = useRef(0);
+  const hideHintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!navigationRef.isReady()) {
+        return false;
+      }
+
+      if (navigationRef.canGoBack()) {
+        return false;
+      }
+
+      const now = Date.now();
+      const isSecondPress = now - lastBackPressAtRef.current <= 2000;
+      if (isSecondPress) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastBackPressAtRef.current = now;
+      setExitHintVisible(true);
+      if (hideHintTimeoutRef.current) {
+        clearTimeout(hideHintTimeoutRef.current);
+      }
+      hideHintTimeoutRef.current = setTimeout(() => {
+        setExitHintVisible(false);
+      }, 2000);
+      return true;
+    });
+
+    return () => {
+      subscription.remove();
+      if (hideHintTimeoutRef.current) {
+        clearTimeout(hideHintTimeoutRef.current);
+      }
+    };
+  }, [navigationRef]);
+
+  const systemScheme = useColorScheme() ?? Appearance.getColorScheme() ?? 'dark';
   const resolvedScheme = useMemo<'light' | 'dark'>(() => {
     if (settings.theme === 'system') {
       return systemScheme === 'dark' ? 'dark' : 'light';
@@ -144,13 +196,19 @@ function AppShell() {
   return (
     <PaperProvider theme={paperTheme}>
       <StatusBar
-        barStyle={resolvedScheme === 'dark' ? 'light-content' : 'dark-content'}
+        barStyle={resolvedScheme === "dark" ? "light-content" : "dark-content"}
         translucent={false}
       />
       <BottomSheetModalProvider>
-        <NavigationContainer theme={navTheme}>
+        <NavigationContainer ref={navigationRef} theme={navTheme}>
           <AppNavigator />
         </NavigationContainer>
+        <Snackbar
+          visible={exitHintVisible}
+          onDismiss={() => setExitHintVisible(false)}
+        >
+          Press back again to exit
+        </Snackbar>
       </BottomSheetModalProvider>
     </PaperProvider>
   );
@@ -163,7 +221,9 @@ export function App() {
         <MigrationGate>
           <AppProviders>
             <PersistenceSync>
-              <AppShell />
+              <AppErrorBoundary>
+                <AppShell />
+              </AppErrorBoundary>
             </PersistenceSync>
           </AppProviders>
         </MigrationGate>

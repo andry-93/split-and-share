@@ -1,23 +1,21 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import uuid from 'react-native-uuid';
-import { initialPeople } from '../../features/people/data/initialPeople';
 import { PersonItem } from '../../features/people/types/people';
 import { readJSON, writeJSON } from '../storage/mmkv';
+import { parsePeopleState } from '../storage/guards';
+import { STORAGE_KEYS } from '../storage/storageKeys';
 import { selectCurrentUser } from './peopleSelectors';
 import { peopleReducer } from './peopleReducer';
 import { PeopleAction, PeopleState } from './peopleTypes';
+import { createEntityId } from '../../shared/utils/id';
+import { normalizeOptionalText } from '../../shared/utils/validation';
 
 const PeopleStateContext = createContext<PeopleState | undefined>(undefined);
 const PeopleDispatchContext = createContext<React.Dispatch<PeopleAction> | undefined>(undefined);
 
 function normalizePeople(people: PersonItem[]): PersonItem[] {
-  if (!Array.isArray(people) || people.length === 0) {
-    return initialPeople;
-  }
-
   const currentUser = selectCurrentUser(people);
   if (!currentUser) {
-    return initialPeople;
+    return people;
   }
 
   return people.map((person) => ({
@@ -27,9 +25,10 @@ function normalizePeople(people: PersonItem[]): PersonItem[] {
 }
 
 function initState(): PeopleState {
-  const persistedPeople = readJSON<PersonItem[]>('people');
+  const persistedPeople = readJSON<unknown>(STORAGE_KEYS.people);
+  const parsed = parsePeopleState(persistedPeople);
   return {
-    people: normalizePeople(Array.isArray(persistedPeople) ? persistedPeople : initialPeople),
+    people: normalizePeople(parsed.people),
   };
 }
 
@@ -71,10 +70,10 @@ export function usePeopleActions() {
         dispatch({
           type: 'people/add',
           payload: {
-            id: `person-${String(uuid.v4())}`,
+            id: createEntityId('person'),
             name: trimmedName,
-            contact: trimmedContact || undefined,
-            note: trimmedNote || undefined,
+            contact: normalizeOptionalText(trimmedContact),
+            note: normalizeOptionalText(trimmedNote),
           },
         });
       },
@@ -89,17 +88,17 @@ export function usePeopleActions() {
           payload: {
             id: payload.id,
             name: trimmedName,
-            contact: payload.contact?.trim() || undefined,
-            note: payload.note?.trim() || undefined,
+            contact: normalizeOptionalText(payload.contact),
+            note: normalizeOptionalText(payload.note),
           },
         });
       },
       addPeople: (payload: { people: { name: string; contact?: string; crypto?: string }[] }) => {
         const nextPeople: PersonItem[] = payload.people.map((person) => ({
-          id: `person-${String(uuid.v4())}`,
+          id: createEntityId('person'),
           name: person.name,
           // Keep backward compatibility if caller used `crypto` by mistake.
-          contact: person.contact ?? person.crypto ?? undefined,
+          contact: normalizeOptionalText(person.contact ?? person.crypto),
         }));
 
         dispatch({ type: 'people/addMany', payload: { people: nextPeople } });
@@ -110,5 +109,5 @@ export function usePeopleActions() {
 }
 
 export function persistPeople(state: PeopleState) {
-  writeJSON('people', state.people);
+  writeJSON(STORAGE_KEYS.people, state.people);
 }

@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { FAB, Searchbar, Text, useTheme } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -11,6 +11,11 @@ import { PersonListRow } from '../components/PersonListRow';
 import { usePeopleState } from '../../../state/people/peopleContext';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { AppHeader } from '../../../shared/ui/AppHeader';
+import { AppList } from '../../../shared/ui/AppList';
+import { DraggableFab } from '../../../shared/ui/DraggableFab';
+import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
+import { useDismissBottomSheetsOnBlur } from '../../../shared/hooks/useDismissBottomSheetsOnBlur';
+import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '../../../shared/utils/people';
 
 type PeopleListScreenProps = NativeStackScreenProps<PeopleStackParamList, 'People'>;
 
@@ -20,6 +25,7 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 250);
   const sheetRef = useRef<BottomSheetModal>(null);
+  useDismissBottomSheetsOnBlur([sheetRef]);
 
   const handleOpenSheet = useCallback(() => {
     sheetRef.current?.present();
@@ -45,33 +51,33 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
   const filteredPeople = useMemo(() => {
     const normalized = debouncedQuery.trim().toLowerCase();
     if (!normalized) {
-      return people;
+      return sortPeopleWithCurrentUserFirst(people);
     }
 
-    return people.filter((person) => person.name.toLowerCase().includes(normalized));
+    return sortPeopleWithCurrentUserFirst(
+      people.filter((person) => person.name.toLowerCase().includes(normalized)),
+    );
   }, [debouncedQuery, people]);
 
   const renderPersonItem = useCallback(
-    ({ item, index }: { item: PersonItem; index: number }) => (
+    ({ item }: { item: PersonItem }) => (
       <PersonRow
         person={item}
-        withDivider={index < filteredPeople.length - 1}
         onPress={() => handleEditPerson(item.id)}
       />
     ),
-    [filteredPeople.length],
+    [handleEditPerson],
   );
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       <AppHeader title="People" />
 
-      <Searchbar
+      <AppSearchbar
         value={query}
         onChangeText={setQuery}
         placeholder="Search people"
-        style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
-        inputStyle={styles.searchInput}
+        style={styles.search}
       />
 
       {filteredPeople.length === 0 ? (
@@ -81,35 +87,22 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
         </View>
       ) : (
         <View style={styles.listWrapper}>
-          <View
-            style={[
-              styles.listContainer,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.outlineVariant,
-              },
-            ]}
-          >
-            <FlatList
-              data={filteredPeople}
-              keyExtractor={(item) => item.id}
-              style={styles.list}
-              removeClippedSubviews
-              initialNumToRender={10}
-              maxToRenderPerBatch={10}
-              windowSize={5}
-              contentContainerStyle={styles.listContent}
-              renderItem={renderPersonItem}
-            />
-          </View>
+          <AppList
+            data={filteredPeople}
+            keyExtractor={(item) => item.id}
+            listStyle={styles.list}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => renderPersonItem({ item })}
+          />
         </View>
       )}
 
-      <FAB
+      <DraggableFab
         icon="plus"
-        style={[styles.fab, styles.fabNoShadow, { backgroundColor: '#2563FF' }]}
         color="#FFFFFF"
+        backgroundColor="#2563FF"
         onPress={handleOpenSheet}
+        topBoundary={124}
       />
       <AddPersonActionSheet
         ref={sheetRef}
@@ -122,18 +115,16 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
 
 const PersonRow = memo(function PersonRow({
   person,
-  withDivider,
   onPress,
 }: {
   person: PersonItem;
-  withDivider: boolean;
   onPress: () => void;
 }) {
   return (
     <PersonListRow
       name={person.name}
       contact={person.contact}
-      withDivider={withDivider}
+      isCurrentUser={isCurrentUserPerson(person)}
       onPress={onPress}
     />
   );
@@ -146,34 +137,20 @@ const styles = StyleSheet.create({
   search: {
     marginHorizontal: 16,
     marginTop: 0,
-    height: 52,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  searchInput: {
-    marginVertical: 0,
-    minHeight: 0,
-    paddingVertical: 0,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
+    marginBottom: 12,
   },
   list: {
     flexGrow: 0,
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     paddingVertical: 0,
   },
   listWrapper: {
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 96,
-  },
-  listContainer: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    overflow: 'hidden',
+    paddingBottom: 12,
   },
   emptyState: {
     flex: 1,
@@ -181,22 +158,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 24,
     gap: 8,
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabNoShadow: {
-    elevation: 0,
-    shadowColor: 'transparent',
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
   },
 });

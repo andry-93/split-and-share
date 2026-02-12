@@ -3,6 +3,7 @@ export type EventItem = {
   name: string;
   description?: string;
   currency?: string;
+  date?: string | null;
   expenses: ExpenseItem[];
   participants: ParticipantItem[];
 };

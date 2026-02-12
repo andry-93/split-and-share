@@ -1,13 +1,16 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { Avatar, Button, Checkbox, Searchbar, Text, useTheme } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { Button, Checkbox, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
 import { mockContacts, MockContact } from '../data/mockContacts';
 import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
-import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 import { AppHeader } from '../../../shared/ui/AppHeader';
+import { AppList } from '../../../shared/ui/AppList';
+import { PersonListRow } from '../components/PersonListRow';
+import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
+import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
 
 type ContactsPickerScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsPicker'>;
 
@@ -17,6 +20,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   const { people } = usePeopleState();
   const { addPeople } = usePeopleActions();
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, 250);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const handleBack = useCallback(() => {
@@ -43,13 +47,13 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   }, [people]);
 
   const filteredContacts = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalized = debouncedQuery.trim().toLowerCase();
     if (!normalized) {
       return mockContacts;
     }
 
     return mockContacts.filter((contact) => contact.name.toLowerCase().includes(normalized));
-  }, [query]);
+  }, [debouncedQuery]);
 
   const selectedCount = selectedIds.length;
 
@@ -80,52 +84,39 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   );
 
   const renderContactItem = useCallback(
-    ({ item, index }: { item: MockContact; index: number }) => (
+    ({ item }: { item: MockContact }) => (
       <ContactRow
         contact={item}
         alreadyAdded={isAlreadyAdded(item)}
         selected={selectedSet.has(item.id)}
-        withDivider={index < filteredContacts.length - 1}
         onToggle={handleToggle}
       />
     ),
-    [filteredContacts.length, handleToggle, isAlreadyAdded, selectedSet],
+    [handleToggle, isAlreadyAdded, selectedSet],
   );
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       <AppHeader title="Select contacts" onBackPress={handleBack} />
 
-      <Searchbar
+      <AppSearchbar
         value={query}
         onChangeText={setQuery}
         placeholder="Search contacts"
-        style={[styles.search, { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.outlineVariant }]}
-        inputStyle={styles.searchInput}
+        style={styles.search}
       />
 
       <View style={styles.listWrapper}>
-        <View
-          style={[
-            styles.listContainer,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.outlineVariant,
-            },
-          ]}
-        >
-          <FlatList
-            data={filteredContacts}
-            keyExtractor={(item) => item.id}
-            style={styles.list}
-            removeClippedSubviews
-            initialNumToRender={12}
-            maxToRenderPerBatch={12}
-            windowSize={5}
-            contentContainerStyle={styles.listContent}
-            renderItem={renderContactItem}
-          />
-        </View>
+        <AppList
+          data={filteredContacts}
+          keyExtractor={(item) => item.id}
+          listStyle={styles.list}
+          contentContainerStyle={styles.listContent}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={5}
+          renderItem={({ item }) => renderContactItem({ item })}
+        />
       </View>
 
       <View
@@ -150,54 +141,22 @@ type ContactRowProps = {
   contact: MockContact;
   alreadyAdded: boolean;
   selected: boolean;
-  withDivider: boolean;
   onToggle: (contactId: string) => void;
 };
 
-const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, withDivider, onToggle }: ContactRowProps) {
-  const theme = useTheme();
-  const avatarColors = getInitialsAvatarColors(theme.dark);
-  const initials = contact.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-
+const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, onToggle }: ContactRowProps) {
   const handlePress = useCallback(() => {
     onToggle(contact.id);
   }, [contact.id, onToggle]);
 
   return (
-    <View
-      style={[
-        styles.row,
-        alreadyAdded ? styles.rowMuted : null,
-        withDivider
-          ? {
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: theme.colors.outlineVariant,
-            }
-          : null,
-      ]}
-    >
-      <Avatar.Text
-        size={40}
-        label={initials || '?'}
-        style={[styles.avatar, { backgroundColor: avatarColors.backgroundColor }]}
-        color={avatarColors.labelColor}
-      />
-      <View style={styles.rowText}>
-        <Text variant="titleMedium">{contact.name}</Text>
-        <Text variant="bodyMedium">{contact.contact}</Text>
-        {alreadyAdded ? (
-          <Text variant="labelMedium" style={styles.alreadyAdded}>
-            Already added
-          </Text>
-        ) : null}
-      </View>
-      <Checkbox status={selected ? 'checked' : 'unchecked'} disabled={alreadyAdded} onPress={handlePress} />
-    </View>
+    <PersonListRow
+      name={contact.name}
+      contact={contact.contact}
+      metaText={alreadyAdded ? 'Already added' : undefined}
+      muted={alreadyAdded}
+      rightSlot={<Checkbox status={selected ? 'checked' : 'unchecked'} disabled={alreadyAdded} onPress={handlePress} />}
+    />
   );
 });
 
@@ -208,16 +167,6 @@ const styles = StyleSheet.create({
   search: {
     marginHorizontal: 16,
     marginBottom: 12,
-    height: 52,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  searchInput: {
-    marginVertical: 0,
-    minHeight: 0,
-    paddingVertical: 0,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
   },
   list: {
     flexGrow: 0,
@@ -227,32 +176,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
-  listContainer: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     paddingTop: 0,
     paddingBottom: 0,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  rowMuted: {
-    opacity: 0.5,
-  },
-  avatar: {
-    marginRight: 12,
-  },
-  rowText: {
-    flex: 1,
-  },
-  alreadyAdded: {
-    marginTop: 4,
   },
   bottomBar: {
     paddingHorizontal: 16,
