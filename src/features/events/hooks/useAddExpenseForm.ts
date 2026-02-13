@@ -7,12 +7,22 @@ type UseAddExpenseFormInput = {
   participants: ParticipantItem[];
   currency?: string;
   fallbackCurrency: string;
+  initialAmount?: string;
+  initialTitle?: string;
+  initialPaidById?: string;
 };
 
-export function useAddExpenseForm({ participants, currency, fallbackCurrency }: UseAddExpenseFormInput) {
-  const [amount, setAmount] = useState('');
-  const [title, setTitle] = useState('');
-  const [paidById, setPaidById] = useState(participants[0]?.id ?? '');
+export function useAddExpenseForm({
+  participants,
+  currency,
+  fallbackCurrency,
+  initialAmount = '',
+  initialTitle = '',
+  initialPaidById,
+}: UseAddExpenseFormInput) {
+  const [amount, setAmount] = useState(initialAmount);
+  const [title, setTitle] = useState(initialTitle);
+  const [paidById, setPaidById] = useState(initialPaidById ?? participants[0]?.id ?? '');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
     participants.map((participant) => participant.name),
   );
@@ -49,6 +59,14 @@ export function useAddExpenseForm({ participants, currency, fallbackCurrency }: 
     }
     return false;
   }, [amount, paidById, parsedAmount, title]);
+
+  useEffect(() => {
+    setAmount(initialAmount);
+    setTitle(initialTitle);
+    if (initialPaidById) {
+      setPaidById(initialPaidById);
+    }
+  }, [initialAmount, initialPaidById, initialTitle]);
 
   useEffect(() => {
     if (participantOptions.length === 0) {

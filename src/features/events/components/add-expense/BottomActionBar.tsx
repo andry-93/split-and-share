@@ -1,35 +1,33 @@
 import React, { memo } from 'react';
-import { View } from 'react-native';
-import { Button, useTheme } from 'react-native-paper';
-import { addExpenseStyles as styles } from './styles';
+import { addExpenseStyles } from './styles';
+import { BottomPrimaryActionBar } from '../../../../shared/ui/BottomPrimaryActionBar';
 
 type BottomActionBarProps = {
   onSave: () => void;
   disabled: boolean;
   bottomInset: number;
+  label?: string;
+  secondaryLabel?: string;
+  onSecondaryPress?: () => void;
 };
 
 export const BottomActionBar = memo(function BottomActionBar({
   onSave,
   disabled,
   bottomInset,
+  label = 'Save expense',
+  secondaryLabel,
+  onSecondaryPress,
 }: BottomActionBarProps) {
-  const theme = useTheme();
-
   return (
-    <View
-      style={[
-        styles.bottomBar,
-        {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outlineVariant,
-          paddingBottom: Math.max(bottomInset, 12),
-        },
-      ]}
-    >
-      <Button mode="contained" onPress={onSave} disabled={disabled}>
-        Save expense
-      </Button>
-    </View>
+    <BottomPrimaryActionBar
+      bottomInset={bottomInset}
+      disabled={disabled}
+      onPress={onSave}
+      label={label}
+      secondaryLabel={secondaryLabel}
+      onSecondaryPress={onSecondaryPress}
+      containerStyle={addExpenseStyles.bottomBar}
+    />
   );
 });

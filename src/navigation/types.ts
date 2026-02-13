@@ -1,8 +1,8 @@
 export type EventsStackParamList = {
   Events: undefined;
-  AddEvent: undefined;
+  AddEvent: { eventId?: string } | undefined;
   EventDetails: { eventId: string };
-  AddExpense: { eventId: string };
+  AddExpense: { eventId: string; expenseId?: string } | undefined;
   AddPeopleToEvent: { eventId: string };
 };
 

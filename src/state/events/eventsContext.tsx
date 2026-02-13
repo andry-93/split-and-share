@@ -61,6 +61,29 @@ export function useEventsActions() {
           },
         });
       },
+      updateEvent: (payload: {
+        eventId: string;
+        name: string;
+        description?: string;
+        currency?: string;
+        date?: string | null;
+      }) => {
+        const trimmedName = payload.name.trim();
+        if (!trimmedName) {
+          throw new Error('Event name is required.');
+        }
+
+        dispatch({
+          type: 'events/update',
+          payload: {
+            eventId: payload.eventId,
+            name: trimmedName,
+            description: normalizeOptionalText(payload.description),
+            currency: payload.currency,
+            date: payload.date ?? null,
+          },
+        });
+      },
       addExpense: (payload: { eventId: string; expense: { title: string; amount: number; paidBy: string; paidById?: string } }) => {
         const trimmedTitle = payload.expense.title.trim();
         if (!trimmedTitle) {
@@ -84,6 +107,34 @@ export function useEventsActions() {
           payload: {
             eventId: payload.eventId,
             expense: nextExpense,
+          },
+        });
+      },
+      updateExpense: (payload: {
+        eventId: string;
+        expenseId: string;
+        patch: { title: string; amount: number; paidBy: string; paidById?: string };
+      }) => {
+        const trimmedTitle = payload.patch.title.trim();
+        if (!trimmedTitle) {
+          throw new Error('Expense title is required.');
+        }
+
+        if (!Number.isFinite(payload.patch.amount) || payload.patch.amount <= 0) {
+          throw new Error('Amount must be a positive number.');
+        }
+
+        dispatch({
+          type: 'events/updateExpense',
+          payload: {
+            eventId: payload.eventId,
+            expenseId: payload.expenseId,
+            patch: {
+              title: trimmedTitle,
+              amount: payload.patch.amount,
+              paidBy: payload.patch.paidBy,
+              paidById: payload.patch.paidById,
+            },
           },
         });
       },
@@ -118,6 +169,30 @@ export function useEventsActions() {
               source: payload.source,
             }),
           },
+        });
+      },
+      removeParticipantsFromEvent: (payload: { eventId: string; participantIds: string[] }) => {
+        dispatch({
+          type: 'events/removeParticipants',
+          payload,
+        });
+      },
+      removePeopleEverywhere: (payload: { personIds: string[] }) => {
+        dispatch({
+          type: 'events/removePeopleEverywhere',
+          payload,
+        });
+      },
+      removeEvents: (payload: { eventIds: string[] }) => {
+        dispatch({
+          type: 'events/removeEvents',
+          payload,
+        });
+      },
+      removeExpenses: (payload: { eventId: string; expenseIds: string[] }) => {
+        dispatch({
+          type: 'events/removeExpenses',
+          payload,
         });
       },
     }),

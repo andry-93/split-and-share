@@ -1,52 +1,45 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Card, Icon, Text, useTheme } from 'react-native-paper';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { EventsStackParamList } from '../../../navigation/types';
-import { useEventsState } from '../../../state/events/eventsContext';
+import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
 import { PaymentEntry, selectEffectiveRawDebts, selectPayments, selectRawDebts, selectTotalAmount } from '../../../state/events/eventsSelectors';
 import { usePeopleState } from '../../../state/people/peopleContext';
 import { selectCurrentUser } from '../../../state/people/peopleSelectors';
 import { useSettingsState } from '../../../state/settings/settingsContext';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
+import { useSelectionMode } from '../../../shared/hooks/useSelectionMode';
 import { EventItem } from '../types/events';
 import { formatCurrencyAmount, normalizeCurrencyCode } from '../../../shared/utils/currency';
 import { AppHeader } from '../../../shared/ui/AppHeader';
 import { AppList } from '../../../shared/ui/AppList';
 import { DraggableFab } from '../../../shared/ui/DraggableFab';
 import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
+import { SelectionActionToolbar } from '../../../shared/ui/SelectionActionToolbar';
+import { AppConfirm } from '../../../shared/ui/AppConfirm';
 
 type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
 export function EventsListScreen({ navigation }: EventsListScreenProps) {
   const theme = useTheme();
   const { events, paymentsByEvent } = useEventsState();
+  const { removeEvents } = useEventsActions();
   const { people } = usePeopleState();
   const settings = useSettingsState();
   const [query, setQuery] = useState('');
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 250);
   const currencyCode = useMemo(() => normalizeCurrencyCode(settings.currency), [settings.currency]);
   const currentUserId = useMemo(() => selectCurrentUser(people)?.id, [people]);
 
-  const handlePressEvent = useCallback(
+  const handleOpenEvent = useCallback(
     (eventId: string) => {
       navigation.navigate('EventDetails', { eventId });
     },
     [navigation],
-  );
-
-  const renderEventItem = useCallback(
-    ({ item }: { item: EventItem }) => (
-      <EventCard
-        event={item}
-        onPress={handlePressEvent}
-        fallbackCurrencyCode={currencyCode}
-        payments={selectPayments({ events, paymentsByEvent }, item.id)}
-        currentUserId={currentUserId}
-      />
-    ),
-    [currencyCode, currentUserId, events, handlePressEvent, paymentsByEvent],
   );
 
   const filteredEvents = useMemo(() => {
@@ -58,13 +51,96 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
     return events.filter((event) => event.name.toLowerCase().includes(normalized));
   }, [debouncedQuery, events]);
 
+  const {
+    isEditMode,
+    selectedIds,
+    selectedSet,
+    selectableIds,
+    exitEditMode,
+    toggleSelection,
+    enterEditMode,
+    toggleSelectAll,
+  } = useSelectionMode<EventItem>({
+    items: filteredEvents,
+  });
+
+  const renderEventItem = useCallback(
+    ({ item }: { item: EventItem }) => (
+      <EventCard
+        event={item}
+        selectable={isEditMode}
+        selected={selectedSet.has(item.id)}
+        onPress={() => {
+          if (isEditMode) {
+            toggleSelection(item);
+            return;
+          }
+          handleOpenEvent(item.id);
+        }}
+        onLongPress={() => {
+          if (!isEditMode) {
+            enterEditMode(item);
+          }
+        }}
+        fallbackCurrencyCode={currencyCode}
+        payments={selectPayments({ events, paymentsByEvent }, item.id)}
+        currentUserId={currentUserId}
+      />
+    ),
+    [
+      currencyCode,
+      currentUserId,
+      enterEditMode,
+      events,
+      handleOpenEvent,
+      isEditMode,
+      paymentsByEvent,
+      selectedSet,
+      toggleSelection,
+    ],
+  );
+
   const handleAddEvent = useCallback(() => {
     navigation.navigate('AddEvent');
   }, [navigation]);
 
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedIds.length === 0) {
+      return;
+    }
+    removeEvents({ eventIds: selectedIds });
+    setIsDeleteConfirmVisible(false);
+    exitEditMode();
+  }, [exitEditMode, removeEvents, selectedIds]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (!isEditMode) {
+          return false;
+        }
+        exitEditMode();
+        return true;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [exitEditMode, isEditMode]),
+  );
+
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title="Events" />
+      {isEditMode ? (
+        <SelectionActionToolbar
+          title={`Selected ${selectedIds.length}`}
+          totalSelectableCount={selectableIds.length}
+          selectedCount={selectedIds.length}
+          onToggleSelectAll={toggleSelectAll}
+          onDelete={() => setIsDeleteConfirmVisible(true)}
+          onClose={exitEditMode}
+        />
+      ) : (
+        <AppHeader title="Events" />
+      )}
 
       <AppSearchbar
         value={query}
@@ -94,20 +170,37 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
         showDividers={false}
       />
 
-      <DraggableFab
-        icon="plus"
-        color="#FFFFFF"
-        backgroundColor="#2563FF"
-        onPress={handleAddEvent}
-        topBoundary={124}
-      />
+      {!isEditMode ? (
+        <DraggableFab
+          icon="plus"
+          color="#FFFFFF"
+          backgroundColor="#2563FF"
+          onPress={handleAddEvent}
+          topBoundary={124}
+        />
+      ) : null}
+
+      <AppConfirm
+        visible={isDeleteConfirmVisible}
+        title="Delete events"
+        onDismiss={() => setIsDeleteConfirmVisible(false)}
+        onConfirm={handleDeleteSelected}
+        confirmText="Delete"
+      >
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          Selected events and all related data will be deleted.
+        </Text>
+      </AppConfirm>
     </SafeAreaView>
   );
 }
 
 type EventCardProps = {
   event: EventItem;
-  onPress: (eventId: string) => void;
+  selectable: boolean;
+  selected: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
   fallbackCurrencyCode: string;
   payments: PaymentEntry[];
   currentUserId?: string;
@@ -130,17 +223,24 @@ function formatEventDate(dateValue?: string | null) {
   }).format(parsedDate);
 }
 
-const EventCard = memo(function EventCard({ event, onPress, fallbackCurrencyCode, payments, currentUserId }: EventCardProps) {
+const EventCard = memo(function EventCard({
+  event,
+  selectable,
+  selected,
+  onPress,
+  onLongPress,
+  fallbackCurrencyCode,
+  payments,
+  currentUserId,
+}: EventCardProps) {
   const theme = useTheme();
+  const longPressTriggeredRef = useRef(false);
   const pressedCardBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
   const eventCurrencyCode = useMemo(
     () => normalizeCurrencyCode(event.currency ?? fallbackCurrencyCode),
     [event.currency, fallbackCurrencyCode],
   );
   const eventDate = useMemo(() => formatEventDate(event.date), [event.date]);
-  const handlePress = useCallback(() => {
-    onPress(event.id);
-  }, [event.id, onPress]);
   const total = useMemo(() => selectTotalAmount(event), [event]);
   const rawDebts = useMemo(() => selectRawDebts(event), [event]);
   const effectiveDebts = useMemo(() => selectEffectiveRawDebts(rawDebts, payments), [payments, rawDebts]);
@@ -192,14 +292,29 @@ const EventCard = memo(function EventCard({ event, onPress, fallbackCurrencyCode
   }, [status.tone, theme.colors.error, theme.colors.errorContainer, theme.colors.onErrorContainer, theme.colors.onSurfaceVariant, theme.colors.outlineVariant, theme.colors.surface]);
 
   return (
-    <Pressable onPress={handlePress}>
+    <Pressable
+      onPress={() => {
+        if (longPressTriggeredRef.current) {
+          longPressTriggeredRef.current = false;
+          return;
+        }
+        onPress();
+      }}
+      onLongPress={() => {
+        longPressTriggeredRef.current = true;
+        onLongPress();
+      }}
+      onPressIn={() => {
+        longPressTriggeredRef.current = false;
+      }}
+    >
       {({ pressed }) => (
         <Card
           mode="contained"
           style={[
             styles.card,
             {
-              backgroundColor: pressed ? pressedCardBackground : theme.colors.surface,
+              backgroundColor: selected || pressed ? pressedCardBackground : theme.colors.surface,
               borderColor: theme.colors.outlineVariant,
             },
           ]}
@@ -233,6 +348,11 @@ const EventCard = memo(function EventCard({ event, onPress, fallbackCurrencyCode
               </View>
             </View>
           </Card.Content>
+          {selectable ? (
+            <View pointerEvents="none" style={styles.eventCheckboxOverlay}>
+              <Checkbox status={selected ? 'checked' : 'unchecked'} />
+            </View>
+          ) : null}
         </Card>
       )}
     </Pressable>
@@ -302,6 +422,12 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  eventCheckboxOverlay: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    zIndex: 2,
   },
   emptyState: {
     flex: 1,

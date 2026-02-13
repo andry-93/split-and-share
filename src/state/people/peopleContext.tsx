@@ -120,6 +120,13 @@ export function usePeopleActions() {
 
         dispatch({ type: 'people/addMany', payload: { people: nextPeople } });
       },
+      removePeople: (payload: { ids: string[] }) => {
+        if (payload.ids.length === 0) {
+          return;
+        }
+
+        dispatch({ type: 'people/removeMany', payload: { ids: payload.ids } });
+      },
     }),
     [dispatch],
   );

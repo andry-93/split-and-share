@@ -56,6 +56,13 @@ export function peopleReducer(state: PeopleState, action: PeopleAction): PeopleS
         people: [...nextPeople, ...state.people],
       };
     }
+    case 'people/removeMany': {
+      const idsToRemove = new Set(action.payload.ids);
+      return {
+        ...state,
+        people: state.people.filter((person) => !idsToRemove.has(person.id)),
+      };
+    }
     default:
       return state;
   }

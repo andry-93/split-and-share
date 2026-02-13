@@ -1,13 +1,14 @@
 import React, { memo } from 'react';
-import { View } from 'react-native';
-import { Button, useTheme } from 'react-native-paper';
-import { addPersonStyles as styles } from './styles';
+import { addPersonStyles } from './styles';
+import { BottomPrimaryActionBar } from '../../../../shared/ui/BottomPrimaryActionBar';
 
 type BottomActionBarProps = {
   bottomInset: number;
   disabled: boolean;
   label: string;
   onPress: () => void;
+  secondaryLabel?: string;
+  onSecondaryPress?: () => void;
 };
 
 export const BottomActionBar = memo(function BottomActionBar({
@@ -15,23 +16,18 @@ export const BottomActionBar = memo(function BottomActionBar({
   disabled,
   label,
   onPress,
+  secondaryLabel,
+  onSecondaryPress,
 }: BottomActionBarProps) {
-  const theme = useTheme();
-
   return (
-    <View
-      style={[
-        styles.bottomBar,
-        {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outlineVariant,
-          paddingBottom: Math.max(bottomInset, 12),
-        },
-      ]}
-    >
-      <Button mode="contained" onPress={onPress} disabled={disabled}>
-        {label}
-      </Button>
-    </View>
+    <BottomPrimaryActionBar
+      bottomInset={bottomInset}
+      disabled={disabled}
+      onPress={onPress}
+      label={label}
+      secondaryLabel={secondaryLabel}
+      onSecondaryPress={onSecondaryPress}
+      containerStyle={addPersonStyles.bottomBar}
+    />
   );
 });

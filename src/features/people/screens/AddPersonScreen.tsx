@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { Snackbar, useTheme } from 'react-native-paper';
+import { Snackbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
 import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
+import { useEventsActions } from '../../../state/events/eventsContext';
 import { AppHeader } from '../../../shared/ui/AppHeader';
 import { validatePersonEmail, validatePersonPhone } from '../../../shared/utils/validation';
 import { addPersonStyles as featureStyles } from '../components/add-person/styles';
@@ -12,6 +13,7 @@ import { NameField } from '../components/add-person/NameField';
 import { ContactField } from '../components/add-person/ContactField';
 import { NoteField } from '../components/add-person/NoteField';
 import { BottomActionBar } from '../components/add-person/BottomActionBar';
+import { AppConfirm } from '../../../shared/ui/AppConfirm';
 
 type AddPersonScreenProps = NativeStackScreenProps<PeopleStackParamList, 'AddPerson'>;
 
@@ -19,7 +21,8 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { people } = usePeopleState();
-  const { addPerson, updatePerson } = usePeopleActions();
+  const { addPerson, updatePerson, removePeople } = usePeopleActions();
+  const { removePeopleEverywhere } = useEventsActions();
   const editingPerson = useMemo(
     () => (route.params?.personId ? people.find((person) => person.id === route.params?.personId) : undefined),
     [people, route.params?.personId],
@@ -30,6 +33,8 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
   const [email, setEmail] = useState(editingPerson?.email ?? '');
   const [note, setNote] = useState(editingPerson?.note ?? '');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const isCurrentUser = Boolean(editingPerson?.isMe);
 
   useEffect(() => {
     setName(editingPerson?.name ?? '');
@@ -71,6 +76,16 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
     }
   }, [addPerson, editingPerson, email, name, navigation, note, phone, updatePerson]);
 
+  const handleDelete = useCallback(() => {
+    if (!editingPerson || editingPerson.isMe) {
+      return;
+    }
+    removePeople({ ids: [editingPerson.id] });
+    removePeopleEverywhere({ personIds: [editingPerson.id] });
+    setIsDeleteConfirmVisible(false);
+    navigation.goBack();
+  }, [editingPerson, navigation, removePeople, removePeopleEverywhere]);
+
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       <AppHeader title={isEditMode ? 'Edit Person' : 'Add Person'} onBackPress={handleBack} />
@@ -111,12 +126,26 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
           disabled={isDisabled}
           onPress={handleSave}
           label={isEditMode ? 'Save changes' : 'Add person'}
+          secondaryLabel={isEditMode && !isCurrentUser ? 'Delete' : undefined}
+          onSecondaryPress={isEditMode && !isCurrentUser ? () => setIsDeleteConfirmVisible(true) : undefined}
         />
       </KeyboardAvoidingView>
 
       <Snackbar visible={errorMessage.length > 0} onDismiss={() => setErrorMessage('')}>
         {errorMessage}
       </Snackbar>
+
+      <AppConfirm
+        visible={isDeleteConfirmVisible}
+        title="Delete contact"
+        onDismiss={() => setIsDeleteConfirmVisible(false)}
+        onConfirm={handleDelete}
+        confirmText="Delete"
+      >
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          This contact and all related event data will be deleted.
+        </Text>
+      </AppConfirm>
     </SafeAreaView>
   );
 }

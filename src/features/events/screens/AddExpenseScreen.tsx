@@ -18,6 +18,7 @@ import { BottomActionBar } from '../components/add-expense/BottomActionBar';
 import { CategoryId, CategorySelector } from '../components/add-expense/CategorySelector';
 import { PaidByField } from '../components/add-expense/PaidByField';
 import { SplitBetweenField } from '../components/add-expense/SplitBetweenField';
+import { AppConfirm } from '../../../shared/ui/AppConfirm';
 
 type AddExpenseScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddExpense'>;
 
@@ -26,15 +27,22 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
   const { events } = useEventsState();
-  const { addExpense } = useEventsActions();
+  const { addExpense, updateExpense, removeExpenses } = useEventsActions();
+  const eventId = route.params?.eventId;
   const event = useMemo(
-    () => events.find((item) => item.id === route.params.eventId),
-    [events, route.params.eventId],
+    () => (eventId ? events.find((item) => item.id === eventId) : undefined),
+    [eventId, events],
   );
+  const editingExpense = useMemo(
+    () => event?.expenses.find((expense) => expense.id === route.params?.expenseId),
+    [event?.expenses, route.params?.expenseId],
+  );
+  const isEditMode = Boolean(editingExpense);
   const [category, setCategory] = useState<CategoryId>('food');
   const sheetRef = useRef<BottomSheetModal>(null);
   useDismissBottomSheetsOnBlur([sheetRef]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const {
     amount,
     title,
@@ -54,6 +62,9 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     participants: event?.participants ?? [],
     currency: event?.currency,
     fallbackCurrency: settings.currency,
+    initialAmount: editingExpense ? String(editingExpense.amount) : '',
+    initialTitle: editingExpense?.title ?? '',
+    initialPaidById: editingExpense?.paidById,
   });
 
   const snapPoints = useMemo(() => ['40%'], []);
@@ -84,25 +95,53 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
       }
 
     try {
-      addExpense({
-        eventId: route.params.eventId,
-        expense: {
-          title,
-          amount: parsedAmount,
-          paidBy,
-          paidById,
-        },
-      });
+      if (editingExpense) {
+        if (!eventId) {
+          throw new Error('Event not found.');
+        }
+        updateExpense({
+          eventId,
+          expenseId: editingExpense.id,
+          patch: {
+            title,
+            amount: parsedAmount,
+            paidBy,
+            paidById,
+          },
+        });
+      } else {
+        if (!eventId) {
+          throw new Error('Event not found.');
+        }
+        addExpense({
+          eventId,
+          expense: {
+            title,
+            amount: parsedAmount,
+            paidBy,
+            paidById,
+          },
+        });
+      }
       navigation.goBack();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save expense.';
+      const message = error instanceof Error ? error.message : `Unable to ${editingExpense ? 'update' : 'save'} expense.`;
       setErrorMessage(message);
     }
-  }, [addExpense, navigation, paidBy, paidById, parsedAmount, route.params.eventId, title]);
+  }, [addExpense, editingExpense, eventId, navigation, paidBy, paidById, parsedAmount, title, updateExpense]);
+
+  const handleDelete = useCallback(() => {
+    if (!editingExpense || !eventId) {
+      return;
+    }
+    removeExpenses({ eventId, expenseIds: [editingExpense.id] });
+    setIsDeleteConfirmVisible(false);
+    navigation.goBack();
+  }, [editingExpense, eventId, navigation, removeExpenses]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title="Add Expense" onBackPress={() => navigation.goBack()} />
+      <AppHeader title={isEditMode ? 'Edit Expense' : 'Add Expense'} onBackPress={() => navigation.goBack()} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -143,12 +182,31 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           </View>
         </ScrollView>
 
-        <BottomActionBar onSave={handleSave} disabled={isSaveDisabled} bottomInset={insets.bottom} />
+        <BottomActionBar
+          onSave={handleSave}
+          disabled={isSaveDisabled}
+          bottomInset={insets.bottom}
+          label={isEditMode ? 'Save changes' : 'Save expense'}
+          secondaryLabel={isEditMode ? 'Delete' : undefined}
+          onSecondaryPress={isEditMode ? () => setIsDeleteConfirmVisible(true) : undefined}
+        />
       </KeyboardAvoidingView>
 
       <Snackbar visible={errorMessage.length > 0} onDismiss={() => setErrorMessage('')}>
         {errorMessage}
       </Snackbar>
+
+      <AppConfirm
+        visible={isDeleteConfirmVisible}
+        title="Delete expense"
+        onDismiss={() => setIsDeleteConfirmVisible(false)}
+        onConfirm={handleDelete}
+        confirmText="Delete"
+      >
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          This expense and all related debt/payment calculations will be deleted.
+        </Text>
+      </AppConfirm>
 
       <AppSingleSelectBottomSheet
         ref={sheetRef}

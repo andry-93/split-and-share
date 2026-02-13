@@ -5,7 +5,7 @@ export function settingsReducer(state: SettingsState, action: SettingsAction): S
     case 'settings/theme':
       return { ...state, theme: action.payload.theme };
     case 'settings/language':
-      return { ...state, language: action.payload.language };
+      return { ...state, language: action.payload.language, languageSource: 'manual' };
     case 'settings/currency':
       return { ...state, currency: action.payload.currency };
     default:

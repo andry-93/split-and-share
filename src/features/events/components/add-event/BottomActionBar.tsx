@@ -1,35 +1,33 @@
 import React, { memo } from 'react';
-import { View } from 'react-native';
-import { Button, useTheme } from 'react-native-paper';
-import { addEventStyles as styles } from './styles';
+import { addEventStyles } from './styles';
+import { BottomPrimaryActionBar } from '../../../../shared/ui/BottomPrimaryActionBar';
 
 type BottomActionBarProps = {
   bottomInset: number;
   disabled: boolean;
   onPress: () => void;
+  label?: string;
+  secondaryLabel?: string;
+  onSecondaryPress?: () => void;
 };
 
 export const BottomActionBar = memo(function BottomActionBar({
   bottomInset,
   disabled,
   onPress,
+  label = 'Create event',
+  secondaryLabel,
+  onSecondaryPress,
 }: BottomActionBarProps) {
-  const theme = useTheme();
-
   return (
-    <View
-      style={[
-        styles.bottomBar,
-        {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outlineVariant,
-          paddingBottom: Math.max(bottomInset, 12),
-        },
-      ]}
-    >
-      <Button mode="contained" onPress={onPress} disabled={disabled}>
-        Create event
-      </Button>
-    </View>
+    <BottomPrimaryActionBar
+      bottomInset={bottomInset}
+      disabled={disabled}
+      onPress={onPress}
+      label={label}
+      secondaryLabel={secondaryLabel}
+      onSecondaryPress={onSecondaryPress}
+      containerStyle={addEventStyles.bottomBar}
+    />
   );
 });

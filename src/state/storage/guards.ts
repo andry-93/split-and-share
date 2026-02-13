@@ -10,14 +10,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function isPersonItem(value: unknown): value is PersonItem {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return typeof value.id === 'string' && typeof value.name === 'string';
-}
-
 function toNormalizedPerson(value: unknown): PersonItem | null {
   if (!isRecord(value)) {
     return null;
@@ -88,6 +80,7 @@ export function parseSettingsState(value: unknown): SettingsState {
 
   const theme = value.theme;
   const language = value.language;
+  const languageSource = value.languageSource;
   const currency = value.currency;
   if (
     (theme !== 'light' && theme !== 'dark' && theme !== 'system') ||
@@ -97,7 +90,17 @@ export function parseSettingsState(value: unknown): SettingsState {
     return createDefaultSettingsState();
   }
 
-  return { theme, language, currency };
+  return {
+    theme,
+    language,
+    languageSource:
+      languageSource === 'manual' || languageSource === 'system'
+        ? languageSource
+        : language === 'English'
+          ? 'system'
+          : 'manual',
+    currency,
+  };
 }
 
 export function parsePeopleState(value: unknown): PeopleState {

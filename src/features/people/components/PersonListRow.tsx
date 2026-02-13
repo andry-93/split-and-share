@@ -1,6 +1,6 @@
-import React, { ReactNode, memo } from 'react';
+import React, { ReactNode, memo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Avatar, Text, useTheme } from 'react-native-paper';
+import { Avatar, Checkbox, Text, useTheme } from 'react-native-paper';
 import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
 import { getPreferredPersonContact } from '../../../shared/utils/people';
 import { getListPressedBackground } from '../../../shared/ui/listPressState';
@@ -17,7 +17,11 @@ type PersonListRowProps = {
   muted?: boolean;
   isCurrentUser?: boolean;
   rightSlot?: ReactNode;
+  selectable?: boolean;
+  selected?: boolean;
+  selectionDisabled?: boolean;
   onPress?: () => void;
+  onLongPress?: () => void;
 };
 
 export const PersonListRow = memo(function PersonListRow({
@@ -28,9 +32,14 @@ export const PersonListRow = memo(function PersonListRow({
   muted = false,
   isCurrentUser = false,
   rightSlot,
+  selectable = false,
+  selected = false,
+  selectionDisabled = false,
   onPress,
+  onLongPress,
 }: PersonListRowProps) {
   const theme = useTheme();
+  const longPressTriggeredRef = useRef(false);
   const contact = getPreferredPersonContact({ phone, email });
   const currentUserBackground = getListPressedBackground(theme.dark);
   const initials = name
@@ -76,21 +85,46 @@ export const PersonListRow = memo(function PersonListRow({
           ) : null}
         </View>
       </View>
-      {rightSlot ? <View style={styles.rightSlot}>{rightSlot}</View> : null}
+      {selectable ? (
+        <View style={styles.rightSlot}>
+          <View pointerEvents="none">
+            <Checkbox
+              status={selected ? 'checked' : 'unchecked'}
+              disabled={selectionDisabled}
+            />
+          </View>
+        </View>
+      ) : rightSlot ? (
+        <View style={styles.rightSlot}>{rightSlot}</View>
+      ) : null}
     </View>
   );
 
-  if (!onPress) {
+  if (!onPress && !onLongPress) {
     return <View style={styles.row}>{content}</View>;
   }
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        if (longPressTriggeredRef.current) {
+          longPressTriggeredRef.current = false;
+          return;
+        }
+        onPress?.();
+      }}
+      onLongPress={() => {
+        longPressTriggeredRef.current = true;
+        onLongPress?.();
+      }}
+      onPressIn={() => {
+        longPressTriggeredRef.current = false;
+      }}
       hitSlop={4}
       style={({ pressed }) => [
         styles.row,
         styles.pressableRow,
+        selected ? { backgroundColor: currentUserBackground } : null,
         pressed ? { backgroundColor: currentUserBackground } : null,
       ]}
     >

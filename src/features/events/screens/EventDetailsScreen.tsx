@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { Appbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,11 +11,12 @@ import { AppHeader } from '../../../shared/ui/AppHeader';
 import { DraggableFab } from '../../../shared/ui/DraggableFab';
 import { useEventDetailsModel } from '../hooks/useEventDetailsModel';
 import { DebtsPanel } from '../components/event-details/DebtsPanel';
-import { ExpensesPanel } from '../components/event-details/ExpensesPanel';
-import { PeoplePanel } from '../components/event-details/PeoplePanel';
+import { ExpensesPanel, ExpensesSelectionToolbarState } from '../components/event-details/ExpensesPanel';
+import { PeoplePanel, PeopleSelectionToolbarState } from '../components/event-details/PeoplePanel';
 import { Summary } from '../components/event-details/Summary';
 import { EventDetailsTab, TopTabs } from '../components/event-details/TopTabs';
 import { eventDetailsStyles as styles } from '../components/event-details/styles';
+import { SelectionActionToolbar } from '../../../shared/ui/SelectionActionToolbar';
 
 type EventDetailsScreenProps = NativeStackScreenProps<EventsStackParamList, 'EventDetails'>;
 
@@ -26,17 +27,31 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
   const { events, paymentsByEvent } = useEventsState();
-  const { registerPayment } = useEventsActions();
+  const { registerPayment, removeParticipantsFromEvent, removeExpenses } = useEventsActions();
   const event = events.find((item) => item.id === route.params.eventId);
   const [activeTab, setActiveTab] = useState<EventDetailsTab>('expenses');
   const [debtsMode, setDebtsMode] = useState<'detailed' | 'simplified'>('detailed');
   const [rawViewportHeight, setRawViewportHeight] = useState(0);
   const [rawContentHeight, setRawContentHeight] = useState(0);
   const [debtHintHeight, setDebtHintHeight] = useState(0);
+  const [peopleToolbarState, setPeopleToolbarState] = useState<PeopleSelectionToolbarState | null>(null);
+  const [expensesToolbarState, setExpensesToolbarState] = useState<ExpensesSelectionToolbarState | null>(null);
 
   const handleViewDetailedDebts = useCallback(() => {
     setDebtsMode('detailed');
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'people') {
+      setPeopleToolbarState(null);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'expenses') {
+      setExpensesToolbarState(null);
+    }
+  }, [activeTab]);
 
   if (!event) {
     return (
@@ -101,9 +116,40 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     navigation.navigate('AddExpense', { eventId: event.id });
   }, [event.id, navigation]);
 
+  const handleOpenExpense = useCallback(
+    (expenseId: string) => {
+      navigation.navigate('AddExpense', { eventId: event.id, expenseId });
+    },
+    [event.id, navigation],
+  );
+
   const handleAddPeople = useCallback(() => {
     navigation.navigate('AddPeopleToEvent', { eventId: event.id });
   }, [event.id, navigation]);
+
+  const handleEditEvent = useCallback(() => {
+    navigation.navigate('AddEvent', { eventId: event.id });
+  }, [event.id, navigation]);
+
+  const handleRemoveExpenses = useCallback(
+    (expenseIds: string[]) => {
+      removeExpenses({
+        eventId: event.id,
+        expenseIds,
+      });
+    },
+    [event.id, removeExpenses],
+  );
+
+  const handleRemoveParticipants = useCallback(
+    (participantIds: string[]) => {
+      removeParticipantsFromEvent({
+        eventId: event.id,
+        participantIds,
+      });
+    },
+    [event.id, removeParticipantsFromEvent],
+  );
 
   const handleRawViewportLayout = useCallback((layoutEvent: LayoutChangeEvent) => {
     setRawViewportHeight(layoutEvent.nativeEvent.layout.height);
@@ -126,11 +172,36 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
       style={[styles.screen, { backgroundColor: theme.colors.background }]}
       edges={['top', 'left', 'right']}
     >
-      <AppHeader
-        title={event.name}
-        onBackPress={() => navigation.goBack()}
-        rightSlot={<Appbar.Action icon="share-variant" onPress={() => undefined} />}
-      />
+      {activeTab === 'people' && peopleToolbarState?.visible ? (
+        <SelectionActionToolbar
+          title={peopleToolbarState.title}
+          totalSelectableCount={peopleToolbarState.totalSelectableCount}
+          selectedCount={peopleToolbarState.selectedCount}
+          onToggleSelectAll={peopleToolbarState.onToggleSelectAll}
+          onDelete={peopleToolbarState.onDelete}
+          onClose={peopleToolbarState.onClose}
+        />
+      ) : activeTab === 'expenses' && expensesToolbarState?.visible ? (
+        <SelectionActionToolbar
+          title={expensesToolbarState.title}
+          totalSelectableCount={expensesToolbarState.totalSelectableCount}
+          selectedCount={expensesToolbarState.selectedCount}
+          onToggleSelectAll={expensesToolbarState.onToggleSelectAll}
+          onDelete={expensesToolbarState.onDelete}
+          onClose={expensesToolbarState.onClose}
+        />
+      ) : (
+        <AppHeader
+          title={event.name}
+          onBackPress={() => navigation.goBack()}
+          rightSlot={
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Appbar.Action icon="pencil-outline" onPress={handleEditEvent} />
+              <Appbar.Action icon="share-variant" onPress={() => undefined} />
+            </View>
+          }
+        />
+      )}
 
       <View style={styles.topSection}>
         <Summary
@@ -143,7 +214,13 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
 
       <View style={styles.contentArea}>
         {activeTab === 'expenses' ? (
-          <ExpensesPanel expenses={event.expenses} currencyCode={currencyCode} />
+          <ExpensesPanel
+            expenses={event.expenses}
+            currencyCode={currencyCode}
+            onRemoveExpenses={handleRemoveExpenses}
+            onOpenExpense={handleOpenExpense}
+            onSelectionToolbarChange={setExpensesToolbarState}
+          />
         ) : null}
 
         {activeTab === 'debts' ? (
@@ -172,11 +249,13 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
             participants={event.participants}
             participantBalanceMap={participantBalanceMap}
             currencyCode={currencyCode}
+            onRemoveParticipants={handleRemoveParticipants}
+            onSelectionToolbarChange={setPeopleToolbarState}
           />
         ) : null}
       </View>
 
-      {activeTab === 'expenses' ? (
+      {activeTab === 'expenses' && !expensesToolbarState?.visible ? (
         <DraggableFab
           icon="plus"
           color="#FFFFFF"
@@ -186,7 +265,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
         />
       ) : null}
 
-      {activeTab === 'people' ? (
+      {activeTab === 'people' && !peopleToolbarState?.visible ? (
         <DraggableFab
           icon="plus"
           color="#FFFFFF"

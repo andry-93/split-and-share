@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import * as Contacts from 'expo-contacts';
-import { ActivityIndicator, Button, Checkbox, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Button, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PeopleStackParamList } from '../../../navigation/types';
@@ -239,8 +239,11 @@ type ContactRowProps = {
 
 const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, onToggle }: ContactRowProps) {
   const handlePress = useCallback(() => {
+    if (alreadyAdded) {
+      return;
+    }
     onToggle(contact.id);
-  }, [contact.id, onToggle]);
+  }, [alreadyAdded, contact.id, onToggle]);
 
   return (
     <PersonListRow
@@ -249,7 +252,10 @@ const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, o
       email={contact.email}
       metaText={alreadyAdded ? 'Already added' : undefined}
       muted={alreadyAdded}
-      rightSlot={<Checkbox status={selected ? 'checked' : 'unchecked'} disabled={alreadyAdded} onPress={handlePress} />}
+      selectable
+      selected={selected}
+      selectionDisabled={alreadyAdded}
+      onPress={handlePress}
     />
   );
 });
