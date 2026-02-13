@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
-import { addExpenseStyles } from './styles';
-import { BottomPrimaryActionBar } from '../../../../shared/ui/BottomPrimaryActionBar';
+import { addExpenseStyles } from '@/features/events/components/add-expense/styles';
+import { BottomPrimaryActionBar } from '@/shared/ui/BottomPrimaryActionBar';
 
 type BottomActionBarProps = {
   onSave: () => void;

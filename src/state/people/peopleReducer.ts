@@ -1,4 +1,4 @@
-import { PeopleAction, PeopleState } from './peopleTypes';
+import { PeopleAction, PeopleState } from '@/state/people/peopleTypes';
 
 export function peopleReducer(state: PeopleState, action: PeopleAction): PeopleState {
   switch (action.type) {

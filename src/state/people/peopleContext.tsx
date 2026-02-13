@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import { PersonItem } from '../../features/people/types/people';
-import { readJSON, writeJSON } from '../storage/mmkv';
-import { parsePeopleState } from '../storage/guards';
-import { STORAGE_KEYS } from '../storage/storageKeys';
-import { selectCurrentUser } from './peopleSelectors';
-import { peopleReducer } from './peopleReducer';
-import { PeopleAction, PeopleState } from './peopleTypes';
-import { createEntityId } from '../../shared/utils/id';
-import { normalizeOptionalText } from '../../shared/utils/validation';
+import { PersonItem } from '@/features/people/types/people';
+import { readJSON, writeJSON } from '@/state/storage/mmkv';
+import { parsePeopleState } from '@/state/storage/guards';
+import { STORAGE_KEYS } from '@/state/storage/storageKeys';
+import { selectCurrentUser } from '@/state/people/peopleSelectors';
+import { peopleReducer } from '@/state/people/peopleReducer';
+import { PeopleAction, PeopleState } from '@/state/people/peopleTypes';
+import { createEntityId } from '@/shared/utils/id';
+import { normalizeOptionalText } from '@/shared/utils/validation';
 
 const PeopleStateContext = createContext<PeopleState | undefined>(undefined);
 const PeopleDispatchContext = createContext<React.Dispatch<PeopleAction> | undefined>(undefined);

@@ -1,8 +1,8 @@
 import React, { memo, useCallback } from 'react';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Text, useTheme } from 'react-native-paper';
-import { BottomSheetSingleSelectRow } from '../../../../shared/ui/BottomSheetSingleSelectRow';
-import { addEventStyles as styles } from './styles';
+import { BottomSheetSingleSelectRow } from '@/shared/ui/BottomSheetSingleSelectRow';
+import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
 
 type CurrencyBottomSheetProps<T extends string> = {
   sheetRef: React.RefObject<BottomSheetModal | null>;

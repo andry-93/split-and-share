@@ -1,8 +1,8 @@
 import React, { memo, useCallback } from 'react';
 import { Pressable, View } from 'react-native';
 import { Checkbox, Divider, Text } from 'react-native-paper';
-import { OutlinedFieldContainer } from '../../../../shared/ui/OutlinedFieldContainer';
-import { addExpenseStyles as styles } from './styles';
+import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
+import { addExpenseStyles as styles } from '@/features/events/components/add-expense/styles';
 
 type SplitBetweenFieldProps = {
   participants: string[];

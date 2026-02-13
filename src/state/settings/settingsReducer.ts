@@ -1,4 +1,4 @@
-import { SettingsAction, SettingsState } from './settingsTypes';
+import { SettingsAction, SettingsState } from '@/state/settings/settingsTypes';
 
 export function settingsReducer(state: SettingsState, action: SettingsAction): SettingsState {
   switch (action.type) {

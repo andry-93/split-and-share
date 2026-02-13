@@ -1,7 +1,7 @@
 import React, { forwardRef, memo, useCallback } from 'react';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { BottomSheetSingleSelectRow } from './BottomSheetSingleSelectRow';
-import { AppBottomSheet } from './AppBottomSheet';
+import { BottomSheetSingleSelectRow } from '@/shared/ui/BottomSheetSingleSelectRow';
+import { AppBottomSheet } from '@/shared/ui/AppBottomSheet';
 
 type Option = {
   value: string;

@@ -1,4 +1,4 @@
-import { PersonItem } from '../../features/people/types/people';
+import { PersonItem } from '@/features/people/types/people';
 
 export function selectCurrentUser(people: PersonItem[]): PersonItem | undefined {
   const explicit = people.find((person) => person.isMe);

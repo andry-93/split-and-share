@@ -4,10 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { RootTabParamList } from './types';
-import { EventsStackNavigator } from './stacks/EventsStackNavigator';
-import { PeopleStackNavigator } from './stacks/PeopleStackNavigator';
-import { ProfileStackNavigator } from './stacks/ProfileStackNavigator';
+import { RootTabParamList } from '@/navigation/types';
+import { EventsStackNavigator } from '@/navigation/stacks/EventsStackNavigator';
+import { PeopleStackNavigator } from '@/navigation/stacks/PeopleStackNavigator';
+import { ProfileStackNavigator } from '@/navigation/stacks/ProfileStackNavigator';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
@@ -50,6 +50,7 @@ export function AppNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        animation: 'shift',
         tabBarShowLabel: true,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,

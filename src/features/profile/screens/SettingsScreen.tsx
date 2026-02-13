@@ -3,14 +3,15 @@ import { StyleSheet, View } from 'react-native';
 import { Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useSettingsActions, useSettingsState } from '../../../state/settings/settingsContext';
-import type { SettingsState } from '../../../state/settings/settingsTypes';
+import { useSettingsActions, useSettingsState } from '@/state/settings/settingsContext';
+import type { SettingsState } from '@/state/settings/settingsTypes';
 import appPackage from '../../../../package.json';
-import { CustomToggleGroup } from '../../../shared/ui/CustomToggleGroup';
-import { normalizeCurrencyCode } from '../../../shared/utils/currency';
-import { AppHeader } from '../../../shared/ui/AppHeader';
-import { AppSingleSelectBottomSheet } from '../../../shared/ui/AppSingleSelectBottomSheet';
-import { useDismissBottomSheetsOnBlur } from '../../../shared/hooks/useDismissBottomSheetsOnBlur';
+import { CustomToggleGroup } from '@/shared/ui/CustomToggleGroup';
+import { normalizeCurrencyCode } from '@/shared/utils/currency';
+import { AppHeader } from '@/shared/ui/AppHeader';
+import { AppSingleSelectBottomSheet } from '@/shared/ui/AppSingleSelectBottomSheet';
+import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomSheetsOnBlur';
+import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
 
 const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
 const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'];
@@ -69,7 +70,8 @@ export function SettingsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
+    <BottomTabSwipeBoundary currentTab="ProfileTab">
+      <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       <AppHeader title="Settings" />
 
       <View style={styles.content}>
@@ -143,7 +145,8 @@ export function SettingsScreen() {
         onSelect={handleSelectCurrency}
         snapPoints={snapPoints}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </BottomTabSwipeBoundary>
   );
 }
 

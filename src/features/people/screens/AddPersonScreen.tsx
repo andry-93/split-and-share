@@ -3,17 +3,17 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-na
 import { Snackbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { PeopleStackParamList } from '../../../navigation/types';
-import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
-import { useEventsActions } from '../../../state/events/eventsContext';
-import { AppHeader } from '../../../shared/ui/AppHeader';
-import { validatePersonEmail, validatePersonPhone } from '../../../shared/utils/validation';
-import { addPersonStyles as featureStyles } from '../components/add-person/styles';
-import { NameField } from '../components/add-person/NameField';
-import { ContactField } from '../components/add-person/ContactField';
-import { NoteField } from '../components/add-person/NoteField';
-import { BottomActionBar } from '../components/add-person/BottomActionBar';
-import { AppConfirm } from '../../../shared/ui/AppConfirm';
+import { PeopleStackParamList } from '@/navigation/types';
+import { usePeopleActions, usePeopleState } from '@/state/people/peopleContext';
+import { useEventsActions } from '@/state/events/eventsContext';
+import { AppHeader } from '@/shared/ui/AppHeader';
+import { validatePersonEmail, validatePersonPhone } from '@/shared/utils/validation';
+import { addPersonStyles as featureStyles } from '@/features/people/components/add-person/styles';
+import { NameField } from '@/features/people/components/add-person/NameField';
+import { ContactField } from '@/features/people/components/add-person/ContactField';
+import { NoteField } from '@/features/people/components/add-person/NoteField';
+import { BottomActionBar } from '@/features/people/components/add-person/BottomActionBar';
+import { AppConfirm } from '@/shared/ui/AppConfirm';
 
 type AddPersonScreenProps = NativeStackScreenProps<PeopleStackParamList, 'AddPerson'>;
 

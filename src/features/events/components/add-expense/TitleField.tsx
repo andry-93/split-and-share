@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Text, TextInput } from 'react-native-paper';
-import { OutlinedFieldContainer } from '../../../../shared/ui/OutlinedFieldContainer';
-import { addExpenseStyles as styles } from './styles';
+import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
+import { addExpenseStyles as styles } from '@/features/events/components/add-expense/styles';
 
 type TitleFieldProps = {
   value: string;

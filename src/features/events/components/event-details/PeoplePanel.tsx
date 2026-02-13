@@ -2,14 +2,14 @@ import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { BackHandler, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { ParticipantItem } from '../../types/events';
-import { AppList } from '../../../../shared/ui/AppList';
-import { PersonListRow } from '../../../people/components/PersonListRow';
-import { formatCurrencyAmount } from '../../../../shared/utils/currency';
-import { eventDetailsStyles as styles } from './styles';
-import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '../../../../shared/utils/people';
-import { AppConfirm } from '../../../../shared/ui/AppConfirm';
-import { useSelectionMode } from '../../../../shared/hooks/useSelectionMode';
+import { ParticipantItem } from '@/features/events/types/events';
+import { AppList } from '@/shared/ui/AppList';
+import { PersonListRow } from '@/features/people/components/PersonListRow';
+import { formatCurrencyAmount } from '@/shared/utils/currency';
+import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
+import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
+import { AppConfirm } from '@/shared/ui/AppConfirm';
+import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
 
 export type PeopleSelectionToolbarState = {
   visible: boolean;

@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
-import { OutlinedFieldContainer } from '../../../../shared/ui/OutlinedFieldContainer';
-import { addEventStyles as styles } from './styles';
+import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
+import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
 
 type DateFieldProps = {
   value: string;

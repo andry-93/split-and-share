@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Text, TextInput } from 'react-native-paper';
-import { OutlinedFieldContainer } from '../../../../shared/ui/OutlinedFieldContainer';
-import { addEventStyles as styles } from './styles';
+import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
+import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
 
 type EventNameFieldProps = {
   value: string;

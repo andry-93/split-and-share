@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Modal, Portal, Text, Button, useTheme } from 'react-native-paper';
-import { addEventStyles as styles } from './styles';
+import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
 
 type IosDatePickerModalProps = {
   visible: boolean;

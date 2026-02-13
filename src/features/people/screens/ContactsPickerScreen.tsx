@@ -4,14 +4,14 @@ import * as Contacts from 'expo-contacts';
 import { ActivityIndicator, Button, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { PeopleStackParamList } from '../../../navigation/types';
-import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
-import { AppHeader } from '../../../shared/ui/AppHeader';
-import { AppList } from '../../../shared/ui/AppList';
-import { PersonListRow } from '../components/PersonListRow';
-import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
-import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
-import { getContactsPermissionStatus } from '../services/contactsPermission';
+import { PeopleStackParamList } from '@/navigation/types';
+import { usePeopleActions, usePeopleState } from '@/state/people/peopleContext';
+import { AppHeader } from '@/shared/ui/AppHeader';
+import { AppList } from '@/shared/ui/AppList';
+import { PersonListRow } from '@/features/people/components/PersonListRow';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import { AppSearchbar } from '@/shared/ui/AppSearchbar';
+import { getContactsPermissionStatus } from '@/features/people/services/contactsPermission';
 
 type DeviceContact = {
   id: string;

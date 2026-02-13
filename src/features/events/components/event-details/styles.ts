@@ -48,6 +48,9 @@ export const eventDetailsStyles = StyleSheet.create({
   contentArea: {
     flex: 1,
   },
+  tabPanelArea: {
+    flex: 1,
+  },
   debtsContent: {
     flex: 1,
     paddingTop: 12,
@@ -197,4 +200,3 @@ export const eventDetailsStyles = StyleSheet.create({
     gap: 8,
   },
 });
-

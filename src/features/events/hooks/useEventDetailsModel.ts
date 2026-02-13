@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { EventItem } from '../types/events';
+import { EventItem } from '@/features/events/types/events';
 import {
   PaymentEntry,
   selectDetailedDebts,
@@ -10,9 +10,9 @@ import {
   selectPayments,
   selectRawDebts,
   selectSimplifiedDebts,
-} from '../../../state/events/eventsSelectors';
-import { EventsState } from '../../../state/events/eventsTypes';
-import { formatCurrencyAmount, normalizeCurrencyCode } from '../../../shared/utils/currency';
+} from '@/state/events/eventsSelectors';
+import { EventsState } from '@/state/events/eventsTypes';
+import { formatCurrencyAmount, normalizeCurrencyCode } from '@/shared/utils/currency';
 
 type UseEventDetailsModelInput = {
   event: EventItem;

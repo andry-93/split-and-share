@@ -1,7 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { FlatList, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import { getListPressedBackground } from './listPressState';
+import { getListPressedBackground } from '@/shared/ui/listPressState';
 
 type RenderItemParams<T> = {
   item: T;

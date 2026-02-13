@@ -1,5 +1,5 @@
-import { EventItem, ParticipantItem } from '../../features/events/types/events';
-import { PersonItem } from '../../features/people/types/people';
+import { EventItem, ParticipantItem } from '@/features/events/types/events';
+import { PersonItem } from '@/features/people/types/people';
 
 export type SeedPerson = {
   id: string;

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { NativeModules, Platform, useColorScheme } from 'react-native';
-import { SettingsState } from '../../../state/settings/settingsTypes';
+import { SettingsState } from '@/state/settings/settingsTypes';
 
 type UseEventDatePickerInput = {
   themeMode: SettingsState['theme'];

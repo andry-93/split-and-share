@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ParticipantItem } from '../types/events';
-import { normalizeCurrencyCode } from '../../../shared/utils/currency';
-import { sortPeopleWithCurrentUserFirst } from '../../../shared/utils/people';
+import { ParticipantItem } from '@/features/events/types/events';
+import { normalizeCurrencyCode } from '@/shared/utils/currency';
+import { sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 
 type UseAddExpenseFormInput = {
   participants: ParticipantItem[];

@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
-import { addExpenseStyles as styles } from './styles';
+import { addExpenseStyles as styles } from '@/features/events/components/add-expense/styles';
 
 export const categoryOptions = [
   { id: 'food', label: 'Food', icon: 'cart-outline' },

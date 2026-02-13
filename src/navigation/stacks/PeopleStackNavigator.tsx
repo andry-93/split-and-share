@@ -1,10 +1,10 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PeopleStackParamList } from '../types';
-import { PeopleListScreen } from '../../features/people/screens/PeopleListScreen';
-import { AddPersonScreen } from '../../features/people/screens/AddPersonScreen';
-import { ContactsAccessScreen } from '../../features/people/screens/ContactsAccessScreen';
-import { ContactsPickerScreen } from '../../features/people/screens/ContactsPickerScreen';
+import { PeopleStackParamList } from '@/navigation/types';
+import { PeopleListScreen } from '@/features/people/screens/PeopleListScreen';
+import { AddPersonScreen } from '@/features/people/screens/AddPersonScreen';
+import { ContactsAccessScreen } from '@/features/people/screens/ContactsAccessScreen';
+import { ContactsPickerScreen } from '@/features/people/screens/ContactsPickerScreen';
 
 const Stack = createNativeStackNavigator<PeopleStackParamList>();
 

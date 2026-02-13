@@ -4,9 +4,9 @@ import { Button, Icon, Snackbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { PeopleStackParamList } from '../../../navigation/types';
-import { AppHeader } from '../../../shared/ui/AppHeader';
-import { getContactsPermissionStatus, requestContactsPermission } from '../services/contactsPermission';
+import { PeopleStackParamList } from '@/navigation/types';
+import { AppHeader } from '@/shared/ui/AppHeader';
+import { getContactsPermissionStatus, requestContactsPermission } from '@/features/people/services/contactsPermission';
 
 type ContactsAccessScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsAccess'>;
 

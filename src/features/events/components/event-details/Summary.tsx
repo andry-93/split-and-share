@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { View } from 'react-native';
 import { Card, Text, useTheme } from 'react-native-paper';
-import { eventDetailsStyles as styles } from './styles';
+import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 
 type SummaryProps = {
   totalAmountDisplay: string;

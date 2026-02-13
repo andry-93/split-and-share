@@ -3,16 +3,16 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Checkbox, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { EventsStackParamList } from '../../../navigation/types';
-import { usePeopleState } from '../../../state/people/peopleContext';
-import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
-import { PersonItem } from '../../people/types/people';
-import { AppHeader } from '../../../shared/ui/AppHeader';
-import { AppList } from '../../../shared/ui/AppList';
-import { PersonListRow } from '../../people/components/PersonListRow';
-import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
-import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
-import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '../../../shared/utils/people';
+import { EventsStackParamList } from '@/navigation/types';
+import { usePeopleState } from '@/state/people/peopleContext';
+import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
+import { PersonItem } from '@/features/people/types/people';
+import { AppHeader } from '@/shared/ui/AppHeader';
+import { AppList } from '@/shared/ui/AppList';
+import { PersonListRow } from '@/features/people/components/PersonListRow';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import { AppSearchbar } from '@/shared/ui/AppSearchbar';
+import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 
 type AddPeopleToEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddPeopleToEvent'>;
 

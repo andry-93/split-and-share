@@ -1,26 +1,51 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { Appbar, Text, useTheme } from 'react-native-paper';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { EventsStackParamList } from '../../../navigation/types';
-import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
-import { RawDebt, SimplifiedDebt } from '../../../state/events/eventsSelectors';
-import { useSettingsState } from '../../../state/settings/settingsContext';
-import { AppHeader } from '../../../shared/ui/AppHeader';
-import { DraggableFab } from '../../../shared/ui/DraggableFab';
-import { useEventDetailsModel } from '../hooks/useEventDetailsModel';
-import { DebtsPanel } from '../components/event-details/DebtsPanel';
-import { ExpensesPanel, ExpensesSelectionToolbarState } from '../components/event-details/ExpensesPanel';
-import { PeoplePanel, PeopleSelectionToolbarState } from '../components/event-details/PeoplePanel';
-import { Summary } from '../components/event-details/Summary';
-import { EventDetailsTab, TopTabs } from '../components/event-details/TopTabs';
-import { eventDetailsStyles as styles } from '../components/event-details/styles';
-import { SelectionActionToolbar } from '../../../shared/ui/SelectionActionToolbar';
+import { EventsStackParamList } from '@/navigation/types';
+import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
+import { RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
+import { useSettingsState } from '@/state/settings/settingsContext';
+import { AppHeader } from '@/shared/ui/AppHeader';
+import { DraggableFab } from '@/shared/ui/DraggableFab';
+import { useEventDetailsModel } from '@/features/events/hooks/useEventDetailsModel';
+import { DebtsPanel } from '@/features/events/components/event-details/DebtsPanel';
+import { ExpensesPanel, ExpensesSelectionToolbarState } from '@/features/events/components/event-details/ExpensesPanel';
+import { PeoplePanel, PeopleSelectionToolbarState } from '@/features/events/components/event-details/PeoplePanel';
+import { Summary } from '@/features/events/components/event-details/Summary';
+import { EventDetailsTab, TopTabs } from '@/features/events/components/event-details/TopTabs';
+import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
+import { SelectionActionToolbar } from '@/shared/ui/SelectionActionToolbar';
 
 type EventDetailsScreenProps = NativeStackScreenProps<EventsStackParamList, 'EventDetails'>;
 
 const DEBTS_LIST_BOTTOM_GAP = 12;
+const TAB_ORDER: EventDetailsTab[] = ['expenses', 'debts', 'people'];
+const HORIZONTAL_THRESHOLD = 64;
+const VELOCITY_THRESHOLD = 420;
+
+function getNextTabFromSwipe(
+  activeIndex: number,
+  translationX: number,
+  velocityX: number,
+): EventDetailsTab | null {
+  'worklet';
+  const shouldGoNext = translationX < -HORIZONTAL_THRESHOLD || velocityX < -VELOCITY_THRESHOLD;
+  const shouldGoPrev = translationX > HORIZONTAL_THRESHOLD || velocityX > VELOCITY_THRESHOLD;
+
+  if (shouldGoNext && activeIndex < TAB_ORDER.length - 1) {
+    return TAB_ORDER[activeIndex + 1];
+  }
+
+  if (shouldGoPrev && activeIndex > 0) {
+    return TAB_ORDER[activeIndex - 1];
+  }
+
+  return null;
+}
 
 export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProps) {
   const theme = useTheme();
@@ -36,6 +61,10 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const [debtHintHeight, setDebtHintHeight] = useState(0);
   const [peopleToolbarState, setPeopleToolbarState] = useState<PeopleSelectionToolbarState | null>(null);
   const [expensesToolbarState, setExpensesToolbarState] = useState<ExpensesSelectionToolbarState | null>(null);
+  const activeTabIndex = TAB_ORDER.indexOf(activeTab);
+  const activeSelectionToolbarState =
+    activeTab === 'people' ? peopleToolbarState : activeTab === 'expenses' ? expensesToolbarState : null;
+  const showSelectionToolbar = Boolean(activeSelectionToolbarState?.visible);
 
   const handleViewDetailedDebts = useCallback(() => {
     setDebtsMode('detailed');
@@ -126,6 +155,24 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const handleAddPeople = useCallback(() => {
     navigation.navigate('AddPeopleToEvent', { eventId: event.id });
   }, [event.id, navigation]);
+  const shouldShowFab = useMemo(() => {
+    if (activeTab === 'expenses') {
+      return !expensesToolbarState?.visible;
+    }
+    if (activeTab === 'people') {
+      return !peopleToolbarState?.visible;
+    }
+    return false;
+  }, [activeTab, expensesToolbarState?.visible, peopleToolbarState?.visible]);
+  const handleFabPress = useCallback(() => {
+    if (activeTab === 'expenses') {
+      handleAddExpense();
+      return;
+    }
+    if (activeTab === 'people') {
+      handleAddPeople();
+    }
+  }, [activeTab, handleAddExpense, handleAddPeople]);
 
   const handleEditEvent = useCallback(() => {
     navigation.navigate('AddEvent', { eventId: event.id });
@@ -167,28 +214,36 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     return Math.max(1, nextHeight);
   }, [debtHintHeight, insets.bottom, rawContentHeight, rawViewportHeight]);
 
+  const isTopTabsSwipeEnabled = useMemo(() => !showSelectionToolbar, [showSelectionToolbar]);
+
+  const tabsSwipeGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(isTopTabsSwipeEnabled && activeTabIndex >= 0)
+        .activeOffsetX([-24, 24])
+        .failOffsetY([-14, 14])
+        .onEnd((event) => {
+          const nextTab = getNextTabFromSwipe(activeTabIndex, event.translationX, event.velocityX);
+          if (nextTab) {
+            runOnJS(setActiveTab)(nextTab);
+          }
+        }),
+    [activeTabIndex, isTopTabsSwipeEnabled],
+  );
+
   return (
     <SafeAreaView
       style={[styles.screen, { backgroundColor: theme.colors.background }]}
       edges={['top', 'left', 'right']}
     >
-      {activeTab === 'people' && peopleToolbarState?.visible ? (
+      {showSelectionToolbar ? (
         <SelectionActionToolbar
-          title={peopleToolbarState.title}
-          totalSelectableCount={peopleToolbarState.totalSelectableCount}
-          selectedCount={peopleToolbarState.selectedCount}
-          onToggleSelectAll={peopleToolbarState.onToggleSelectAll}
-          onDelete={peopleToolbarState.onDelete}
-          onClose={peopleToolbarState.onClose}
-        />
-      ) : activeTab === 'expenses' && expensesToolbarState?.visible ? (
-        <SelectionActionToolbar
-          title={expensesToolbarState.title}
-          totalSelectableCount={expensesToolbarState.totalSelectableCount}
-          selectedCount={expensesToolbarState.selectedCount}
-          onToggleSelectAll={expensesToolbarState.onToggleSelectAll}
-          onDelete={expensesToolbarState.onDelete}
-          onClose={expensesToolbarState.onClose}
+          title={activeSelectionToolbarState!.title}
+          totalSelectableCount={activeSelectionToolbarState!.totalSelectableCount}
+          selectedCount={activeSelectionToolbarState!.selectedCount}
+          onToggleSelectAll={activeSelectionToolbarState!.onToggleSelectAll}
+          onDelete={activeSelectionToolbarState!.onDelete}
+          onClose={activeSelectionToolbarState!.onClose}
         />
       ) : (
         <AppHeader
@@ -203,77 +258,70 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
         />
       )}
 
-      <View style={styles.topSection}>
-        <Summary
-          totalAmountDisplay={totalAmountDisplay}
-          participantsCount={participantsCount}
-          expensesCount={expensesCount}
-        />
-        <TopTabs activeTab={activeTab} onTabChange={setActiveTab} />
-      </View>
+      <GestureDetector gesture={tabsSwipeGesture}>
+        <View style={styles.contentArea}>
+          <View style={styles.topSection}>
+            <Summary
+              totalAmountDisplay={totalAmountDisplay}
+              participantsCount={participantsCount}
+              expensesCount={expensesCount}
+            />
+            <TopTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          </View>
 
-      <View style={styles.contentArea}>
-        {activeTab === 'expenses' ? (
-          <ExpensesPanel
-            expenses={event.expenses}
-            currencyCode={currencyCode}
-            onRemoveExpenses={handleRemoveExpenses}
-            onOpenExpense={handleOpenExpense}
-            onSelectionToolbarChange={setExpensesToolbarState}
-          />
-        ) : null}
+          <View style={styles.tabPanelArea}>
+            {activeTab === 'expenses' ? (
+              <ExpensesPanel
+                expenses={event.expenses}
+                currencyCode={currencyCode}
+                onRemoveExpenses={handleRemoveExpenses}
+                onOpenExpense={handleOpenExpense}
+                onSelectionToolbarChange={setExpensesToolbarState}
+              />
+            ) : null}
 
-        {activeTab === 'debts' ? (
-          <DebtsPanel
-            mode={debtsMode}
-            onModeChange={setDebtsMode}
-            onViewDetailedDebts={handleViewDetailedDebts}
-            detailedDebts={detailedDebts}
-            simplifiedDebts={simplifiedDebts}
-            baseDetailedCount={baseDetailedCount}
-            paidDetailedCount={paidDetailedCount}
-            baseSimplifiedCount={baseSimplifiedCount}
-            paidSimplifiedCount={paidSimplifiedCount}
-            currencyCode={currencyCode}
-            onMarkDetailedPaid={handleMarkDetailedPaid}
-            onMarkSimplifiedPaid={handleMarkSimplifiedPaid}
-            rawContainerHeight={rawContainerHeight}
-            onViewportLayout={handleRawViewportLayout}
-            onHintLayout={setDebtHintHeight}
-            onContentSizeChange={(_, height) => setRawContentHeight(height)}
-          />
-        ) : null}
+            {activeTab === 'debts' ? (
+              <DebtsPanel
+                mode={debtsMode}
+                onModeChange={setDebtsMode}
+                onViewDetailedDebts={handleViewDetailedDebts}
+                detailedDebts={detailedDebts}
+                simplifiedDebts={simplifiedDebts}
+                baseDetailedCount={baseDetailedCount}
+                paidDetailedCount={paidDetailedCount}
+                baseSimplifiedCount={baseSimplifiedCount}
+                paidSimplifiedCount={paidSimplifiedCount}
+                currencyCode={currencyCode}
+                onMarkDetailedPaid={handleMarkDetailedPaid}
+                onMarkSimplifiedPaid={handleMarkSimplifiedPaid}
+                rawContainerHeight={rawContainerHeight}
+                onViewportLayout={handleRawViewportLayout}
+                onHintLayout={setDebtHintHeight}
+                onContentSizeChange={(_, height) => setRawContentHeight(height)}
+              />
+            ) : null}
 
-        {activeTab === 'people' ? (
-          <PeoplePanel
-            participants={event.participants}
-            participantBalanceMap={participantBalanceMap}
-            currencyCode={currencyCode}
-            onRemoveParticipants={handleRemoveParticipants}
-            onSelectionToolbarChange={setPeopleToolbarState}
-          />
-        ) : null}
-      </View>
+            {activeTab === 'people' ? (
+              <PeoplePanel
+                participants={event.participants}
+                participantBalanceMap={participantBalanceMap}
+                currencyCode={currencyCode}
+                onRemoveParticipants={handleRemoveParticipants}
+                onSelectionToolbarChange={setPeopleToolbarState}
+              />
+            ) : null}
+          </View>
+        </View>
+      </GestureDetector>
 
-      {activeTab === 'expenses' && !expensesToolbarState?.visible ? (
-        <DraggableFab
-          icon="plus"
-          color="#FFFFFF"
-          backgroundColor="#2563FF"
-          onPress={handleAddExpense}
-          topBoundary={220}
-        />
-      ) : null}
-
-      {activeTab === 'people' && !peopleToolbarState?.visible ? (
-        <DraggableFab
-          icon="plus"
-          color="#FFFFFF"
-          backgroundColor="#2563FF"
-          onPress={handleAddPeople}
-          topBoundary={220}
-        />
-      ) : null}
+      <DraggableFab
+        icon="plus"
+        color="#FFFFFF"
+        backgroundColor="#2563FF"
+        onPress={handleFabPress}
+        topBoundary={220}
+        visible={shouldShowFab}
+      />
     </SafeAreaView>
   );
 }

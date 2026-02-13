@@ -10,13 +10,13 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { AppNavigator } from '../navigation/AppNavigator';
-import { AppProviders } from '../state/AppProviders';
-import { MigrationGate } from '../state/storage/MigrationGate';
-import { PersistenceSync } from '../state/storage/PersistenceSync';
-import { useSettingsState } from '../state/settings/settingsContext';
-import { AppErrorBoundary } from '../shared/ui/AppErrorBoundary';
-import { RootTabParamList } from '../navigation/types';
+import { AppNavigator } from '@/navigation/AppNavigator';
+import { AppProviders } from '@/state/AppProviders';
+import { MigrationGate } from '@/state/storage/MigrationGate';
+import { PersistenceSync } from '@/state/storage/PersistenceSync';
+import { useSettingsState } from '@/state/settings/settingsContext';
+import { AppErrorBoundary } from '@/shared/ui/AppErrorBoundary';
+import { RootTabParamList } from '@/navigation/types';
 
 const lightColorOverrides = {
   primary: '#2563FF',

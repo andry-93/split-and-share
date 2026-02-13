@@ -2,14 +2,14 @@ import React, { memo, useCallback, useRef, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
 import { TextInput as RNTextInput } from 'react-native';
-import { RawDebt, SimplifiedDebt } from '../../../../state/events/eventsSelectors';
-import { AppList } from '../../../../shared/ui/AppList';
-import { AppConfirm } from '../../../../shared/ui/AppConfirm';
-import { CustomToggleGroup } from '../../../../shared/ui/CustomToggleGroup';
-import { formatCurrencyAmount, roundMoney } from '../../../../shared/utils/currency';
-import { OutlinedFieldContainer } from '../../../../shared/ui/OutlinedFieldContainer';
-import { useAutofocusWithRetry } from '../../../../shared/hooks/useAutofocusWithRetry';
-import { eventDetailsStyles as styles } from './styles';
+import { RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
+import { AppList } from '@/shared/ui/AppList';
+import { AppConfirm } from '@/shared/ui/AppConfirm';
+import { CustomToggleGroup } from '@/shared/ui/CustomToggleGroup';
+import { formatCurrencyAmount, roundMoney } from '@/shared/utils/currency';
+import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
+import { useAutofocusWithRetry } from '@/shared/hooks/useAutofocusWithRetry';
+import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 
 type DebtsPanelProps = {
   mode: 'detailed' | 'simplified';

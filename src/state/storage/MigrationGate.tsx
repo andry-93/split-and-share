@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { runMigrations } from './migrations';
+import { runMigrations } from '@/state/storage/migrations';
 
 export function MigrationGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);

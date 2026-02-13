@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import { readJSON, writeJSON } from '../storage/mmkv';
-import { parseSettingsState } from '../storage/guards';
-import { STORAGE_KEYS } from '../storage/storageKeys';
-import { getSystemDefaultLanguage } from './languageDefaults';
-import { settingsReducer } from './settingsReducer';
-import { SettingsAction, SettingsState } from './settingsTypes';
+import { readJSON, writeJSON } from '@/state/storage/mmkv';
+import { parseSettingsState } from '@/state/storage/guards';
+import { STORAGE_KEYS } from '@/state/storage/storageKeys';
+import { getSystemDefaultLanguage } from '@/state/settings/languageDefaults';
+import { settingsReducer } from '@/state/settings/settingsReducer';
+import { SettingsAction, SettingsState } from '@/state/settings/settingsTypes';
 
 const SettingsStateContext = createContext<SettingsState | undefined>(undefined);
 const SettingsDispatchContext = createContext<React.Dispatch<SettingsAction> | undefined>(undefined);

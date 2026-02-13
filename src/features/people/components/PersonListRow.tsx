@@ -1,9 +1,9 @@
 import React, { ReactNode, memo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Avatar, Checkbox, Text, useTheme } from 'react-native-paper';
-import { getInitialsAvatarColors } from '../../../shared/utils/avatarColors';
-import { getPreferredPersonContact } from '../../../shared/utils/people';
-import { getListPressedBackground } from '../../../shared/ui/listPressState';
+import { getInitialsAvatarColors } from '@/shared/utils/avatarColors';
+import { getPreferredPersonContact } from '@/shared/utils/people';
+import { getListPressedBackground } from '@/shared/ui/listPressState';
 
 function sanitizeAvatarLabel(value: string): string {
   return value.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2);

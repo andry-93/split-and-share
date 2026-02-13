@@ -4,22 +4,23 @@ import { Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { EventsStackParamList } from '../../../navigation/types';
-import { useEventsActions, useEventsState } from '../../../state/events/eventsContext';
-import { PaymentEntry, selectEffectiveRawDebts, selectPayments, selectRawDebts, selectTotalAmount } from '../../../state/events/eventsSelectors';
-import { usePeopleState } from '../../../state/people/peopleContext';
-import { selectCurrentUser } from '../../../state/people/peopleSelectors';
-import { useSettingsState } from '../../../state/settings/settingsContext';
-import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
-import { useSelectionMode } from '../../../shared/hooks/useSelectionMode';
-import { EventItem } from '../types/events';
-import { formatCurrencyAmount, normalizeCurrencyCode } from '../../../shared/utils/currency';
-import { AppHeader } from '../../../shared/ui/AppHeader';
-import { AppList } from '../../../shared/ui/AppList';
-import { DraggableFab } from '../../../shared/ui/DraggableFab';
-import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
-import { SelectionActionToolbar } from '../../../shared/ui/SelectionActionToolbar';
-import { AppConfirm } from '../../../shared/ui/AppConfirm';
+import { EventsStackParamList } from '@/navigation/types';
+import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
+import { PaymentEntry, selectEffectiveRawDebts, selectPayments, selectRawDebts, selectTotalAmount } from '@/state/events/eventsSelectors';
+import { usePeopleState } from '@/state/people/peopleContext';
+import { selectCurrentUser } from '@/state/people/peopleSelectors';
+import { useSettingsState } from '@/state/settings/settingsContext';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
+import { EventItem } from '@/features/events/types/events';
+import { formatCurrencyAmount, normalizeCurrencyCode } from '@/shared/utils/currency';
+import { AppHeader } from '@/shared/ui/AppHeader';
+import { AppList } from '@/shared/ui/AppList';
+import { DraggableFab } from '@/shared/ui/DraggableFab';
+import { AppSearchbar } from '@/shared/ui/AppSearchbar';
+import { SelectionActionToolbar } from '@/shared/ui/SelectionActionToolbar';
+import { AppConfirm } from '@/shared/ui/AppConfirm';
+import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
 
 type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
@@ -128,7 +129,8 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
   );
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
+    <BottomTabSwipeBoundary currentTab="EventsTab" enabled={!isEditMode}>
+      <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       {isEditMode ? (
         <SelectionActionToolbar
           title={`Selected ${selectedIds.length}`}
@@ -191,7 +193,8 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
           Selected events and all related data will be deleted.
         </Text>
       </AppConfirm>
-    </SafeAreaView>
+      </SafeAreaView>
+    </BottomTabSwipeBoundary>
   );
 }
 

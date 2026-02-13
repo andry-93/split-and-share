@@ -1,11 +1,11 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { EventsStackParamList } from '../types';
-import { EventsListScreen } from '../../features/events/screens/EventsListScreen';
-import { AddEventScreen } from '../../features/events/screens/AddEventScreen';
-import { EventDetailsScreen } from '../../features/events/screens/EventDetailsScreen';
-import { AddExpenseScreen } from '../../features/events/screens/AddExpenseScreen';
-import { AddPeopleToEventScreen } from '../../features/events/screens/AddPeopleToEventScreen';
+import { EventsStackParamList } from '@/navigation/types';
+import { EventsListScreen } from '@/features/events/screens/EventsListScreen';
+import { AddEventScreen } from '@/features/events/screens/AddEventScreen';
+import { EventDetailsScreen } from '@/features/events/screens/EventDetailsScreen';
+import { AddExpenseScreen } from '@/features/events/screens/AddExpenseScreen';
+import { AddPeopleToEventScreen } from '@/features/events/screens/AddPeopleToEventScreen';
 const Stack = createNativeStackNavigator<EventsStackParamList>();
 
 export function EventsStackNavigator() {

@@ -1,4 +1,4 @@
-import { EventsAction, EventsState } from './eventsTypes';
+import { EventsAction, EventsState } from '@/state/events/eventsTypes';
 
 export function eventsReducer(state: EventsState, action: EventsAction): EventsState {
   switch (action.type) {

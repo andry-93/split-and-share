@@ -1,7 +1,7 @@
-import { EventItem, ParticipantItem } from '../../features/events/types/events';
-import { fromMinorUnits, toMinorUnits } from '../../shared/utils/currency';
-import { EventsState } from './eventsTypes';
-import { EventPayment } from './paymentsModel';
+import { EventItem, ParticipantItem } from '@/features/events/types/events';
+import { fromMinorUnits, toMinorUnits } from '@/shared/utils/currency';
+import { EventsState } from '@/state/events/eventsTypes';
+import { EventPayment } from '@/state/events/paymentsModel';
 
 export type RawDebt = {
   id: string;

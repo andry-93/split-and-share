@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import { ExpenseItem, ParticipantItem } from '../../features/events/types/events';
-import { PersonItem } from '../../features/people/types/people';
-import { readJSON, writeJSON } from '../storage/mmkv';
-import { parseEventsState } from '../storage/guards';
-import { STORAGE_KEYS } from '../storage/storageKeys';
-import { eventsReducer } from './eventsReducer';
-import { EventsAction, EventsState } from './eventsTypes';
-import { createEventPayment, PaymentSource } from './paymentsModel';
-import { createEntityId } from '../../shared/utils/id';
-import { normalizeOptionalText } from '../../shared/utils/validation';
+import { ExpenseItem, ParticipantItem } from '@/features/events/types/events';
+import { PersonItem } from '@/features/people/types/people';
+import { readJSON, writeJSON } from '@/state/storage/mmkv';
+import { parseEventsState } from '@/state/storage/guards';
+import { STORAGE_KEYS } from '@/state/storage/storageKeys';
+import { eventsReducer } from '@/state/events/eventsReducer';
+import { EventsAction, EventsState } from '@/state/events/eventsTypes';
+import { createEventPayment, PaymentSource } from '@/state/events/paymentsModel';
+import { createEntityId } from '@/shared/utils/id';
+import { normalizeOptionalText } from '@/shared/utils/validation';
 
 const EventsStateContext = createContext<EventsState | undefined>(undefined);
 const EventsDispatchContext = createContext<React.Dispatch<EventsAction> | undefined>(undefined);

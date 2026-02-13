@@ -1,7 +1,7 @@
 import React, { memo, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
-import { AppPopup } from './AppPopup';
+import { AppPopup } from '@/shared/ui/AppPopup';
 
 type AppConfirmProps = {
   visible: boolean;

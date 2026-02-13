@@ -5,23 +5,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useFocusEffect } from '@react-navigation/native';
-import { PeopleStackParamList } from '../../../navigation/types';
-import { PersonItem } from '../types/people';
-import { AddPersonActionSheet } from '../components/AddPersonActionSheet';
-import { PersonListRow } from '../components/PersonListRow';
-import { usePeopleActions, usePeopleState } from '../../../state/people/peopleContext';
-import { useEventsActions } from '../../../state/events/eventsContext';
-import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
-import { AppHeader } from '../../../shared/ui/AppHeader';
-import { AppList } from '../../../shared/ui/AppList';
-import { DraggableFab } from '../../../shared/ui/DraggableFab';
-import { AppSearchbar } from '../../../shared/ui/AppSearchbar';
-import { useDismissBottomSheetsOnBlur } from '../../../shared/hooks/useDismissBottomSheetsOnBlur';
-import { useSelectionMode } from '../../../shared/hooks/useSelectionMode';
-import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '../../../shared/utils/people';
-import { getContactsPermissionStatus } from '../services/contactsPermission';
-import { SelectionActionToolbar } from '../../../shared/ui/SelectionActionToolbar';
-import { AppConfirm } from '../../../shared/ui/AppConfirm';
+import { PeopleStackParamList } from '@/navigation/types';
+import { PersonItem } from '@/features/people/types/people';
+import { AddPersonActionSheet } from '@/features/people/components/AddPersonActionSheet';
+import { PersonListRow } from '@/features/people/components/PersonListRow';
+import { usePeopleActions, usePeopleState } from '@/state/people/peopleContext';
+import { useEventsActions } from '@/state/events/eventsContext';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import { AppHeader } from '@/shared/ui/AppHeader';
+import { AppList } from '@/shared/ui/AppList';
+import { DraggableFab } from '@/shared/ui/DraggableFab';
+import { AppSearchbar } from '@/shared/ui/AppSearchbar';
+import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomSheetsOnBlur';
+import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
+import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
+import { getContactsPermissionStatus } from '@/features/people/services/contactsPermission';
+import { SelectionActionToolbar } from '@/shared/ui/SelectionActionToolbar';
+import { AppConfirm } from '@/shared/ui/AppConfirm';
+import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
 
 type PeopleListScreenProps = NativeStackScreenProps<PeopleStackParamList, 'People'>;
 
@@ -138,7 +139,8 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
   );
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
+    <BottomTabSwipeBoundary currentTab="PeopleTab" enabled={!isEditMode}>
+      <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       {isEditMode ? (
         <SelectionActionToolbar
           title={`Selected ${selectedIds.length}`}
@@ -204,7 +206,8 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
           Selected contacts will be deleted with all related data across events.
         </Text>
       </AppConfirm>
-    </SafeAreaView>
+      </SafeAreaView>
+    </BottomTabSwipeBoundary>
   );
 }
 

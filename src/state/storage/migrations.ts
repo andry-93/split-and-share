@@ -1,10 +1,10 @@
-import { createDefaultEventsState, createDefaultPeopleState, createDefaultSettingsState } from '../defaultState';
-import { EventsState } from '../events/eventsTypes';
-import { PeopleState } from '../people/peopleTypes';
-import { SettingsState } from '../settings/settingsTypes';
-import { readJSON, storage, writeJSON } from './mmkv';
-import { parseEventsState, parsePeopleState, parseSettingsState } from './guards';
-import { STORAGE_KEYS } from './storageKeys';
+import { createDefaultEventsState, createDefaultPeopleState, createDefaultSettingsState } from '@/state/defaultState';
+import { EventsState } from '@/state/events/eventsTypes';
+import { PeopleState } from '@/state/people/peopleTypes';
+import { SettingsState } from '@/state/settings/settingsTypes';
+import { readJSON, storage, writeJSON } from '@/state/storage/mmkv';
+import { parseEventsState, parsePeopleState, parseSettingsState } from '@/state/storage/guards';
+import { STORAGE_KEYS } from '@/state/storage/storageKeys';
 
 export const CURRENT_SCHEMA_VERSION = 4;
 

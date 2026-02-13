@@ -1,10 +1,10 @@
-import { EventItem } from '../../features/events/types/events';
-import { PersonItem } from '../../features/people/types/people';
-import { createDefaultEventsState, createDefaultPeopleState, createDefaultSettingsState } from '../defaultState';
-import { EventPayment } from '../events/paymentsModel';
-import { EventsState } from '../events/eventsTypes';
-import { PeopleState } from '../people/peopleTypes';
-import { SettingsState } from '../settings/settingsTypes';
+import { EventItem } from '@/features/events/types/events';
+import { PersonItem } from '@/features/people/types/people';
+import { createDefaultEventsState, createDefaultPeopleState, createDefaultSettingsState } from '@/state/defaultState';
+import { EventPayment } from '@/state/events/paymentsModel';
+import { EventsState } from '@/state/events/eventsTypes';
+import { PeopleState } from '@/state/people/peopleTypes';
+import { SettingsState } from '@/state/settings/settingsTypes';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

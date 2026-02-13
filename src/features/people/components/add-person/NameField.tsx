@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Text, TextInput } from 'react-native-paper';
-import { OutlinedFieldContainer } from '../../../../shared/ui/OutlinedFieldContainer';
-import { addPersonStyles as styles } from './styles';
+import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
+import { addPersonStyles as styles } from '@/features/people/components/add-person/styles';
 
 type NameFieldProps = {
   value: string;

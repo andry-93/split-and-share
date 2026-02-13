@@ -9,6 +9,7 @@ type DraggableFabProps = {
   backgroundColor: string;
   color: string;
   topBoundary?: number;
+  visible?: boolean;
 };
 
 const FAB_SIZE = 56;
@@ -21,6 +22,7 @@ export function DraggableFab({
   backgroundColor,
   color,
   topBoundary = 72,
+  visible = true,
 }: DraggableFabProps) {
   const { width, height } = useWindowDimensions();
   const tabBarHeight = useBottomTabBarHeight();
@@ -128,9 +130,11 @@ export function DraggableFab({
       style={[
         styles.container,
         {
+          opacity: visible ? 1 : 0,
           transform: [{ translateX: pan.x }, { translateY: pan.y }],
         },
       ]}
+      pointerEvents={visible ? 'auto' : 'none'}
       {...panResponder.panHandlers}
     >
       <FAB icon={icon} color={color} style={[styles.fab, styles.fabNoShadow, { backgroundColor }]} onPress={undefined} />

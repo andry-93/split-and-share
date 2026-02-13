@@ -2,12 +2,12 @@ import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { ExpenseItem } from '../../types/events';
-import { AppList } from '../../../../shared/ui/AppList';
-import { formatCurrencyAmount } from '../../../../shared/utils/currency';
-import { eventDetailsStyles as styles } from './styles';
-import { AppConfirm } from '../../../../shared/ui/AppConfirm';
-import { useSelectionMode } from '../../../../shared/hooks/useSelectionMode';
+import { ExpenseItem } from '@/features/events/types/events';
+import { AppList } from '@/shared/ui/AppList';
+import { formatCurrencyAmount } from '@/shared/utils/currency';
+import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
+import { AppConfirm } from '@/shared/ui/AppConfirm';
+import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
 
 type ExpensesPanelProps = {
   expenses: ExpenseItem[];

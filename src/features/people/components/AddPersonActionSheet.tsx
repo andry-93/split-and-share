@@ -2,9 +2,9 @@ import React, { forwardRef, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { AppBottomSheet } from '../../../shared/ui/AppBottomSheet';
-import { AppList } from '../../../shared/ui/AppList';
-import { getListPressedBackground } from '../../../shared/ui/listPressState';
+import { AppBottomSheet } from '@/shared/ui/AppBottomSheet';
+import { AppList } from '@/shared/ui/AppList';
+import { getListPressedBackground } from '@/shared/ui/listPressState';
 
 export type AddPersonActionSheetProps = {
   onAddManual: () => void;

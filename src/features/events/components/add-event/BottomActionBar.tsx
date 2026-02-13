@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
-import { addEventStyles } from './styles';
-import { BottomPrimaryActionBar } from '../../../../shared/ui/BottomPrimaryActionBar';
+import { addEventStyles } from '@/features/events/components/add-event/styles';
+import { BottomPrimaryActionBar } from '@/shared/ui/BottomPrimaryActionBar';
 
 type BottomActionBarProps = {
   bottomInset: number;
