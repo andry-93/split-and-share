@@ -13,6 +13,8 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 const hiddenTabRoutes = new Set([
   'AddEvent',
+  'AddGroup',
+  'EventReportPreview',
   'AddExpense',
   'AddPeopleToEvent',
   'AddPerson',

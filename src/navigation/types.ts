@@ -1,7 +1,9 @@
 export type EventsStackParamList = {
-  Events: undefined;
-  AddEvent: { eventId?: string } | undefined;
+  Events: { groupId?: string } | undefined;
+  AddEvent: { eventId?: string; groupId?: string } | undefined;
+  AddGroup: { groupId?: string } | undefined;
   EventDetails: { eventId: string };
+  EventReportPreview: { eventId: string };
   AddExpense: { eventId: string; expenseId?: string } | undefined;
   AddPeopleToEvent: { eventId: string };
 };

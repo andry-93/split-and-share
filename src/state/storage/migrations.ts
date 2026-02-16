@@ -6,7 +6,7 @@ import { readJSON, storage, writeJSON } from '@/state/storage/mmkv';
 import { parseEventsState, parsePeopleState, parseSettingsState } from '@/state/storage/guards';
 import { STORAGE_KEYS } from '@/state/storage/storageKeys';
 
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 export function getStoredSchemaVersion() {
   const version = storage.getString(STORAGE_KEYS.schemaVersion);
@@ -79,6 +79,7 @@ function migrateV2toV3() {
 
     writeJSON(STORAGE_KEYS.events, {
       events: legacy.events,
+      groups: [],
       paymentsByEvent:
         typeof legacy.paymentsByEvent === 'object' && legacy.paymentsByEvent
           ? legacy.paymentsByEvent
@@ -133,10 +134,83 @@ function migrateV3toV4() {
 
     writeJSON(STORAGE_KEYS.events, {
       events: events.events,
+      groups: Array.isArray(events.groups) ? events.groups : [],
       paymentsByEvent: normalizedPaymentsByEvent,
     });
   } catch (error) {
     console.error('[MMKV] events v4 migration failed', error);
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
+  }
+}
+
+function migrateV4toV5() {
+  try {
+    const events = readJSON<EventsState>(STORAGE_KEYS.events);
+    writeJSON(STORAGE_KEYS.events, parseEventsState(events));
+  } catch (error) {
+    console.error('[MMKV] events v5 migration failed', error);
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
+  }
+}
+
+function migrateV5toV6() {
+  try {
+    const eventsRaw = readJSON<EventsState>(STORAGE_KEYS.events);
+    const normalized = parseEventsState(eventsRaw);
+
+    const hasGroups = normalized.groups.length > 0;
+    const hasGroupedEvents = normalized.events.some((event) => Boolean(event.groupId));
+
+    if (hasGroups || hasGroupedEvents) {
+      writeJSON(STORAGE_KEYS.events, normalized);
+      return;
+    }
+
+    const seededGroups = createDefaultEventsState().groups;
+    if (seededGroups.length === 0) {
+      writeJSON(STORAGE_KEYS.events, {
+        ...normalized,
+        groups: seededGroups,
+      });
+      return;
+    }
+
+    const midpoint = Math.ceil(normalized.events.length / 2);
+    const firstGroupId = seededGroups[0]?.id;
+    const secondGroupId = seededGroups[1]?.id ?? firstGroupId;
+
+    const eventsWithGroups = normalized.events.map((event, index) => ({
+      ...event,
+      groupId: index < midpoint ? firstGroupId : secondGroupId,
+    }));
+
+    writeJSON(STORAGE_KEYS.events, {
+      ...normalized,
+      groups: seededGroups,
+      events: eventsWithGroups,
+    });
+  } catch (error) {
+    console.error('[MMKV] events v6 migration failed', error);
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
+  }
+}
+
+function migrateV6toV7() {
+  try {
+    const events = readJSON<EventsState>(STORAGE_KEYS.events);
+    writeJSON(STORAGE_KEYS.events, parseEventsState(events));
+  } catch (error) {
+    console.error('[MMKV] events v7 migration failed', error);
+    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
+  }
+}
+
+function migrateV7toV8() {
+  try {
+    const events = readJSON<EventsState>(STORAGE_KEYS.events);
+    writeJSON(STORAGE_KEYS.events, parseEventsState(events));
+  } catch (error) {
+    console.error('[MMKV] events v8 migration failed', error);
     writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
   }
 }
@@ -164,6 +238,18 @@ export function runMigrations() {
       }
       if (version === 3) {
         migrateV3toV4();
+      }
+      if (version === 4) {
+        migrateV4toV5();
+      }
+      if (version === 5) {
+        migrateV5toV6();
+      }
+      if (version === 6) {
+        migrateV6toV7();
+      }
+      if (version === 7) {
+        migrateV7toV8();
       }
       version += 1;
     }

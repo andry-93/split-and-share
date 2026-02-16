@@ -1,9 +1,11 @@
 import { EventsAction, EventsState } from '@/state/events/eventsTypes';
 
 export function eventsReducer(state: EventsState, action: EventsAction): EventsState {
+  const now = new Date().toISOString();
+
   switch (action.type) {
     case 'events/create': {
-      const { id, name, description, currency, date } = action.payload;
+      const { id, name, description, currency, date, groupId } = action.payload;
       return {
         ...state,
         events: [
@@ -13,6 +15,9 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
             description,
             currency,
             date: date ?? null,
+            groupId,
+            createdAt: now,
+            updatedAt: now,
             expenses: [],
             participants: [],
           },
@@ -20,8 +25,31 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
         ],
       };
     }
+    case 'events/createGroup': {
+      const { id, name, description } = action.payload;
+      return {
+        ...state,
+        groups: [{ id, name, description, createdAt: now, updatedAt: now }, ...state.groups],
+      };
+    }
+    case 'events/updateGroup': {
+      const { groupId, name, description } = action.payload;
+      return {
+        ...state,
+        groups: state.groups.map((group) =>
+          group.id === groupId
+            ? {
+                ...group,
+                name,
+                description,
+                updatedAt: now,
+              }
+            : group,
+        ),
+      };
+    }
     case 'events/update': {
-      const { eventId, name, description, currency, date } = action.payload;
+      const { eventId, name, description, currency, date, groupId } = action.payload;
       return {
         ...state,
         events: state.events.map((event) =>
@@ -32,6 +60,8 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
                 description,
                 currency,
                 date: date ?? null,
+                groupId,
+                updatedAt: now,
               }
             : event,
         ),
@@ -45,7 +75,15 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
           event.id === eventId
             ? {
                 ...event,
-                expenses: [expense, ...event.expenses],
+                updatedAt: now,
+                expenses: [
+                  {
+                    ...expense,
+                    createdAt: now,
+                    updatedAt: now,
+                  },
+                  ...event.expenses,
+                ],
               }
             : event,
         ),
@@ -63,6 +101,7 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
           event.id === eventId
             ? {
                 ...event,
+                updatedAt: now,
                 expenses: event.expenses.map((expense) =>
                   expense.id === expenseId
                     ? {
@@ -71,6 +110,7 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
                         amount: patch.amount,
                         paidBy: patch.paidBy,
                         paidById: patch.paidById,
+                        updatedAt: now,
                       }
                     : expense,
                 ),
@@ -91,6 +131,7 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
           event.id === eventId
             ? {
                 ...event,
+                updatedAt: now,
                 participants: [
                   ...event.participants,
                   ...participants.filter(
@@ -115,6 +156,14 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
       }
       return {
         ...state,
+        events: state.events.map((event) =>
+          event.id === eventId
+            ? {
+                ...event,
+                updatedAt: now,
+              }
+            : event,
+        ),
         paymentsByEvent: {
           ...state.paymentsByEvent,
           [eventId]: [...current, payment],
@@ -133,6 +182,7 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
           event.id === eventId
             ? {
                 ...event,
+                updatedAt: now,
                 participants: event.participants.filter((participant) => !idsSet.has(participant.id)),
               }
             : event,
@@ -160,6 +210,7 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
 
       const nextEvents = state.events.map((event) => ({
         ...event,
+        updatedAt: now,
         participants: event.participants.filter((participant) => !idsSet.has(participant.id)),
         expenses: event.expenses.filter((expense) => {
           if (expense.paidById && idsSet.has(expense.paidById)) {
@@ -195,6 +246,27 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
         paymentsByEvent: nextPaymentsByEvent,
       };
     }
+    case 'events/removeGroups': {
+      if (action.payload.groupIds.length === 0) {
+        return state;
+      }
+      const groupIdsSet = new Set(action.payload.groupIds);
+      const nextGroups = state.groups.filter((group) => !groupIdsSet.has(group.id));
+      const removedEventIds = new Set(
+        state.events.filter((event) => event.groupId && groupIdsSet.has(event.groupId)).map((event) => event.id),
+      );
+      const nextEvents = state.events.filter((event) => !removedEventIds.has(event.id));
+      const nextPaymentsByEvent = Object.fromEntries(
+        Object.entries(state.paymentsByEvent).filter(([eventId]) => !removedEventIds.has(eventId)),
+      );
+
+      return {
+        ...state,
+        groups: nextGroups,
+        events: nextEvents,
+        paymentsByEvent: nextPaymentsByEvent,
+      };
+    }
     case 'events/removeExpenses': {
       const { eventId, expenseIds } = action.payload;
       if (expenseIds.length === 0) {
@@ -208,6 +280,7 @@ export function eventsReducer(state: EventsState, action: EventsAction): EventsS
           event.id === eventId
             ? {
                 ...event,
+                updatedAt: now,
                 expenses: event.expenses.filter((expense) => !idsSet.has(expense.id)),
               }
             : event,

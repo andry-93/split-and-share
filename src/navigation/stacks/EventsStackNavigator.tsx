@@ -6,6 +6,8 @@ import { AddEventScreen } from '@/features/events/screens/AddEventScreen';
 import { EventDetailsScreen } from '@/features/events/screens/EventDetailsScreen';
 import { AddExpenseScreen } from '@/features/events/screens/AddExpenseScreen';
 import { AddPeopleToEventScreen } from '@/features/events/screens/AddPeopleToEventScreen';
+import { AddGroupScreen } from '@/features/events/screens/AddGroupScreen';
+import { EventReportPreviewScreen } from '@/features/events/screens/EventReportPreviewScreen';
 const Stack = createNativeStackNavigator<EventsStackParamList>();
 
 export function EventsStackNavigator() {
@@ -13,7 +15,9 @@ export function EventsStackNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Events" component={EventsListScreen} />
       <Stack.Screen name="AddEvent" component={AddEventScreen} />
+      <Stack.Screen name="AddGroup" component={AddGroupScreen} />
       <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
+      <Stack.Screen name="EventReportPreview" component={EventReportPreviewScreen} />
       <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
       <Stack.Screen name="AddPeopleToEvent" component={AddPeopleToEventScreen} />
     </Stack.Navigator>

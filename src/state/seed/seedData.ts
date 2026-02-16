@@ -16,6 +16,8 @@ export type SeedExpense = {
   amount: number;
   paidById: string;
   splitBetweenIds: string[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type SeedEvent = {
@@ -24,9 +26,37 @@ export type SeedEvent = {
   description?: string;
   currency?: string;
   date?: string | null;
+  groupId?: string;
+  createdAt?: string;
+  updatedAt?: string;
   participantIds: string[];
   expenses: SeedExpense[];
 };
+
+export type SeedGroup = {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+const groupsSeed: SeedGroup[] = [
+  {
+    id: 'group-1',
+    name: 'Trips',
+    description: 'Travel and weekend plans',
+    createdAt: '2024-11-01T10:00:00.000Z',
+    updatedAt: '2024-12-10T09:30:00.000Z',
+  },
+  {
+    id: 'group-2',
+    name: 'Home',
+    description: 'Household and apartment costs',
+    createdAt: '2024-11-05T08:15:00.000Z',
+    updatedAt: '2024-12-12T12:10:00.000Z',
+  },
+];
 
 const peopleSeed: SeedPerson[] = [
   { id: 'person-me', name: 'Me', email: 'me@example.com', isMe: true },
@@ -43,6 +73,9 @@ const eventsSeed: SeedEvent[] = [
     description: 'Weekend in the mountains',
     currency: 'USD',
     date: '2024-12-05T00:00:00.000Z',
+    groupId: 'group-1',
+    createdAt: '2024-11-18T09:00:00.000Z',
+    updatedAt: '2024-12-05T18:20:00.000Z',
     participantIds: ['person-me', 'person-1', 'person-2', 'person-3'],
     expenses: [
       {
@@ -51,6 +84,8 @@ const eventsSeed: SeedEvent[] = [
         amount: 420,
         paidById: 'person-1',
         splitBetweenIds: ['person-me', 'person-1', 'person-2', 'person-3'],
+        createdAt: '2024-12-05T10:00:00.000Z',
+        updatedAt: '2024-12-05T10:00:00.000Z',
       },
       {
         id: 'exp-2',
@@ -58,6 +93,8 @@ const eventsSeed: SeedEvent[] = [
         amount: 86,
         paidById: 'person-2',
         splitBetweenIds: ['person-me', 'person-1', 'person-2', 'person-3'],
+        createdAt: '2024-12-05T13:20:00.000Z',
+        updatedAt: '2024-12-05T13:20:00.000Z',
       },
     ],
   },
@@ -66,6 +103,9 @@ const eventsSeed: SeedEvent[] = [
     name: 'Team Dinner',
     currency: 'EUR',
     date: '2024-12-10T00:00:00.000Z',
+    groupId: 'group-1',
+    createdAt: '2024-11-21T11:35:00.000Z',
+    updatedAt: '2024-12-10T20:45:00.000Z',
     participantIds: ['person-me', 'person-2', 'person-4'],
     expenses: [
       {
@@ -74,6 +114,8 @@ const eventsSeed: SeedEvent[] = [
         amount: 180,
         paidById: 'person-4',
         splitBetweenIds: ['person-me', 'person-2', 'person-4'],
+        createdAt: '2024-12-10T19:35:00.000Z',
+        updatedAt: '2024-12-10T19:35:00.000Z',
       },
     ],
   },
@@ -82,6 +124,39 @@ const eventsSeed: SeedEvent[] = [
     name: 'Apartment Supplies',
     description: 'Kitchen + cleaning',
     date: null,
+    groupId: 'group-2',
+    createdAt: '2024-11-25T07:20:00.000Z',
+    updatedAt: '2024-12-15T07:20:00.000Z',
+    participantIds: [],
+    expenses: [],
+  },
+  {
+    id: 'seed-4',
+    name: 'Office Lunch',
+    currency: 'USD',
+    date: '2024-12-12T00:00:00.000Z',
+    createdAt: '2024-12-01T13:05:00.000Z',
+    updatedAt: '2024-12-12T14:18:00.000Z',
+    participantIds: ['person-me', 'person-1', 'person-3'],
+    expenses: [
+      {
+        id: 'exp-4',
+        title: 'Lunch bill',
+        amount: 95,
+        paidById: 'person-me',
+        splitBetweenIds: ['person-me', 'person-1', 'person-3'],
+        createdAt: '2024-12-12T12:40:00.000Z',
+        updatedAt: '2024-12-12T12:40:00.000Z',
+      },
+    ],
+  },
+  {
+    id: 'seed-5',
+    name: 'Birthday Party',
+    currency: 'USD',
+    date: '2024-12-15T00:00:00.000Z',
+    createdAt: '2024-12-03T16:40:00.000Z',
+    updatedAt: '2024-12-15T16:40:00.000Z',
     participantIds: [],
     expenses: [],
   },
@@ -127,6 +202,9 @@ export function createInitialEventsSeed(): EventItem[] {
       description: event.description,
       currency: event.currency,
       date: event.date ?? null,
+      groupId: event.groupId,
+      createdAt: event.createdAt ?? new Date(0).toISOString(),
+      updatedAt: event.updatedAt ?? event.createdAt ?? new Date(0).toISOString(),
       participants,
       expenses: event.expenses
         .map((expense) => {
@@ -140,11 +218,23 @@ export function createInitialEventsSeed(): EventItem[] {
             amount: expense.amount,
             paidBy: payer.name,
             paidById: payer.id,
+            createdAt: expense.createdAt ?? new Date(0).toISOString(),
+            updatedAt: expense.updatedAt ?? expense.createdAt ?? new Date(0).toISOString(),
           };
         })
         .filter((expense): expense is NonNullable<typeof expense> => Boolean(expense)),
     };
   });
+}
+
+export function createInitialGroupsSeed() {
+  return groupsSeed.map((group) => ({
+    id: group.id,
+    name: group.name,
+    description: group.description,
+    createdAt: group.createdAt ?? new Date(0).toISOString(),
+    updatedAt: group.updatedAt ?? group.createdAt ?? new Date(0).toISOString(),
+  }));
 }
 
 export type EventCalculationSeed = {

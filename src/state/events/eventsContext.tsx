@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import { ExpenseItem, ParticipantItem } from '@/features/events/types/events';
+import { ParticipantItem } from '@/features/events/types/events';
 import { PersonItem } from '@/features/people/types/people';
 import { readJSON, writeJSON } from '@/state/storage/mmkv';
 import { parseEventsState } from '@/state/storage/guards';
@@ -7,6 +7,7 @@ import { STORAGE_KEYS } from '@/state/storage/storageKeys';
 import { eventsReducer } from '@/state/events/eventsReducer';
 import { EventsAction, EventsState } from '@/state/events/eventsTypes';
 import { createEventPayment, PaymentSource } from '@/state/events/paymentsModel';
+import { createDefaultEventsState } from '@/state/defaultState';
 import { createEntityId } from '@/shared/utils/id';
 import { normalizeOptionalText } from '@/shared/utils/validation';
 
@@ -15,7 +16,32 @@ const EventsDispatchContext = createContext<React.Dispatch<EventsAction> | undef
 
 function initState(): EventsState {
   const persistedEvents = readJSON<unknown>(STORAGE_KEYS.events);
-  return parseEventsState(persistedEvents);
+  const parsed = parseEventsState(persistedEvents);
+  const defaultState = createDefaultEventsState();
+  if (defaultState.groups.length === 0 && defaultState.events.length === 0) {
+    return parsed;
+  }
+
+  // Ensure mocked bootstrap data is available for product demos and future MMKV migrations.
+  const mergedGroups = [
+    ...parsed.groups,
+    ...defaultState.groups.filter(
+      (seedGroup) => !parsed.groups.some((group) => group.id === seedGroup.id),
+    ),
+  ];
+
+  const mergedEvents = [
+    ...parsed.events,
+    ...defaultState.events.filter(
+      (seedEvent) => !parsed.events.some((event) => event.id === seedEvent.id),
+    ),
+  ];
+
+  return {
+    ...parsed,
+    groups: mergedGroups,
+    events: mergedEvents,
+  };
 }
 
 export function EventsProvider({ children }: { children: React.ReactNode }) {
@@ -44,7 +70,7 @@ export function useEventsActions() {
 
   return useMemo(
     () => ({
-      createEvent: (payload: { name: string; description?: string; currency?: string; date?: string | null }) => {
+      createEvent: (payload: { name: string; description?: string; currency?: string; date?: string | null; groupId?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
           throw new Error('Event name is required.');
@@ -58,6 +84,37 @@ export function useEventsActions() {
             description: normalizeOptionalText(payload.description),
             currency: payload.currency,
             date: payload.date ?? null,
+            groupId: payload.groupId,
+          },
+        });
+      },
+      createGroup: (payload: { name: string; description?: string }) => {
+        const trimmedName = payload.name.trim();
+        if (!trimmedName) {
+          throw new Error('Group name is required.');
+        }
+
+        dispatch({
+          type: 'events/createGroup',
+          payload: {
+            id: createEntityId('group'),
+            name: trimmedName,
+            description: normalizeOptionalText(payload.description),
+          },
+        });
+      },
+      updateGroup: (payload: { groupId: string; name: string; description?: string }) => {
+        const trimmedName = payload.name.trim();
+        if (!trimmedName) {
+          throw new Error('Group name is required.');
+        }
+
+        dispatch({
+          type: 'events/updateGroup',
+          payload: {
+            groupId: payload.groupId,
+            name: trimmedName,
+            description: normalizeOptionalText(payload.description),
           },
         });
       },
@@ -67,6 +124,7 @@ export function useEventsActions() {
         description?: string;
         currency?: string;
         date?: string | null;
+        groupId?: string;
       }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
@@ -81,6 +139,7 @@ export function useEventsActions() {
             description: normalizeOptionalText(payload.description),
             currency: payload.currency,
             date: payload.date ?? null,
+            groupId: payload.groupId,
           },
         });
       },
@@ -94,7 +153,7 @@ export function useEventsActions() {
           throw new Error('Amount must be a positive number.');
         }
 
-        const nextExpense: ExpenseItem = {
+        const nextExpense = {
           id: createEntityId('expense'),
           title: trimmedTitle,
           amount: payload.expense.amount,
@@ -186,6 +245,12 @@ export function useEventsActions() {
       removeEvents: (payload: { eventIds: string[] }) => {
         dispatch({
           type: 'events/removeEvents',
+          payload,
+        });
+      },
+      removeGroups: (payload: { groupIds: string[] }) => {
+        dispatch({
+          type: 'events/removeGroups',
           payload,
         });
       },

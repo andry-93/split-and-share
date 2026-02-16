@@ -4,8 +4,19 @@ export type EventItem = {
   description?: string;
   currency?: string;
   date?: string | null;
+  groupId?: string;
+  createdAt: string;
+  updatedAt: string;
   expenses: ExpenseItem[];
   participants: ParticipantItem[];
+};
+
+export type EventGroupItem = {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ExpenseItem = {
@@ -14,6 +25,8 @@ export type ExpenseItem = {
   amount: number;
   paidBy: string;
   paidById?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ParticipantItem = {

@@ -1,4 +1,4 @@
-import { EventItem, ParticipantItem } from '@/features/events/types/events';
+import { EventGroupItem, EventItem, ExpenseItem, ParticipantItem } from '@/features/events/types/events';
 import { fromMinorUnits, toMinorUnits } from '@/shared/utils/currency';
 import { EventsState } from '@/state/events/eventsTypes';
 import { EventPayment } from '@/state/events/paymentsModel';
@@ -360,4 +360,36 @@ export function selectOutstandingPeopleCount(rawDebts: RawDebt[]) {
 
 export function selectOutstandingTransfersCount(rawDebts: RawDebt[]) {
   return selectDetailedDebts(rawDebts).length;
+}
+
+function toTimestamp(value?: string) {
+  if (!value) {
+    return 0;
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+export function selectEventsSortedByUpdatedAt(events: EventItem[]) {
+  return [...events].sort(
+    (a, b) =>
+      toTimestamp(b.updatedAt) - toTimestamp(a.updatedAt) ||
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+  );
+}
+
+export function selectGroupsSortedByUpdatedAt(groups: EventGroupItem[]) {
+  return [...groups].sort(
+    (a, b) =>
+      toTimestamp(b.updatedAt) - toTimestamp(a.updatedAt) ||
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+  );
+}
+
+export function selectExpensesSortedByUpdatedAt(expenses: ExpenseItem[]) {
+  return [...expenses].sort(
+    (a, b) =>
+      toTimestamp(b.updatedAt) - toTimestamp(a.updatedAt) ||
+      a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
+  );
 }

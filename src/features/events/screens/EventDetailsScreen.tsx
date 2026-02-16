@@ -7,7 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EventsStackParamList } from '@/navigation/types';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
-import { RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
+import { RawDebt, selectExpensesSortedByUpdatedAt, SimplifiedDebt } from '@/state/events/eventsSelectors';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { DraggableFab } from '@/shared/ui/DraggableFab';
@@ -51,7 +51,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
-  const { events, paymentsByEvent } = useEventsState();
+  const { events, groups, paymentsByEvent } = useEventsState();
   const { registerPayment, removeParticipantsFromEvent, removeExpenses } = useEventsActions();
   const event = events.find((item) => item.id === route.params.eventId);
   const [activeTab, setActiveTab] = useState<EventDetailsTab>('expenses');
@@ -111,7 +111,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     expensesCount,
   } = useEventDetailsModel({
     event,
-    eventsState: { events, paymentsByEvent },
+    eventsState: { events, groups, paymentsByEvent },
     settingsCurrency: settings.currency,
   });
 
@@ -178,6 +178,10 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     navigation.navigate('AddEvent', { eventId: event.id });
   }, [event.id, navigation]);
 
+  const handleShareEvent = useCallback(() => {
+    navigation.navigate('EventReportPreview', { eventId: event.id });
+  }, [event.id, navigation]);
+
   const handleRemoveExpenses = useCallback(
     (expenseIds: string[]) => {
       removeExpenses({
@@ -201,6 +205,11 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const handleRawViewportLayout = useCallback((layoutEvent: LayoutChangeEvent) => {
     setRawViewportHeight(layoutEvent.nativeEvent.layout.height);
   }, []);
+
+  const sortedExpenses = useMemo(
+    () => selectExpensesSortedByUpdatedAt(event.expenses),
+    [event.expenses],
+  );
 
   const rawContainerHeight = useMemo(() => {
     if (rawViewportHeight <= 0) {
@@ -252,7 +261,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
           rightSlot={
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Appbar.Action icon="pencil-outline" onPress={handleEditEvent} />
-              <Appbar.Action icon="share-variant" onPress={() => undefined} />
+              <Appbar.Action icon="share-variant" onPress={handleShareEvent} />
             </View>
           }
         />
@@ -272,7 +281,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
           <View style={styles.tabPanelArea}>
             {activeTab === 'expenses' ? (
               <ExpensesPanel
-                expenses={event.expenses}
+                expenses={sortedExpenses}
                 currencyCode={currencyCode}
                 onRemoveExpenses={handleRemoveExpenses}
                 onOpenExpense={handleOpenExpense}

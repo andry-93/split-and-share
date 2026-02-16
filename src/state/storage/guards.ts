@@ -1,4 +1,4 @@
-import { EventItem } from '@/features/events/types/events';
+import { EventGroupItem, EventItem } from '@/features/events/types/events';
 import { PersonItem } from '@/features/people/types/people';
 import { createDefaultEventsState, createDefaultPeopleState, createDefaultSettingsState } from '@/state/defaultState';
 import { EventPayment } from '@/state/events/paymentsModel';
@@ -52,9 +52,86 @@ function isEventItem(value: unknown): value is EventItem {
   return (
     typeof value.id === 'string' &&
     typeof value.name === 'string' &&
+    (typeof value.groupId === 'undefined' || typeof value.groupId === 'string') &&
     Array.isArray(value.expenses) &&
     Array.isArray(value.participants)
   );
+}
+
+function isEventGroupItem(value: unknown): value is EventGroupItem {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    (typeof value.description === 'undefined' || typeof value.description === 'string')
+  );
+}
+
+function normalizeIsoDateString(value: unknown, fallback: string) {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return new Date(parsed).toISOString();
+}
+
+function normalizeEventItem(value: EventItem): EventItem {
+  const fallbackCreatedAt = new Date(0).toISOString();
+  const createdAt = normalizeIsoDateString(
+    (value as EventItem & { createdAt?: unknown }).createdAt,
+    fallbackCreatedAt,
+  );
+  const updatedAt = normalizeIsoDateString(
+    (value as EventItem & { updatedAt?: unknown }).updatedAt,
+    createdAt,
+  );
+
+  return {
+    ...value,
+    createdAt,
+    updatedAt,
+    expenses: value.expenses.map((expense) => {
+      const fallbackExpenseCreatedAt = createdAt;
+      const expenseCreatedAt = normalizeIsoDateString(
+        (expense as EventItem['expenses'][number] & { createdAt?: unknown }).createdAt,
+        fallbackExpenseCreatedAt,
+      );
+      const expenseUpdatedAt = normalizeIsoDateString(
+        (expense as EventItem['expenses'][number] & { updatedAt?: unknown }).updatedAt,
+        expenseCreatedAt,
+      );
+
+      return {
+        ...expense,
+        createdAt: expenseCreatedAt,
+        updatedAt: expenseUpdatedAt,
+      };
+    }),
+  };
+}
+
+function normalizeEventGroupItem(value: EventGroupItem): EventGroupItem {
+  const fallbackCreatedAt = new Date(0).toISOString();
+  const createdAt = normalizeIsoDateString(
+    (value as EventGroupItem & { createdAt?: unknown }).createdAt,
+    fallbackCreatedAt,
+  );
+  const updatedAt = normalizeIsoDateString(
+    (value as EventGroupItem & { updatedAt?: unknown }).updatedAt,
+    createdAt,
+  );
+
+  return {
+    ...value,
+    createdAt,
+    updatedAt,
+  };
 }
 
 function isEventPayment(value: unknown): value is EventPayment {
@@ -131,7 +208,10 @@ export function parseEventsState(value: unknown): EventsState {
     return fallback;
   }
 
-  const events = value.events.filter(isEventItem);
+  const events = value.events.filter(isEventItem).map(normalizeEventItem);
+  const groups = Array.isArray(value.groups)
+    ? value.groups.filter(isEventGroupItem).map(normalizeEventGroupItem)
+    : fallback.groups;
   const paymentsByEventRaw = isRecord(value.paymentsByEvent) ? value.paymentsByEvent : {};
 
   const paymentsByEvent = Object.entries(paymentsByEventRaw).reduce<EventsState['paymentsByEvent']>(
@@ -148,6 +228,7 @@ export function parseEventsState(value: unknown): EventsState {
 
   return {
     events: events.length > 0 ? events : fallback.events,
+    groups,
     paymentsByEvent,
   };
 }
