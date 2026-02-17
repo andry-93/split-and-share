@@ -9,7 +9,7 @@ import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
 import { useMessageState } from '@/shared/hooks/useMessageState';
-import { normalizeCurrencyCode } from '@/shared/utils/currency';
+import { getCurrencyDisplay, getCurrencyOptionLabel, normalizeCurrencyCode } from '@/shared/utils/currency';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { EventNameField } from '@/features/events/components/add-event/EventNameField';
 import { DescriptionField } from '@/features/events/components/add-event/DescriptionField';
@@ -203,7 +203,7 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
           <DescriptionField value={description} onChangeText={setDescription} />
 
           <CurrencyField
-            value={normalizeCurrencyCode(currencyLabels[eventCurrency])}
+            value={currencyLabels[eventCurrency] ?? getCurrencyDisplay(eventCurrency)}
             onPress={openCurrencyPicker}
           />
           <GroupField
@@ -247,7 +247,11 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
         title="Currency"
         options={eventCurrencySheetOptions}
         selectedValue={eventCurrency}
-        getLabel={(value) => currencyLabels[value] ?? normalizeCurrencyCode(value)}
+        getLabel={(value) =>
+          EVENT_CURRENCY_OPTIONS.includes(value as (typeof EVENT_CURRENCY_OPTIONS)[number])
+            ? getCurrencyOptionLabel(value)
+            : currencyLabels[value] ?? getCurrencyDisplay(value)
+        }
         onSelect={handleSelectCurrency}
         snapPoints={snapPoints}
       />

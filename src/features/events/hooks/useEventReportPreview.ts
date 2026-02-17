@@ -11,7 +11,7 @@ import {
   selectRawDebts,
   selectSimplifiedDebts,
 } from '@/state/events/eventsSelectors';
-import { normalizeCurrencyCode } from '@/shared/utils/currency';
+import { getCurrencyDisplay } from '@/shared/utils/currency';
 import { buildEventReportHtml } from '@/features/events/utils/eventReport';
 
 const PDF_GENERATION_TIMEOUT_MS = 15000;
@@ -58,7 +58,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
     setIsGenerating(true);
     setSnackbarMessage('');
     try {
-      const currencyCode = normalizeCurrencyCode(event.currency ?? settings.currency);
+      const currencyCode = getCurrencyDisplay(event.currency ?? settings.currency);
       const rawDebts = selectRawDebts(event);
       const payments = selectPayments(eventsState, event.id);
       const effectiveRawDebts = selectEffectiveRawDebts(rawDebts, payments);

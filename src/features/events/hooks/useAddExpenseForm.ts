@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ParticipantItem } from '@/features/events/types/events';
-import { normalizeCurrencyCode } from '@/shared/utils/currency';
+import { getCurrencyDisplay } from '@/shared/utils/currency';
 import { sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 
 type UseAddExpenseFormInput = {
@@ -41,7 +41,7 @@ export function useAddExpenseForm({
   );
   const selectedSet = useMemo(() => new Set(selectedParticipants), [selectedParticipants]);
   const selectedCurrency = useMemo(
-    () => normalizeCurrencyCode(currency ?? fallbackCurrency),
+    () => getCurrencyDisplay(currency ?? fallbackCurrency),
     [currency, fallbackCurrency],
   );
   const paidBy = useMemo(

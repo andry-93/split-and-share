@@ -9,7 +9,12 @@ import type { SettingsState } from '@/state/settings/settingsTypes';
 import appPackage from '../../../../package.json';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
 import { CustomToggleGroup } from '@/shared/ui/CustomToggleGroup';
-import { normalizeCurrencyCode } from '@/shared/utils/currency';
+import {
+  getCurrencyDisplay,
+  getCurrencyOptionLabel,
+  getCurrencySymbol,
+  normalizeCurrencyCode,
+} from '@/shared/utils/currency';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { AppSingleSelectBottomSheet } from '@/shared/ui/AppSingleSelectBottomSheet';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
@@ -18,7 +23,7 @@ import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 
 const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
-const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'];
+const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB', 'BYN'];
 const CUSTOM_CURRENCY_VALUE = '__custom_currency__';
 const debtsViewOptions: Array<{ value: SettingsState['debtsViewMode']; label: string; description: string }> = [
   {
@@ -33,19 +38,15 @@ const debtsViewOptions: Array<{ value: SettingsState['debtsViewMode']; label: st
   },
 ];
 
-function validateCustomCurrencyCode(value: string, existingCodes: Set<string>): string | null {
-  const raw = value.trim().toUpperCase();
-  const cleaned = raw.replace(/[^A-Z0-9]/g, '');
-  if (!cleaned) {
-    return 'Enter a currency code.';
+function validateCustomCurrencyValue(value: string, reservedValues: Set<string>): string | null {
+  const raw = value.trim();
+  if (!raw) {
+    return 'Enter a currency symbol or code.';
   }
-  if (cleaned.length < 3 || cleaned.length > 10) {
-    return 'Currency code must be 3-10 letters or numbers.';
+  if (raw.length > 10) {
+    return 'Currency value must be 1-10 characters.';
   }
-  if (cleaned !== raw) {
-    return 'Only letters and numbers are allowed.';
-  }
-  if (existingCodes.has(cleaned)) {
+  if (reservedValues.has(raw.toUpperCase())) {
     return 'This currency already exists.';
   }
   return null;
@@ -96,8 +97,15 @@ export function SettingsScreen() {
     [setLanguage],
   );
 
-  const existingCurrencyCodes = useMemo(
-    () => new Set(currencyOptions.map((code) => normalizeCurrencyCode(code))),
+  const reservedCurrencyValues = useMemo(
+    () =>
+      new Set(
+        currencyOptions.flatMap((code) => {
+          const normalized = normalizeCurrencyCode(code);
+          const symbol = getCurrencySymbol(normalized);
+          return symbol ? [normalized.toUpperCase(), symbol.toUpperCase()] : [normalized.toUpperCase()];
+        }),
+      ),
     [],
   );
 
@@ -106,7 +114,7 @@ export function SettingsScreen() {
       if (option === CUSTOM_CURRENCY_VALUE) {
         currencySheetRef.current?.dismiss();
         const normalizedCurrent = normalizeCurrencyCode(settings.currency);
-        const hasCustomCurrency = !existingCurrencyCodes.has(normalizedCurrent);
+        const hasCustomCurrency = !reservedCurrencyValues.has(normalizedCurrent.toUpperCase());
         setCustomCurrency(hasCustomCurrency ? normalizedCurrent : '');
         setCustomCurrencyDirty(false);
         setCustomCurrencySubmitAttempted(false);
@@ -116,31 +124,30 @@ export function SettingsScreen() {
       setCurrency(option);
       currencySheetRef.current?.dismiss();
     },
-    [existingCurrencyCodes, openCustomCurrency, setCurrency, settings.currency],
+    [openCustomCurrency, reservedCurrencyValues, setCurrency, settings.currency],
   );
   const customCurrencyValidationError = useMemo(
-    () => validateCustomCurrencyCode(customCurrency, existingCurrencyCodes),
-    [customCurrency, existingCurrencyCodes],
+    () => validateCustomCurrencyValue(customCurrency, reservedCurrencyValues),
+    [customCurrency, reservedCurrencyValues],
   );
   const shouldShowCustomCurrencyError =
     (customCurrencyDirty || customCurrencySubmitAttempted) && Boolean(customCurrencyValidationError);
 
   const handleCustomCurrencyChange = useCallback((value: string) => {
-    setCustomCurrency(value.toUpperCase());
+    setCustomCurrency(value);
     setCustomCurrencyDirty(true);
   }, []);
 
   const handleSaveCustomCurrency = useCallback(() => {
     setCustomCurrencySubmitAttempted(true);
-    const validationError = validateCustomCurrencyCode(customCurrency, existingCurrencyCodes);
+    const validationError = validateCustomCurrencyValue(customCurrency, reservedCurrencyValues);
     if (validationError) {
       return;
     }
-    const cleaned = customCurrency.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const normalized = normalizeCurrencyCode(cleaned);
+    const normalized = normalizeCurrencyCode(customCurrency.trim());
     setCurrency(normalized);
     closeCustomCurrency();
-  }, [closeCustomCurrency, customCurrency, existingCurrencyCodes, setCurrency]);
+  }, [closeCustomCurrency, customCurrency, reservedCurrencyValues, setCurrency]);
 
   const handleSelectDebtsView = useCallback(
     (option: string) => {
@@ -161,7 +168,7 @@ export function SettingsScreen() {
       [
         ...currencyOptions.map((option) => ({
           value: option,
-          label: normalizeCurrencyCode(option),
+          label: getCurrencyOptionLabel(option),
         })),
         { value: CUSTOM_CURRENCY_VALUE, label: 'Custom' },
       ],
@@ -205,7 +212,7 @@ export function SettingsScreen() {
           <Divider style={styles.preferencesDivider} />
           <List.Item
             title="Currency"
-            description={normalizeCurrencyCode(settings.currency)}
+            description={getCurrencyDisplay(settings.currency)}
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={handleOpenCurrency}
@@ -281,17 +288,17 @@ export function SettingsScreen() {
         confirmText="Save"
       >
         <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          Enter a custom currency code.
+          Enter a custom currency symbol or code.
         </Text>
         <OutlinedFieldContainer isError={shouldShowCustomCurrencyError}>
           <RNTextInput
             value={customCurrency}
             onChangeText={handleCustomCurrencyChange}
-            autoCapitalize="characters"
+            autoCapitalize="none"
             autoCorrect={false}
             maxLength={10}
             style={[styles.customCurrencyInput, { color: theme.colors.onSurface }]}
-            placeholder="e.g. JPY"
+            placeholder="e.g. $"
             placeholderTextColor={theme.colors.onSurfaceVariant}
             selectionColor={theme.colors.primary}
           />
@@ -302,7 +309,7 @@ export function SettingsScreen() {
           </Text>
         ) : null}
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-          3-10 characters, letters and numbers only.
+          1-10 characters.
         </Text>
       </AppConfirm>
       </SafeAreaView>

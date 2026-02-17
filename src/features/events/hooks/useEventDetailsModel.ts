@@ -6,7 +6,7 @@ import {
   PaymentEntry,
 } from '@/state/events/eventsSelectors';
 import { EventsState } from '@/state/events/eventsTypes';
-import { formatCurrencyAmount, normalizeCurrencyCode } from '@/shared/utils/currency';
+import { formatCurrencyAmount, getCurrencyDisplay } from '@/shared/utils/currency';
 
 type UseEventDetailsModelInput = {
   event: EventItem;
@@ -18,7 +18,7 @@ export function useEventDetailsModel({ event, eventsState, settingsCurrency }: U
   const selectors = useSelectorFactory(createEventDetailsSelectors);
 
   const currencyCode = useMemo(
-    () => normalizeCurrencyCode(event.currency ?? settingsCurrency),
+    () => getCurrencyDisplay(event.currency ?? settingsCurrency),
     [event.currency, settingsCurrency],
   );
 
