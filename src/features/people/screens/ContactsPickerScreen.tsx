@@ -4,6 +4,8 @@ import * as Contacts from 'expo-contacts';
 import { ActivityIndicator, Button, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { DeviceContact } from '@/features/people/types/contacts';
+import { useContactsPickerModel } from '@/features/people/hooks/useContactsPickerModel';
 import { PeopleStackParamList } from '@/navigation/types';
 import { usePeopleActions, usePeopleState } from '@/state/people/peopleContext';
 import { AppHeader } from '@/shared/ui/AppHeader';
@@ -12,13 +14,6 @@ import { PersonListRow } from '@/features/people/components/PersonListRow';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { AppSearchbar } from '@/shared/ui/AppSearchbar';
 import { getContactsPermissionStatus } from '@/features/people/services/contactsPermission';
-
-type DeviceContact = {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-};
 
 function normalizeContact(item: Contacts.Contact): DeviceContact | null {
   const runtimeContact = item as Contacts.Contact & { id?: string; rawId?: string };
@@ -92,37 +87,12 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   }, [loadContacts]);
 
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-  const peopleLookup = useMemo(() => {
-    const nameSet = new Set<string>();
-    const phoneSet = new Set<string>();
-    const emailSet = new Set<string>();
-
-    people.forEach((person) => {
-      const normalizedName = person.name.trim().toLowerCase();
-      if (normalizedName) {
-        nameSet.add(normalizedName);
-      }
-      const normalizedPhone = person.phone?.trim().toLowerCase();
-      if (normalizedPhone) {
-        phoneSet.add(normalizedPhone);
-      }
-      const normalizedEmail = person.email?.trim().toLowerCase();
-      if (normalizedEmail) {
-        emailSet.add(normalizedEmail);
-      }
-    });
-
-    return { nameSet, phoneSet, emailSet };
-  }, [people]);
-
-  const filteredContacts = useMemo(() => {
-    const normalized = debouncedQuery.trim().toLowerCase();
-    if (!normalized) {
-      return contacts;
-    }
-
-    return contacts.filter((contact) => contact.name.toLowerCase().includes(normalized));
-  }, [contacts, debouncedQuery]);
+  const { peopleLookup, filteredContacts, selectedContacts } = useContactsPickerModel({
+    people,
+    contacts,
+    query: debouncedQuery,
+    selectedIds,
+  });
 
   const selectedCount = selectedIds.length;
 
@@ -133,7 +103,6 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   }, []);
 
   const handleAdd = useCallback(() => {
-    const selectedContacts = contacts.filter((contact) => selectedIds.includes(contact.id));
     addPeople({
       people: selectedContacts.map((contact) => ({
         name: contact.name,
@@ -142,7 +111,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
       })),
     });
     navigation.navigate('People');
-  }, [addPeople, contacts, navigation, selectedIds]);
+  }, [addPeople, navigation, selectedContacts]);
 
   const isAlreadyAdded = useCallback(
     (contact: DeviceContact) => {
@@ -207,7 +176,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
             initialNumToRender={12}
             maxToRenderPerBatch={12}
             windowSize={5}
-            renderItem={({ item }) => renderContactItem({ item })}
+            renderItem={renderContactItem}
           />
         </View>
       )}

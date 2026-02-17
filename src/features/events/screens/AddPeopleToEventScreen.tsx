@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Checkbox, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { usePeopleListModel } from '@/features/people/hooks/usePeopleListModel';
 import { EventsStackParamList } from '@/navigation/types';
 import { usePeopleState } from '@/state/people/peopleContext';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
@@ -12,7 +13,7 @@ import { AppList } from '@/shared/ui/AppList';
 import { PersonListRow } from '@/features/people/components/PersonListRow';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { AppSearchbar } from '@/shared/ui/AppSearchbar';
-import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
+import { isCurrentUserPerson } from '@/shared/utils/people';
 
 type AddPeopleToEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddPeopleToEvent'>;
 
@@ -31,16 +32,10 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
   const participantIds = useMemo(() => new Set(participants.map((item) => item.id)), [participants]);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
-  const filteredPeople = useMemo(() => {
-    const normalized = debouncedQuery.trim().toLowerCase();
-    if (!normalized) {
-      return sortPeopleWithCurrentUserFirst(people);
-    }
-
-    return sortPeopleWithCurrentUserFirst(
-      people.filter((person) => person.name.toLowerCase().includes(normalized)),
-    );
-  }, [debouncedQuery, people]);
+  const { filteredPeople } = usePeopleListModel({
+    people,
+    query: debouncedQuery,
+  });
 
   const allAdded = people.length > 0 && people.every((person) => participantIds.has(person.id));
   const selectedCount = selectedIds.length;
@@ -65,14 +60,16 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
   }, [addPeopleToEvent, navigation, people, route.params.eventId, selectedIds]);
 
   const renderPersonItem = useCallback(
-    ({ item }: { item: PersonItem }) => (
-      <SelectablePersonRow
-        person={item}
-        alreadyAdded={participantIds.has(item.id)}
-        selected={selectedSet.has(item.id)}
-        onToggle={toggleSelect}
-      />
-    ),
+    ({ item }: { item: PersonItem }) => {
+      return (
+        <SelectablePersonRow
+          person={item}
+          alreadyAdded={participantIds.has(item.id)}
+          selected={selectedSet.has(item.id)}
+          onToggle={toggleSelect}
+        />
+      );
+    },
     [participantIds, selectedSet, toggleSelect],
   );
 
@@ -104,7 +101,7 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
             initialNumToRender={12}
             maxToRenderPerBatch={12}
             windowSize={5}
-            renderItem={({ item }) => renderPersonItem({ item })}
+            renderItem={renderPersonItem}
           />
         </View>
       )}

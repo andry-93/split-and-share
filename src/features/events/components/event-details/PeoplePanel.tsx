@@ -1,15 +1,15 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { BackHandler, View } from 'react-native';
+import React, { memo, useCallback, useEffect, useMemo } from 'react';
+import { View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { ParticipantItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
 import { PersonListRow } from '@/features/people/components/PersonListRow';
 import { formatCurrencyAmount } from '@/shared/utils/currency';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
-import { AppConfirm } from '@/shared/ui/AppConfirm';
-import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
+import { useConfirmState } from '@/shared/hooks/useConfirmState';
+import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
+import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
 
 export type PeopleSelectionToolbarState = {
   visible: boolean;
@@ -36,9 +36,8 @@ export const PeoplePanel = memo(function PeoplePanel({
   onRemoveParticipants,
   onSelectionToolbarChange,
 }: PeoplePanelProps) {
-  const theme = useTheme();
-  const navigation = useNavigation();
-  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
+    useConfirmState();
 
   const sortedParticipants = useMemo(
     () => sortPeopleWithCurrentUserFirst(participants),
@@ -48,13 +47,13 @@ export const PeoplePanel = memo(function PeoplePanel({
     isEditMode,
     selectedIds,
     selectedSet,
-    selectableIds,
     exitEditMode,
     toggleSelection,
     enterEditMode,
-    toggleSelectAll,
-  } = useSelectionMode<ParticipantItem>({
+    getToolbarProps,
+  } = useSelectionListMode<ParticipantItem>({
     items: sortedParticipants,
+    enableBeforeRemoveExit: true,
   });
 
   const handleDeleteSelected = useCallback(() => {
@@ -62,9 +61,9 @@ export const PeoplePanel = memo(function PeoplePanel({
       return;
     }
     onRemoveParticipants(selectedIds);
-    setIsDeleteConfirmVisible(false);
+    closeDeleteConfirm();
     exitEditMode();
-  }, [exitEditMode, onRemoveParticipants, selectedIds]);
+  }, [closeDeleteConfirm, exitEditMode, onRemoveParticipants, selectedIds]);
 
   useEffect(() => {
     if (!onSelectionToolbarChange) {
@@ -73,55 +72,18 @@ export const PeoplePanel = memo(function PeoplePanel({
 
     onSelectionToolbarChange({
       visible: isEditMode,
-      title: `Selected ${selectedIds.length}`,
-      totalSelectableCount: selectableIds.length,
-      selectedCount: selectedIds.length,
-      onToggleSelectAll: toggleSelectAll,
-      onDelete: () => setIsDeleteConfirmVisible(true),
-      onClose: exitEditMode,
+      ...getToolbarProps(openDeleteConfirm),
     });
 
     return () => {
       onSelectionToolbarChange(null);
     };
   }, [
-    exitEditMode,
+    getToolbarProps,
     isEditMode,
+    openDeleteConfirm,
     onSelectionToolbarChange,
-    selectableIds.length,
-    selectedIds.length,
-    toggleSelectAll,
   ]);
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        if (!isEditMode) {
-          return false;
-        }
-        exitEditMode();
-        return true;
-      };
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => {
-        subscription.remove();
-      };
-    }, [exitEditMode, isEditMode]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-        if (!isEditMode) {
-          return;
-        }
-        event.preventDefault();
-        exitEditMode();
-      });
-      return unsubscribe;
-    }, [exitEditMode, isEditMode, navigation]),
-  );
 
   const renderParticipantItem = useCallback(
     ({ item }: { item: ParticipantItem }) => (
@@ -160,17 +122,14 @@ export const PeoplePanel = memo(function PeoplePanel({
         renderItem={({ item }) => renderParticipantItem({ item })}
       />
 
-      <AppConfirm
+      <SelectionDeleteConfirm
         visible={isDeleteConfirmVisible}
         title="Remove from event"
-        onDismiss={() => setIsDeleteConfirmVisible(false)}
-        onConfirm={handleDeleteSelected}
+        message="Selected contacts will be removed from this event."
         confirmText="Remove"
-      >
-        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          Selected contacts will be removed from this event.
-        </Text>
-      </AppConfirm>
+        onDismiss={closeDeleteConfirm}
+        onConfirm={handleDeleteSelected}
+      />
     </View>
   );
 });

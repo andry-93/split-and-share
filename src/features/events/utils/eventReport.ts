@@ -6,6 +6,7 @@ type BuildEventReportHtmlInput = {
   appName: string;
   event: EventItem;
   currencyCode: string;
+  debtsMode: 'simplified' | 'detailed';
   detailedDebts: RawDebt[];
   simplifiedDebts: SimplifiedDebt[];
   payments: PaymentEntry[];
@@ -41,6 +42,7 @@ export function buildEventReportHtml({
   appName,
   event,
   currencyCode,
+  debtsMode,
   detailedDebts,
   simplifiedDebts,
   payments,
@@ -92,6 +94,27 @@ export function buildEventReportHtml({
           `,
           )
           .join('');
+
+  const selectedDebtsRows =
+    debtsMode === 'detailed'
+      ? detailedRows
+      : simplifiedRows;
+  const selectedDebtsHeader =
+    debtsMode === 'detailed'
+      ? `
+        <tr>
+          <th>Transfer</th>
+          <th>Amount</th>
+          <th>Type</th>
+        </tr>
+      `
+      : `
+        <tr>
+          <th>Transfer</th>
+          <th>Amount</th>
+        </tr>
+      `;
+  const selectedDebtsTitle = debtsMode === 'detailed' ? 'Detailed Debts' : 'Simplified Debts';
 
   const paymentRows =
     payments.length === 0
@@ -196,27 +219,12 @@ export function buildEventReportHtml({
       <tbody>${expensesRows}</tbody>
     </table>
 
-    <h2>Detailed Debts</h2>
+    <h2>${selectedDebtsTitle}</h2>
     <table>
       <thead>
-        <tr>
-          <th>Transfer</th>
-          <th>Amount</th>
-          <th>Type</th>
-        </tr>
+        ${selectedDebtsHeader}
       </thead>
-      <tbody>${detailedRows}</tbody>
-    </table>
-
-    <h2>Simplified Debts</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Transfer</th>
-          <th>Amount</th>
-        </tr>
-      </thead>
-      <tbody>${simplifiedRows}</tbody>
+      <tbody>${selectedDebtsRows}</tbody>
     </table>
 
     <h2>Paid Transfers</h2>

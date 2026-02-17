@@ -12,6 +12,7 @@ export function createDefaultSettingsState(): SettingsState {
     language: getSystemDefaultLanguage(),
     languageSource: 'system',
     currency: 'USD',
+    debtsViewMode: 'simplified',
   };
 }
 

@@ -68,6 +68,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
         appName: 'Split & Share',
         event,
         currencyCode,
+        debtsMode: settings.debtsViewMode,
         detailedDebts,
         simplifiedDebts,
         payments,
@@ -88,7 +89,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
     } finally {
       setIsGenerating(false);
     }
-  }, [event, eventsState, settings.currency]);
+  }, [event, eventsState, settings.currency, settings.debtsViewMode]);
 
   useEffect(() => {
     if (!pdfUri && !isGenerating) {
@@ -155,4 +156,3 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
     handleZoomOut,
   };
 }
-

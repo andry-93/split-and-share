@@ -12,6 +12,7 @@ export function AppSearchbar({ style, inputStyle, ...props }: AppSearchbarProps)
   return (
     <Searchbar
       {...props}
+      placeholderTextColor={theme.colors.onSurfaceVariant}
       style={[
         styles.search,
         {
@@ -20,7 +21,7 @@ export function AppSearchbar({ style, inputStyle, ...props }: AppSearchbarProps)
         },
         style,
       ]}
-      inputStyle={[styles.searchInput, inputStyle]}
+      inputStyle={[styles.searchInput, { color: theme.colors.onSurface }, inputStyle]}
     />
   );
 }

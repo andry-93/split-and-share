@@ -6,7 +6,7 @@ import { readJSON, storage, writeJSON } from '@/state/storage/mmkv';
 import { parseEventsState, parsePeopleState, parseSettingsState } from '@/state/storage/guards';
 import { STORAGE_KEYS } from '@/state/storage/storageKeys';
 
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 export function getStoredSchemaVersion() {
   const version = storage.getString(STORAGE_KEYS.schemaVersion);
@@ -215,6 +215,16 @@ function migrateV7toV8() {
   }
 }
 
+function migrateV8toV9() {
+  try {
+    const settings = readJSON<SettingsState>(STORAGE_KEYS.settings);
+    writeJSON(STORAGE_KEYS.settings, parseSettingsState(settings));
+  } catch (error) {
+    console.error('[MMKV] settings v9 migration failed', error);
+    writeJSON(STORAGE_KEYS.settings, createDefaultSettingsState());
+  }
+}
+
 export function runMigrations() {
   let version = getStoredSchemaVersion();
   if (version === CURRENT_SCHEMA_VERSION) {
@@ -250,6 +260,9 @@ export function runMigrations() {
       }
       if (version === 7) {
         migrateV7toV8();
+      }
+      if (version === 8) {
+        migrateV8toV9();
       }
       version += 1;
     }

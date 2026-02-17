@@ -1,7 +1,9 @@
 import { EventGroupItem, EventItem, ExpenseItem, ParticipantItem } from '@/features/events/types/events';
+import { createSelector } from '@reduxjs/toolkit';
 import { fromMinorUnits, toMinorUnits } from '@/shared/utils/currency';
 import { EventsState } from '@/state/events/eventsTypes';
 import { EventPayment } from '@/state/events/paymentsModel';
+import { RootState } from '@/state/store';
 
 export type RawDebt = {
   id: string;
@@ -18,6 +20,12 @@ export type SimplifiedDebt = {
 };
 
 export type PaymentEntry = EventPayment;
+
+export const selectEventsState = (state: RootState): EventsState => state.events;
+export const selectEvents = (state: RootState): EventItem[] => state.events.events;
+export const selectEventGroups = (state: RootState): EventGroupItem[] => state.events.groups;
+export const selectPaymentsByEvent = (state: RootState): Record<string, EventPayment[]> =>
+  state.events.paymentsByEvent;
 
 export function selectEventById(state: EventsState, eventId: string): EventItem | undefined {
   return state.events.find((event) => event.id === eventId);
@@ -392,4 +400,183 @@ export function selectExpensesSortedByUpdatedAt(expenses: ExpenseItem[]) {
       toTimestamp(b.updatedAt) - toTimestamp(a.updatedAt) ||
       a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
   );
+}
+
+export function createEventDetailsSelectors() {
+  const selectRawDebtsMemo = createSelector(
+    [(event: EventItem) => event],
+    (event) => selectRawDebts(event),
+  );
+
+  const selectPaymentsMemo = createSelector(
+    [(eventsState: EventsState) => eventsState, (_eventsState: EventsState, eventId: string) => eventId],
+    (eventsState, eventId) => selectPayments(eventsState, eventId),
+  );
+
+  const selectEffectiveRawDebtsMemo = createSelector(
+    [(rawDebts: RawDebt[]) => rawDebts, (_rawDebts: RawDebt[], payments: PaymentEntry[]) => payments],
+    (rawDebts, payments) => selectEffectiveRawDebts(rawDebts, payments),
+  );
+
+  const selectDetailedDebtsMemo = createSelector([(rawDebts: RawDebt[]) => rawDebts], (rawDebts) =>
+    selectDetailedDebts(rawDebts),
+  );
+
+  const selectSimplifiedDebtsMemo = createSelector([(rawDebts: RawDebt[]) => rawDebts], (rawDebts) =>
+    selectSimplifiedDebts(rawDebts),
+  );
+
+  const selectOutstandingTotalMemo = createSelector(
+    [(rawDebts: RawDebt[]) => rawDebts],
+    (rawDebts) => selectOutstandingTotal(rawDebts),
+  );
+
+  const selectOutstandingPeopleCountMemo = createSelector(
+    [(rawDebts: RawDebt[]) => rawDebts],
+    (rawDebts) => selectOutstandingPeopleCount(rawDebts),
+  );
+
+  const selectOutstandingTransfersCountMemo = createSelector(
+    [(rawDebts: RawDebt[]) => rawDebts],
+    (rawDebts) => selectOutstandingTransfersCount(rawDebts),
+  );
+
+  const selectParticipantBalanceMapMemo = createSelector(
+    [(participants: ParticipantItem[]) => participants, (_participants: ParticipantItem[], rawDebts: RawDebt[]) => rawDebts],
+    (participants, rawDebts) => {
+      const balanceById = new Map<string, number>();
+      participants.forEach((participant) => {
+        balanceById.set(participant.id, 0);
+      });
+      rawDebts.forEach((debt) => {
+        balanceById.set(debt.from.id, (balanceById.get(debt.from.id) ?? 0) - debt.amount);
+        balanceById.set(debt.to.id, (balanceById.get(debt.to.id) ?? 0) + debt.amount);
+      });
+      return balanceById;
+    },
+  );
+
+  return {
+    selectRawDebtsMemo,
+    selectPaymentsMemo,
+    selectEffectiveRawDebtsMemo,
+    selectDetailedDebtsMemo,
+    selectSimplifiedDebtsMemo,
+    selectOutstandingTotalMemo,
+    selectOutstandingPeopleCountMemo,
+    selectOutstandingTransfersCountMemo,
+    selectParticipantBalanceMapMemo,
+  };
+}
+
+export function createEventsListSelectors() {
+  const selectGroupsByIdMemo = createSelector([(groups: EventGroupItem[]) => groups], (groups) => {
+    return new Map(groups.map((group) => [group.id, group]));
+  });
+
+  const selectCurrentGroupMemo = createSelector(
+    [(groupsById: Map<string, EventGroupItem>) => groupsById, (_groupsById: Map<string, EventGroupItem>, groupId?: string) => groupId],
+    (groupsById, groupId) => (groupId ? groupsById.get(groupId) : undefined),
+  );
+
+  const selectEffectiveGroupIdMemo = createSelector(
+    [(currentGroup?: EventGroupItem) => currentGroup, (_currentGroup: EventGroupItem | undefined, groupId?: string) => groupId],
+    (currentGroup, groupId) => (currentGroup ? groupId : undefined),
+  );
+
+  const selectFilteredEventsMemo = createSelector(
+    [
+      (events: EventItem[]) => events,
+      (_events: EventItem[], effectiveGroupId: string | undefined) => effectiveGroupId,
+      (_events: EventItem[], _effectiveGroupId: string | undefined, groupsById: Map<string, EventGroupItem>) =>
+        groupsById,
+      (_events: EventItem[], _effectiveGroupId: string | undefined, _groupsById: Map<string, EventGroupItem>, query: string) =>
+        query,
+    ],
+    (events, effectiveGroupId, groupsById, query) => {
+      const normalized = query.trim().toLowerCase();
+      const baseEvents = events.filter((event) => {
+        if (effectiveGroupId) {
+          return event.groupId === effectiveGroupId;
+        }
+
+        if (!event.groupId) {
+          return true;
+        }
+
+        return !groupsById.has(event.groupId);
+      });
+
+      const matches = !normalized
+        ? baseEvents
+        : baseEvents.filter((event) => event.name.toLowerCase().includes(normalized));
+
+      return selectEventsSortedByUpdatedAt(matches);
+    },
+  );
+
+  const selectFilteredGroupsMemo = createSelector(
+    [
+      (groups: EventGroupItem[]) => groups,
+      (_groups: EventGroupItem[], effectiveGroupId: string | undefined) => effectiveGroupId,
+      (_groups: EventGroupItem[], _effectiveGroupId: string | undefined, query: string) => query,
+      (_groups: EventGroupItem[], _effectiveGroupId: string | undefined, _query: string, events: EventItem[]) =>
+        events,
+    ],
+    (groups, effectiveGroupId, query, events) => {
+      if (effectiveGroupId) {
+        return [];
+      }
+
+      const normalized = query.trim().toLowerCase();
+      const matches = !normalized
+        ? groups
+        : groups.filter((group) => {
+            if (group.name.toLowerCase().includes(normalized)) {
+              return true;
+            }
+
+            return events.some(
+              (event) => event.groupId === group.id && event.name.toLowerCase().includes(normalized),
+            );
+          });
+
+      return selectGroupsSortedByUpdatedAt(matches);
+    },
+  );
+
+  const selectEventsCountByGroupMemo = createSelector([(events: EventItem[]) => events], (events) => {
+    const counts = new Map<string, number>();
+    events.forEach((event) => {
+      if (!event.groupId) {
+        return;
+      }
+      counts.set(event.groupId, (counts.get(event.groupId) ?? 0) + 1);
+    });
+    return counts;
+  });
+
+  return {
+    selectGroupsByIdMemo,
+    selectCurrentGroupMemo,
+    selectEffectiveGroupIdMemo,
+    selectFilteredEventsMemo,
+    selectFilteredGroupsMemo,
+    selectEventsCountByGroupMemo,
+  };
+}
+
+export function createEventCardSelectors() {
+  const selectTotalMemo = createSelector([(event: EventItem) => event], (event) => selectTotalAmount(event));
+  const selectRawDebtsMemo = createSelector([(event: EventItem) => event], (event) => selectRawDebts(event));
+  const selectEffectiveRawDebtsMemo = createSelector(
+    [(rawDebts: RawDebt[]) => rawDebts, (_rawDebts: RawDebt[], payments: PaymentEntry[]) => payments],
+    (rawDebts, payments) => selectEffectiveRawDebts(rawDebts, payments),
+  );
+
+  return {
+    selectTotalMemo,
+    selectRawDebtsMemo,
+    selectEffectiveRawDebtsMemo,
+  };
 }

@@ -1,7 +1,6 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Appbar, Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,23 +8,22 @@ import { AddEventActionSheet } from '@/features/events/components/AddEventAction
 import { EventListEntry, useEventsListModel } from '@/features/events/hooks/useEventsListModel';
 import { EventGroupItem, EventItem } from '@/features/events/types/events';
 import { EventsStackParamList } from '@/navigation/types';
-import { AppConfirm } from '@/shared/ui/AppConfirm';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { AppList } from '@/shared/ui/AppList';
 import { AppSearchbar } from '@/shared/ui/AppSearchbar';
 import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
+import { useConfirmState } from '@/shared/hooks/useConfirmState';
 import { DraggableFab } from '@/shared/ui/DraggableFab';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomSheetsOnBlur';
-import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
+import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
 import { formatCurrencyAmount, normalizeCurrencyCode } from '@/shared/utils/currency';
 import { SelectionActionToolbar } from '@/shared/ui/SelectionActionToolbar';
+import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import {
+  createEventCardSelectors,
   PaymentEntry,
-  selectEffectiveRawDebts,
-  selectRawDebts,
-  selectTotalAmount,
 } from '@/state/events/eventsSelectors';
 import { selectCurrentUser } from '@/state/people/peopleSelectors';
 import { usePeopleState } from '@/state/people/peopleContext';
@@ -40,7 +38,8 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
   const { people } = usePeopleState();
   const settings = useSettingsState();
   const [query, setQuery] = useState('');
-  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
+    useConfirmState();
   const createSheetRef = useRef<BottomSheetModal>(null);
   useDismissBottomSheetsOnBlur([createSheetRef]);
 
@@ -58,12 +57,11 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
     isEditMode,
     selectedIds,
     selectedSet,
-    selectableIds,
     exitEditMode,
     toggleSelection,
     enterEditMode,
-    toggleSelectAll,
-  } = useSelectionMode<EventListEntry>({
+    getToolbarProps,
+  } = useSelectionListMode<EventListEntry>({
     items: listEntries,
   });
 
@@ -110,9 +108,9 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
       removeEvents({ eventIds: selectedEventIds });
     }
 
-    setIsDeleteConfirmVisible(false);
+    closeDeleteConfirm();
     exitEditMode();
-  }, [exitEditMode, removeEvents, removeGroups, selectedIds]);
+  }, [closeDeleteConfirm, exitEditMode, removeEvents, removeGroups, selectedIds]);
 
   const handleAddEvent = useCallback(() => {
     createSheetRef.current?.dismiss();
@@ -132,63 +130,33 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
     createSheetRef.current?.present();
   }, [effectiveGroupId, navigation]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        if (isEditMode) {
-          exitEditMode();
-          return true;
-        }
-        return false;
-      };
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => subscription.remove();
-    }, [exitEditMode, isEditMode]),
-  );
-
   const renderListItem = useCallback(
     ({ item }: { item: EventListEntry }) => {
       const selected = selectedSet.has(item.id);
       if (item.kind === 'group') {
         return (
-          <GroupCard
+          <GroupEntryRow
             group={item.group}
             eventsCount={item.eventsCount}
+            item={item}
             selectable={isEditMode}
             selected={selected}
-            onPress={() => {
-              if (isEditMode) {
-                toggleSelection(item);
-                return;
-              }
-              handleOpenGroup(item.group.id);
-            }}
-            onLongPress={() => {
-              if (!isEditMode) {
-                enterEditMode(item);
-              }
-            }}
+            onToggleSelection={toggleSelection}
+            onEnterEditMode={enterEditMode}
+            onOpenGroup={handleOpenGroup}
           />
         );
       }
 
       return (
-        <EventCard
+        <EventEntryRow
           event={item.event}
+          item={item}
           selectable={isEditMode}
           selected={selected}
-          onPress={() => {
-            if (isEditMode) {
-              toggleSelection(item);
-              return;
-            }
-            handleOpenEvent(item.event.id);
-          }}
-          onLongPress={() => {
-            if (!isEditMode) {
-              enterEditMode(item);
-            }
-          }}
+          onToggleSelection={toggleSelection}
+          onEnterEditMode={enterEditMode}
+          onOpenEvent={handleOpenEvent}
           fallbackCurrencyCode={currencyCode}
           payments={item.payments}
           currentUserId={currentUserId}
@@ -221,12 +189,7 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
       >
         {isEditMode ? (
           <SelectionActionToolbar
-            title={`Selected ${selectedIds.length}`}
-            totalSelectableCount={selectableIds.length}
-            selectedCount={selectedIds.length}
-            onToggleSelectAll={toggleSelectAll}
-            onDelete={() => setIsDeleteConfirmVisible(true)}
-            onClose={exitEditMode}
+            {...getToolbarProps(openDeleteConfirm)}
           />
         ) : (
           <AppHeader
@@ -254,7 +217,7 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}
-          renderItem={({ item }) => renderListItem({ item })}
+          renderItem={renderListItem}
           emptyComponent={
             <View style={styles.emptyState}>
               <Text variant="bodyMedium">{emptyText}</Text>
@@ -282,17 +245,13 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
           </>
         ) : null}
 
-        <AppConfirm
+        <SelectionDeleteConfirm
           visible={isDeleteConfirmVisible}
           title="Delete selected"
-          onDismiss={() => setIsDeleteConfirmVisible(false)}
+          message="Selected items will be deleted. Deleting a group removes all events inside it."
+          onDismiss={closeDeleteConfirm}
           onConfirm={handleDeleteSelected}
-          confirmText="Delete"
-        >
-          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-            Selected items will be deleted. Deleting a group removes all events inside it.
-          </Text>
-        </AppConfirm>
+        />
       </SafeAreaView>
     </BottomTabSwipeBoundary>
   );
@@ -306,6 +265,106 @@ type GroupCardProps = {
   onPress: () => void;
   onLongPress: () => void;
 };
+
+type GroupEntryRowProps = {
+  item: Extract<EventListEntry, { kind: 'group' }>;
+  group: EventGroupItem;
+  eventsCount: number;
+  selectable: boolean;
+  selected: boolean;
+  onToggleSelection: (item: EventListEntry) => void;
+  onEnterEditMode: (item: EventListEntry) => void;
+  onOpenGroup: (groupId: string) => void;
+};
+
+const GroupEntryRow = memo(function GroupEntryRow({
+  item,
+  group,
+  eventsCount,
+  selectable,
+  selected,
+  onToggleSelection,
+  onEnterEditMode,
+  onOpenGroup,
+}: GroupEntryRowProps) {
+  const handlePress = useCallback(() => {
+    if (selectable) {
+      onToggleSelection(item);
+      return;
+    }
+    onOpenGroup(group.id);
+  }, [group.id, item, onOpenGroup, onToggleSelection, selectable]);
+
+  const handleLongPress = useCallback(() => {
+    if (!selectable) {
+      onEnterEditMode(item);
+    }
+  }, [item, onEnterEditMode, selectable]);
+
+  return (
+    <GroupCard
+      group={group}
+      eventsCount={eventsCount}
+      selectable={selectable}
+      selected={selected}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
+    />
+  );
+});
+
+type EventEntryRowProps = {
+  item: Extract<EventListEntry, { kind: 'event' }>;
+  event: EventItem;
+  selectable: boolean;
+  selected: boolean;
+  onToggleSelection: (item: EventListEntry) => void;
+  onEnterEditMode: (item: EventListEntry) => void;
+  onOpenEvent: (eventId: string) => void;
+  fallbackCurrencyCode: string;
+  payments: PaymentEntry[];
+  currentUserId?: string;
+};
+
+const EventEntryRow = memo(function EventEntryRow({
+  item,
+  event,
+  selectable,
+  selected,
+  onToggleSelection,
+  onEnterEditMode,
+  onOpenEvent,
+  fallbackCurrencyCode,
+  payments,
+  currentUserId,
+}: EventEntryRowProps) {
+  const handlePress = useCallback(() => {
+    if (selectable) {
+      onToggleSelection(item);
+      return;
+    }
+    onOpenEvent(event.id);
+  }, [event.id, item, onOpenEvent, onToggleSelection, selectable]);
+
+  const handleLongPress = useCallback(() => {
+    if (!selectable) {
+      onEnterEditMode(item);
+    }
+  }, [item, onEnterEditMode, selectable]);
+
+  return (
+    <EventCard
+      event={event}
+      selectable={selectable}
+      selected={selected}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
+      fallbackCurrencyCode={fallbackCurrencyCode}
+      payments={payments}
+      currentUserId={currentUserId}
+    />
+  );
+});
 
 const GroupCard = memo(function GroupCard({
   group,
@@ -431,14 +490,18 @@ const EventCard = memo(function EventCard({
   const theme = useTheme();
   const longPressTriggeredRef = useRef(false);
   const pressedCardBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
+  const selectors = useMemo(() => createEventCardSelectors(), []);
   const eventCurrencyCode = useMemo(
     () => normalizeCurrencyCode(event.currency ?? fallbackCurrencyCode),
     [event.currency, fallbackCurrencyCode],
   );
   const eventDate = useMemo(() => formatEventDate(event.date), [event.date]);
-  const total = useMemo(() => selectTotalAmount(event), [event]);
-  const rawDebts = useMemo(() => selectRawDebts(event), [event]);
-  const effectiveDebts = useMemo(() => selectEffectiveRawDebts(rawDebts, payments), [payments, rawDebts]);
+  const total = useMemo(() => selectors.selectTotalMemo(event), [event, selectors]);
+  const rawDebts = useMemo(() => selectors.selectRawDebtsMemo(event), [event, selectors]);
+  const effectiveDebts = useMemo(
+    () => selectors.selectEffectiveRawDebtsMemo(rawDebts, payments),
+    [payments, rawDebts, selectors],
+  );
   const status = useMemo(() => {
     const currentUser = event.participants.find((participant) => participant.id === currentUserId);
     if (!currentUser) {

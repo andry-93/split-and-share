@@ -3,9 +3,5 @@ export type SettingsState = {
   language: string;
   languageSource: 'system' | 'manual';
   currency: string;
+  debtsViewMode: 'simplified' | 'detailed';
 };
-
-export type SettingsAction =
-  | { type: 'settings/theme'; payload: { theme: SettingsState['theme'] } }
-  | { type: 'settings/language'; payload: { language: string } }
-  | { type: 'settings/currency'; payload: { currency: string } };

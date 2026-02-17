@@ -4,6 +4,7 @@ import { createDefaultEventsState, createDefaultPeopleState, createDefaultSettin
 import { EventPayment } from '@/state/events/paymentsModel';
 import { EventsState } from '@/state/events/eventsTypes';
 import { PeopleState } from '@/state/people/peopleTypes';
+import { getSystemDefaultLanguage } from '@/state/settings/languageDefaults';
 import { SettingsState } from '@/state/settings/settingsTypes';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -159,6 +160,7 @@ export function parseSettingsState(value: unknown): SettingsState {
   const language = value.language;
   const languageSource = value.languageSource;
   const currency = value.currency;
+  const debtsViewMode = value.debtsViewMode;
   if (
     (theme !== 'light' && theme !== 'dark' && theme !== 'system') ||
     typeof language !== 'string' ||
@@ -167,16 +169,20 @@ export function parseSettingsState(value: unknown): SettingsState {
     return createDefaultSettingsState();
   }
 
+  const systemLanguage = getSystemDefaultLanguage();
+  const resolvedLanguageSource: SettingsState['languageSource'] =
+    languageSource === 'manual' || languageSource === 'system'
+      ? languageSource
+      : language === systemLanguage
+        ? 'system'
+        : 'manual';
+
   return {
     theme,
     language,
-    languageSource:
-      languageSource === 'manual' || languageSource === 'system'
-        ? languageSource
-        : language === 'English'
-          ? 'system'
-          : 'manual',
+    languageSource: resolvedLanguageSource,
     currency,
+    debtsViewMode: debtsViewMode === 'detailed' ? 'detailed' : 'simplified',
   };
 }
 

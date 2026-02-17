@@ -1,13 +1,13 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { ExpenseItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
+import { useConfirmState } from '@/shared/hooks/useConfirmState';
 import { formatCurrencyAmount } from '@/shared/utils/currency';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
-import { AppConfirm } from '@/shared/ui/AppConfirm';
-import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
+import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
+import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
 
 type ExpensesPanelProps = {
   expenses: ExpenseItem[];
@@ -34,20 +34,19 @@ export const ExpensesPanel = memo(function ExpensesPanel({
   onOpenExpense,
   onSelectionToolbarChange,
 }: ExpensesPanelProps) {
-  const theme = useTheme();
-  const navigation = useNavigation();
-  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
+    useConfirmState();
   const {
     isEditMode,
     selectedIds,
     selectedSet,
-    selectableIds,
     exitEditMode,
     toggleSelection,
     enterEditMode,
-    toggleSelectAll,
-  } = useSelectionMode<ExpenseItem>({
+    getToolbarProps,
+  } = useSelectionListMode<ExpenseItem>({
     items: expenses,
+    enableBeforeRemoveExit: true,
   });
 
   useEffect(() => {
@@ -57,61 +56,27 @@ export const ExpensesPanel = memo(function ExpensesPanel({
 
     onSelectionToolbarChange({
       visible: isEditMode,
-      title: `Selected ${selectedIds.length}`,
-      totalSelectableCount: selectableIds.length,
-      selectedCount: selectedIds.length,
-      onToggleSelectAll: toggleSelectAll,
-      onDelete: () => setIsDeleteConfirmVisible(true),
-      onClose: exitEditMode,
+      ...getToolbarProps(openDeleteConfirm),
     });
 
     return () => {
       onSelectionToolbarChange(null);
     };
   }, [
-    exitEditMode,
+    getToolbarProps,
     isEditMode,
+    openDeleteConfirm,
     onSelectionToolbarChange,
-    selectableIds.length,
-    selectedIds.length,
-    toggleSelectAll,
   ]);
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        if (!isEditMode) {
-          return false;
-        }
-        exitEditMode();
-        return true;
-      };
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => subscription.remove();
-    }, [exitEditMode, isEditMode]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-        if (!isEditMode) {
-          return;
-        }
-        event.preventDefault();
-        exitEditMode();
-      });
-      return unsubscribe;
-    }, [exitEditMode, isEditMode, navigation]),
-  );
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedIds.length === 0) {
       return;
     }
     onRemoveExpenses(selectedIds);
-    setIsDeleteConfirmVisible(false);
+    closeDeleteConfirm();
     exitEditMode();
-  }, [exitEditMode, onRemoveExpenses, selectedIds]);
+  }, [closeDeleteConfirm, exitEditMode, onRemoveExpenses, selectedIds]);
 
   const renderExpenseItem = useCallback(
     ({ item }: { item: ExpenseItem }) => (
@@ -147,17 +112,13 @@ export const ExpensesPanel = memo(function ExpensesPanel({
         }
         showDividers={false}
       />
-      <AppConfirm
+      <SelectionDeleteConfirm
         visible={isDeleteConfirmVisible}
         title="Delete expenses"
-        onDismiss={() => setIsDeleteConfirmVisible(false)}
+        message="Selected expenses and all related debt data will be deleted."
+        onDismiss={closeDeleteConfirm}
         onConfirm={handleDeleteSelected}
-        confirmText="Delete"
-      >
-        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          Selected expenses and all related debt data will be deleted.
-        </Text>
-      </AppConfirm>
+      />
     </>
   );
 });

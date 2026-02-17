@@ -5,7 +5,6 @@ import { TextInput as RNTextInput } from 'react-native';
 import { RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
 import { AppList } from '@/shared/ui/AppList';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
-import { CustomToggleGroup } from '@/shared/ui/CustomToggleGroup';
 import { formatCurrencyAmount, roundMoney } from '@/shared/utils/currency';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { useAutofocusWithRetry } from '@/shared/hooks/useAutofocusWithRetry';
@@ -13,8 +12,6 @@ import { eventDetailsStyles as styles } from '@/features/events/components/event
 
 type DebtsPanelProps = {
   mode: 'detailed' | 'simplified';
-  onModeChange: (mode: 'detailed' | 'simplified') => void;
-  onViewDetailedDebts: () => void;
   detailedDebts: RawDebt[];
   simplifiedDebts: SimplifiedDebt[];
   baseDetailedCount: number;
@@ -32,8 +29,6 @@ type DebtsPanelProps = {
 
 export const DebtsPanel = memo(function DebtsPanel({
   mode,
-  onModeChange,
-  onViewDetailedDebts,
   detailedDebts,
   simplifiedDebts,
   baseDetailedCount,
@@ -132,26 +127,13 @@ export const DebtsPanel = memo(function DebtsPanel({
 
   return (
     <View style={styles.debtsContent}>
-      <View style={styles.debtsHeaderRow}>
-        <Text variant="labelLarge" style={[styles.debtsHeaderLabel, { color: theme.colors.onSurfaceVariant }]}>
-          View
-        </Text>
-        <CustomToggleGroup
-          value={mode}
-          onChange={(value) => onModeChange(value)}
-          options={[
-            { value: 'detailed', label: 'Detailed' },
-            { value: 'simplified', label: 'Simplified' },
-          ]}
-          sizeMode="content"
-          variant="chips"
-        />
-      </View>
       <Text
         variant="bodySmall"
         style={[styles.debtsSharedPaidHint, { color: theme.colors.onSurfaceVariant }]}
       >
-        Paid status is shared between Detailed and Simplified.
+        {mode === 'detailed'
+          ? 'Detailed view is enabled in Settings. Paid status is shared.'
+          : 'Simplified view is enabled in Settings. Paid status is shared.'}
       </Text>
 
       {mode === 'detailed' ? (
@@ -176,9 +158,6 @@ export const DebtsPanel = memo(function DebtsPanel({
         <View style={styles.emptyState}>
           <Text variant="titleMedium">No debts yet</Text>
           <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
-          <Button mode="text" onPress={onViewDetailedDebts}>
-            View detailed debts
-          </Button>
         </View>
       ) : (
         <DebtsList
@@ -270,6 +249,11 @@ const DebtsList = memo(function DebtsList<T extends { id: string }>({
   onContentSizeChange,
   renderItem,
 }: DebtsListProps<T>) {
+  const handleRenderItem = useCallback(
+    ({ item }: { item: T }) => renderItem({ item }),
+    [renderItem],
+  );
+
   return (
     <View style={styles.debtsListWrapper} onLayout={onViewportLayout}>
       <DebtProgressHint totalCount={totalCount} paidCount={paidCount} onLayout={onHintLayout} />
@@ -283,7 +267,7 @@ const DebtsList = memo(function DebtsList<T extends { id: string }>({
           maxToRenderPerBatch={10}
           windowSize={5}
           onContentSizeChange={onContentSizeChange}
-          renderItem={({ item }) => renderItem({ item })}
+          renderItem={handleRenderItem}
         />
       </View>
     </View>
@@ -303,16 +287,16 @@ const DebtProgressHint = memo(function DebtProgressHint({
 }: DebtProgressHintProps) {
   const theme = useTheme();
   const isAllPaid = paidCount >= totalCount;
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      onLayout?.(event.nativeEvent.layout.height);
+    },
+    [onLayout],
+  );
 
   return (
     <View
-      onLayout={
-        onLayout
-          ? (event) => {
-              onLayout(event.nativeEvent.layout.height);
-            }
-          : undefined
-      }
+      onLayout={onLayout ? handleLayout : undefined}
       style={[
         styles.simplifiedHint,
         {

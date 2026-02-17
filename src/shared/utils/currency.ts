@@ -1,12 +1,14 @@
-const SUPPORTED_CURRENCY_CODES = new Set(['USD', 'EUR', 'GBP', 'RUB']);
 const MINOR_UNITS_SCALE = 100;
 
 export function normalizeCurrencyCode(currency?: string): string {
-  if (!currency) {
+  const value = currency?.trim().toUpperCase() ?? '';
+  const normalized = value.replace(/[^A-Z0-9]/g, '');
+
+  if (!normalized) {
     return 'USD';
   }
 
-  return SUPPORTED_CURRENCY_CODES.has(currency) ? currency : 'USD';
+  return normalized.slice(0, 10);
 }
 
 export function toMinorUnits(amount: number): number {

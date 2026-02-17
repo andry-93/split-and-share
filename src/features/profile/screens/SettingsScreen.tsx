@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { TextInput as RNTextInput } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 import { Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,23 +7,66 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useSettingsActions, useSettingsState } from '@/state/settings/settingsContext';
 import type { SettingsState } from '@/state/settings/settingsTypes';
 import appPackage from '../../../../package.json';
+import { AppConfirm } from '@/shared/ui/AppConfirm';
 import { CustomToggleGroup } from '@/shared/ui/CustomToggleGroup';
 import { normalizeCurrencyCode } from '@/shared/utils/currency';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { AppSingleSelectBottomSheet } from '@/shared/ui/AppSingleSelectBottomSheet';
+import { useConfirmState } from '@/shared/hooks/useConfirmState';
 import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomSheetsOnBlur';
 import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
+import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 
 const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
 const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB'];
+const CUSTOM_CURRENCY_VALUE = '__custom_currency__';
+const debtsViewOptions: Array<{ value: SettingsState['debtsViewMode']; label: string; description: string }> = [
+  {
+    value: 'simplified',
+    label: 'Simplified',
+    description: 'Recommended. Shows the minimum transfers needed.',
+  },
+  {
+    value: 'detailed',
+    label: 'Detailed',
+    description: 'Shows full transfer breakdown without simplification.',
+  },
+];
+
+function validateCustomCurrencyCode(value: string, existingCodes: Set<string>): string | null {
+  const raw = value.trim().toUpperCase();
+  const cleaned = raw.replace(/[^A-Z0-9]/g, '');
+  if (!cleaned) {
+    return 'Enter a currency code.';
+  }
+  if (cleaned.length < 3 || cleaned.length > 10) {
+    return 'Currency code must be 3-10 letters or numbers.';
+  }
+  if (cleaned !== raw) {
+    return 'Only letters and numbers are allowed.';
+  }
+  if (existingCodes.has(cleaned)) {
+    return 'This currency already exists.';
+  }
+  return null;
+}
 
 export function SettingsScreen() {
   const theme = useTheme();
   const settings = useSettingsState();
-  const { setTheme, setLanguage, setCurrency } = useSettingsActions();
+  const { setTheme, setLanguage, setCurrency, setDebtsViewMode } = useSettingsActions();
   const languageSheetRef = useRef<BottomSheetModal>(null);
   const currencySheetRef = useRef<BottomSheetModal>(null);
-  useDismissBottomSheetsOnBlur([languageSheetRef, currencySheetRef]);
+  const debtsViewSheetRef = useRef<BottomSheetModal>(null);
+  const [customCurrency, setCustomCurrency] = useState(normalizeCurrencyCode(settings.currency));
+  const [customCurrencyDirty, setCustomCurrencyDirty] = useState(false);
+  const [customCurrencySubmitAttempted, setCustomCurrencySubmitAttempted] = useState(false);
+  const {
+    isVisible: isCustomCurrencyVisible,
+    open: openCustomCurrency,
+    close: closeCustomCurrency,
+  } = useConfirmState();
+  useDismissBottomSheetsOnBlur([languageSheetRef, currencySheetRef, debtsViewSheetRef]);
   const snapPoints = useMemo(() => ['40%'], []);
 
   const handleOpenLanguage = useCallback(() => {
@@ -31,6 +75,10 @@ export function SettingsScreen() {
 
   const handleOpenCurrency = useCallback(() => {
     currencySheetRef.current?.present();
+  }, []);
+
+  const handleOpenDebtsView = useCallback(() => {
+    debtsViewSheetRef.current?.present();
   }, []);
 
   const handleThemeChange = useCallback(
@@ -48,12 +96,60 @@ export function SettingsScreen() {
     [setLanguage],
   );
 
+  const existingCurrencyCodes = useMemo(
+    () => new Set(currencyOptions.map((code) => normalizeCurrencyCode(code))),
+    [],
+  );
+
   const handleSelectCurrency = useCallback(
     (option: string) => {
+      if (option === CUSTOM_CURRENCY_VALUE) {
+        currencySheetRef.current?.dismiss();
+        const normalizedCurrent = normalizeCurrencyCode(settings.currency);
+        const hasCustomCurrency = !existingCurrencyCodes.has(normalizedCurrent);
+        setCustomCurrency(hasCustomCurrency ? normalizedCurrent : '');
+        setCustomCurrencyDirty(false);
+        setCustomCurrencySubmitAttempted(false);
+        openCustomCurrency();
+        return;
+      }
       setCurrency(option);
       currencySheetRef.current?.dismiss();
     },
-    [setCurrency],
+    [existingCurrencyCodes, openCustomCurrency, setCurrency, settings.currency],
+  );
+  const customCurrencyValidationError = useMemo(
+    () => validateCustomCurrencyCode(customCurrency, existingCurrencyCodes),
+    [customCurrency, existingCurrencyCodes],
+  );
+  const shouldShowCustomCurrencyError =
+    (customCurrencyDirty || customCurrencySubmitAttempted) && Boolean(customCurrencyValidationError);
+
+  const handleCustomCurrencyChange = useCallback((value: string) => {
+    setCustomCurrency(value.toUpperCase());
+    setCustomCurrencyDirty(true);
+  }, []);
+
+  const handleSaveCustomCurrency = useCallback(() => {
+    setCustomCurrencySubmitAttempted(true);
+    const validationError = validateCustomCurrencyCode(customCurrency, existingCurrencyCodes);
+    if (validationError) {
+      return;
+    }
+    const cleaned = customCurrency.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const normalized = normalizeCurrencyCode(cleaned);
+    setCurrency(normalized);
+    closeCustomCurrency();
+  }, [closeCustomCurrency, customCurrency, existingCurrencyCodes, setCurrency]);
+
+  const handleSelectDebtsView = useCallback(
+    (option: string) => {
+      if (option === 'detailed' || option === 'simplified') {
+        setDebtsViewMode(option);
+      }
+      debtsViewSheetRef.current?.dismiss();
+    },
+    [setDebtsViewMode],
   );
 
   const languageSheetOptions = useMemo(
@@ -62,9 +158,21 @@ export function SettingsScreen() {
   );
   const currencySheetOptions = useMemo(
     () =>
-      currencyOptions.map((option) => ({
-        value: option,
-        label: normalizeCurrencyCode(option),
+      [
+        ...currencyOptions.map((option) => ({
+          value: option,
+          label: normalizeCurrencyCode(option),
+        })),
+        { value: CUSTOM_CURRENCY_VALUE, label: 'Custom' },
+      ],
+    [],
+  );
+  const debtsViewSheetOptions = useMemo(
+    () =>
+      debtsViewOptions.map((option) => ({
+        value: option.value,
+        label: option.label,
+        description: option.description,
       })),
     [],
   );
@@ -101,6 +209,14 @@ export function SettingsScreen() {
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={handleOpenCurrency}
+          />
+          <Divider style={styles.preferencesDivider} />
+          <List.Item
+            title="Debts view"
+            description={settings.debtsViewMode === 'detailed' ? 'Detailed' : 'Simplified'}
+            style={styles.compactRow}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={handleOpenDebtsView}
           />
         </View>
 
@@ -141,10 +257,54 @@ export function SettingsScreen() {
         ref={currencySheetRef}
         title="Currency"
         options={currencySheetOptions}
-        selectedValue={settings.currency}
+        selectedValue={
+          currencyOptions.includes(settings.currency as (typeof currencyOptions)[number])
+            ? settings.currency
+            : CUSTOM_CURRENCY_VALUE
+        }
         onSelect={handleSelectCurrency}
         snapPoints={snapPoints}
       />
+      <AppSingleSelectBottomSheet
+        ref={debtsViewSheetRef}
+        title="Debts view"
+        options={debtsViewSheetOptions}
+        selectedValue={settings.debtsViewMode}
+        onSelect={handleSelectDebtsView}
+        snapPoints={snapPoints}
+      />
+      <AppConfirm
+        visible={isCustomCurrencyVisible}
+        title="Custom currency"
+        onDismiss={closeCustomCurrency}
+        onConfirm={handleSaveCustomCurrency}
+        confirmText="Save"
+      >
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          Enter a custom currency code.
+        </Text>
+        <OutlinedFieldContainer isError={shouldShowCustomCurrencyError}>
+          <RNTextInput
+            value={customCurrency}
+            onChangeText={handleCustomCurrencyChange}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={10}
+            style={[styles.customCurrencyInput, { color: theme.colors.onSurface }]}
+            placeholder="e.g. JPY"
+            placeholderTextColor={theme.colors.onSurfaceVariant}
+            selectionColor={theme.colors.primary}
+          />
+        </OutlinedFieldContainer>
+        {shouldShowCustomCurrencyError ? (
+          <Text variant="bodySmall" style={{ color: theme.colors.error }}>
+            {customCurrencyValidationError}
+          </Text>
+        ) : null}
+        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          3-10 characters, letters and numbers only.
+        </Text>
+      </AppConfirm>
       </SafeAreaView>
     </BottomTabSwipeBoundary>
   );
@@ -181,5 +341,10 @@ const styles = StyleSheet.create({
   appearanceHint: {
     marginTop: 4,
     marginBottom: 4,
+  },
+  customCurrencyInput: {
+    height: 50,
+    paddingHorizontal: 12,
+    fontSize: 18,
   },
 });

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Snackbar, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -8,6 +8,8 @@ import { EventsStackParamList } from '@/navigation/types';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { AppHeader } from '@/shared/ui/AppHeader';
+import { useConfirmState } from '@/shared/hooks/useConfirmState';
+import { useMessageState } from '@/shared/hooks/useMessageState';
 import { useAddExpenseForm } from '@/features/events/hooks/useAddExpenseForm';
 import { AppSingleSelectBottomSheet } from '@/shared/ui/AppSingleSelectBottomSheet';
 import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomSheetsOnBlur';
@@ -18,7 +20,8 @@ import { BottomActionBar } from '@/features/events/components/add-expense/Bottom
 import { CategoryId, CategorySelector } from '@/features/events/components/add-expense/CategorySelector';
 import { PaidByField } from '@/features/events/components/add-expense/PaidByField';
 import { SplitBetweenField } from '@/features/events/components/add-expense/SplitBetweenField';
-import { AppConfirm } from '@/shared/ui/AppConfirm';
+import { AppDeleteConfirm } from '@/shared/ui/AppDeleteConfirm';
+import { AppMessageSnackbar } from '@/shared/ui/AppMessageSnackbar';
 
 type AddExpenseScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddExpense'>;
 
@@ -41,8 +44,10 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   const [category, setCategory] = useState<CategoryId>('food');
   const sheetRef = useRef<BottomSheetModal>(null);
   useDismissBottomSheetsOnBlur([sheetRef]);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const { message: errorMessage, setMessage: setErrorMessage, clearMessage: clearErrorMessage, visible: isErrorVisible } =
+    useMessageState();
+  const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
+    useConfirmState();
   const {
     amount,
     title,
@@ -74,10 +79,14 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     requestAnimationFrame(() => sheetRef.current?.present());
   }, []);
 
+  const handleBack = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
   const handleSelectPaidBy = useCallback((id: string) => {
     setPaidById(id);
     sheetRef.current?.dismiss();
-  }, []);
+  }, [setPaidById]);
 
   const paidByOptions = useMemo(
     () =>
@@ -135,13 +144,13 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
       return;
     }
     removeExpenses({ eventId, expenseIds: [editingExpense.id] });
-    setIsDeleteConfirmVisible(false);
+    closeDeleteConfirm();
     navigation.goBack();
-  }, [editingExpense, eventId, navigation, removeExpenses]);
+  }, [closeDeleteConfirm, editingExpense, eventId, navigation, removeExpenses]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title={isEditMode ? 'Edit Expense' : 'Add Expense'} onBackPress={() => navigation.goBack()} />
+      <AppHeader title={isEditMode ? 'Edit Expense' : 'Add Expense'} onBackPress={handleBack} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -188,25 +197,23 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           bottomInset={insets.bottom}
           label={isEditMode ? 'Save changes' : 'Save expense'}
           secondaryLabel={isEditMode ? 'Delete' : undefined}
-          onSecondaryPress={isEditMode ? () => setIsDeleteConfirmVisible(true) : undefined}
+          onSecondaryPress={isEditMode ? openDeleteConfirm : undefined}
         />
       </KeyboardAvoidingView>
 
-      <Snackbar visible={errorMessage.length > 0} onDismiss={() => setErrorMessage('')}>
-        {errorMessage}
-      </Snackbar>
+      <AppMessageSnackbar
+        message={errorMessage}
+        visible={isErrorVisible}
+        onDismiss={clearErrorMessage}
+      />
 
-      <AppConfirm
+      <AppDeleteConfirm
         visible={isDeleteConfirmVisible}
         title="Delete expense"
-        onDismiss={() => setIsDeleteConfirmVisible(false)}
+        message="This expense and all related debt/payment calculations will be deleted."
+        onDismiss={closeDeleteConfirm}
         onConfirm={handleDelete}
-        confirmText="Delete"
-      >
-        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          This expense and all related debt/payment calculations will be deleted.
-        </Text>
-      </AppConfirm>
+      />
 
       <AppSingleSelectBottomSheet
         ref={sheetRef}

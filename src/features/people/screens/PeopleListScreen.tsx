@@ -1,28 +1,29 @@
-import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
+import React, { memo, useCallback, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useFocusEffect } from '@react-navigation/native';
 import { PeopleStackParamList } from '@/navigation/types';
 import { PersonItem } from '@/features/people/types/people';
 import { AddPersonActionSheet } from '@/features/people/components/AddPersonActionSheet';
 import { PersonListRow } from '@/features/people/components/PersonListRow';
+import { usePeopleListModel } from '@/features/people/hooks/usePeopleListModel';
 import { usePeopleActions, usePeopleState } from '@/state/people/peopleContext';
 import { useEventsActions } from '@/state/events/eventsContext';
+import { useConfirmState } from '@/shared/hooks/useConfirmState';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { AppList } from '@/shared/ui/AppList';
 import { DraggableFab } from '@/shared/ui/DraggableFab';
 import { AppSearchbar } from '@/shared/ui/AppSearchbar';
 import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomSheetsOnBlur';
-import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
-import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
+import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
+import { isCurrentUserPerson } from '@/shared/utils/people';
 import { getContactsPermissionStatus } from '@/features/people/services/contactsPermission';
 import { SelectionActionToolbar } from '@/shared/ui/SelectionActionToolbar';
-import { AppConfirm } from '@/shared/ui/AppConfirm';
 import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
+import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
 
 type PeopleListScreenProps = NativeStackScreenProps<PeopleStackParamList, 'People'>;
 
@@ -32,7 +33,8 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
   const { removePeople } = usePeopleActions();
   const { removePeopleEverywhere } = useEventsActions();
   const [query, setQuery] = useState('');
-  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
+    useConfirmState();
   const debouncedQuery = useDebouncedValue(query, 250);
   const sheetRef = useRef<BottomSheetModal>(null);
   useDismissBottomSheetsOnBlur([sheetRef]);
@@ -63,27 +65,20 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
     navigation.navigate('ImportContactsAccess');
   }, [navigation]);
 
-  const filteredPeople = useMemo(() => {
-    const normalized = debouncedQuery.trim().toLowerCase();
-    if (!normalized) {
-      return sortPeopleWithCurrentUserFirst(people);
-    }
-
-    return sortPeopleWithCurrentUserFirst(
-      people.filter((person) => person.name.toLowerCase().includes(normalized)),
-    );
-  }, [debouncedQuery, people]);
+  const { filteredPeople } = usePeopleListModel({
+    people,
+    query: debouncedQuery,
+  });
 
   const {
     isEditMode,
     selectedIds,
     selectedSet,
-    selectableIds,
     exitEditMode,
     toggleSelection,
     enterEditMode,
-    toggleSelectAll,
-  } = useSelectionMode<PersonItem>({
+    getToolbarProps,
+  } = useSelectionListMode<PersonItem>({
     items: filteredPeople,
     canSelect: (person) => !isCurrentUserPerson(person),
   });
@@ -94,47 +89,23 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
     }
     removePeople({ ids: selectedIds });
     removePeopleEverywhere({ personIds: selectedIds });
-    setIsDeleteConfirmVisible(false);
+    closeDeleteConfirm();
     exitEditMode();
-  }, [exitEditMode, removePeople, removePeopleEverywhere, selectedIds]);
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        if (!isEditMode) {
-          return false;
-        }
-        exitEditMode();
-        return true;
-      };
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => {
-        subscription.remove();
-      };
-    }, [exitEditMode, isEditMode]),
-  );
+  }, [closeDeleteConfirm, exitEditMode, removePeople, removePeopleEverywhere, selectedIds]);
 
   const renderPersonItem = useCallback(
-    ({ item }: { item: PersonItem }) => (
-      <PersonRow
-        person={item}
-        isEditMode={isEditMode}
-        selected={selectedSet.has(item.id)}
-        onPress={() => {
-          if (isEditMode) {
-            toggleSelection(item);
-            return;
-          }
-          handleEditPerson(item.id);
-        }}
-        onLongPress={() => {
-          if (!isEditMode) {
-            enterEditMode(item);
-          }
-        }}
-      />
-    ),
+    ({ item }: { item: PersonItem }) => {
+      return (
+        <PersonRow
+          person={item}
+          isEditMode={isEditMode}
+          selected={selectedSet.has(item.id)}
+          onToggleSelection={toggleSelection}
+          onEnterEditMode={enterEditMode}
+          onEditPerson={handleEditPerson}
+        />
+      );
+    },
     [enterEditMode, handleEditPerson, isEditMode, selectedSet, toggleSelection],
   );
 
@@ -143,12 +114,7 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
       <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       {isEditMode ? (
         <SelectionActionToolbar
-          title={`Selected ${selectedIds.length}`}
-          totalSelectableCount={selectableIds.length}
-          selectedCount={selectedIds.length}
-          onToggleSelectAll={toggleSelectAll}
-          onDelete={() => setIsDeleteConfirmVisible(true)}
-          onClose={exitEditMode}
+          {...getToolbarProps(openDeleteConfirm)}
         />
       ) : (
         <AppHeader title="People" />
@@ -173,7 +139,7 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
             keyExtractor={(item) => item.id}
             listStyle={styles.list}
             contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => renderPersonItem({ item })}
+            renderItem={renderPersonItem}
           />
         </View>
       )}
@@ -195,17 +161,13 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
         </>
       ) : null}
 
-      <AppConfirm
+      <SelectionDeleteConfirm
         visible={isDeleteConfirmVisible}
         title="Delete contacts"
-        onDismiss={() => setIsDeleteConfirmVisible(false)}
+        message="Selected contacts will be deleted with all related data across events."
+        onDismiss={closeDeleteConfirm}
         onConfirm={handleDeleteSelected}
-        confirmText="Delete"
-      >
-        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          Selected contacts will be deleted with all related data across events.
-        </Text>
-      </AppConfirm>
+      />
       </SafeAreaView>
     </BottomTabSwipeBoundary>
   );
@@ -215,15 +177,31 @@ const PersonRow = memo(function PersonRow({
   person,
   isEditMode,
   selected,
-  onPress,
-  onLongPress,
+  onToggleSelection,
+  onEnterEditMode,
+  onEditPerson,
 }: {
   person: PersonItem;
   isEditMode: boolean;
   selected: boolean;
-  onPress: () => void;
-  onLongPress: () => void;
+  onToggleSelection: (person: PersonItem) => void;
+  onEnterEditMode: (person: PersonItem) => void;
+  onEditPerson: (personId: string) => void;
 }) {
+  const handlePress = useCallback(() => {
+    if (isEditMode) {
+      onToggleSelection(person);
+      return;
+    }
+    onEditPerson(person.id);
+  }, [isEditMode, onEditPerson, onToggleSelection, person]);
+
+  const handleLongPress = useCallback(() => {
+    if (!isEditMode) {
+      onEnterEditMode(person);
+    }
+  }, [isEditMode, onEnterEditMode, person]);
+
   return (
     <PersonListRow
       name={person.name}
@@ -234,8 +212,8 @@ const PersonRow = memo(function PersonRow({
       selectable={isEditMode}
       selected={selected}
       selectionDisabled={isCurrentUserPerson(person)}
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
     />
   );
 });

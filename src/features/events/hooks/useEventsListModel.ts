@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { EventGroupItem, EventItem } from '@/features/events/types/events';
+import { useSelectorFactory } from '@/shared/hooks/useSelectorFactory';
 import {
+  createEventsListSelectors,
   PaymentEntry,
-  selectEventsSortedByUpdatedAt,
-  selectGroupsSortedByUpdatedAt,
-  selectPayments,
 } from '@/state/events/eventsSelectors';
 import { EventsState } from '@/state/events/eventsTypes';
 
@@ -19,52 +18,31 @@ type UseEventsListModelInput = {
 };
 
 export function useEventsListModel({ eventsState, groupId, query }: UseEventsListModelInput) {
-  const { events, groups } = eventsState;
+  const { events, groups, paymentsByEvent } = eventsState;
+  const selectors = useSelectorFactory(createEventsListSelectors);
 
-  const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
-  const currentGroup = groupId ? groupsById.get(groupId) : undefined;
-  const effectiveGroupId = currentGroup ? groupId : undefined;
+  const groupsById = useMemo(() => selectors.selectGroupsByIdMemo(groups), [groups, selectors]);
+  const currentGroup = useMemo(
+    () => selectors.selectCurrentGroupMemo(groupsById, groupId),
+    [groupId, groupsById, selectors],
+  );
+  const effectiveGroupId = useMemo(
+    () => selectors.selectEffectiveGroupIdMemo(currentGroup, groupId),
+    [currentGroup, groupId, selectors],
+  );
 
   const filteredEvents = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    const baseEvents = events.filter((event) => {
-      if (effectiveGroupId) {
-        return event.groupId === effectiveGroupId;
-      }
-
-      if (!event.groupId) {
-        return true;
-      }
-
-      return !groupsById.has(event.groupId);
-    });
-
-    const matches = !normalized
-      ? baseEvents
-      : baseEvents.filter((event) => event.name.toLowerCase().includes(normalized));
-
-    return selectEventsSortedByUpdatedAt(matches);
-  }, [effectiveGroupId, events, groupsById, query]);
+    return selectors.selectFilteredEventsMemo(events, effectiveGroupId, groupsById, query);
+  }, [effectiveGroupId, events, groupsById, query, selectors]);
 
   const filteredGroups = useMemo(() => {
-    if (effectiveGroupId) {
-      return [];
-    }
-    const normalized = query.trim().toLowerCase();
-    const matches = !normalized
-      ? groups
-      : groups.filter((group) => {
-          if (group.name.toLowerCase().includes(normalized)) {
-            return true;
-          }
+    return selectors.selectFilteredGroupsMemo(groups, effectiveGroupId, query, events);
+  }, [effectiveGroupId, events, groups, query, selectors]);
 
-          return events.some(
-            (event) => event.groupId === group.id && event.name.toLowerCase().includes(normalized),
-          );
-        });
-
-    return selectGroupsSortedByUpdatedAt(matches);
-  }, [effectiveGroupId, events, groups, query]);
+  const eventsCountByGroup = useMemo(
+    () => selectors.selectEventsCountByGroupMemo(events),
+    [events, selectors],
+  );
 
   const eventEntries = useMemo<EventListEntry[]>(
     () =>
@@ -72,9 +50,9 @@ export function useEventsListModel({ eventsState, groupId, query }: UseEventsLis
         id: `event:${event.id}`,
         kind: 'event',
         event,
-        payments: selectPayments(eventsState, event.id),
+        payments: paymentsByEvent[event.id] ?? [],
       })),
-    [eventsState, filteredEvents],
+    [filteredEvents, paymentsByEvent],
   );
 
   const groupEntries = useMemo<EventListEntry[]>(
@@ -83,9 +61,9 @@ export function useEventsListModel({ eventsState, groupId, query }: UseEventsLis
         id: `group:${group.id}`,
         kind: 'group',
         group,
-        eventsCount: events.filter((event) => event.groupId === group.id).length,
+        eventsCount: eventsCountByGroup.get(group.id) ?? 0,
       })),
-    [events, filteredGroups],
+    [eventsCountByGroup, filteredGroups],
   );
 
   const listEntries = useMemo(
@@ -99,4 +77,3 @@ export function useEventsListModel({ eventsState, groupId, query }: UseEventsLis
     listEntries,
   };
 }
-

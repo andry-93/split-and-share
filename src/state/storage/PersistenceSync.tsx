@@ -1,15 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { persistEvents, useEventsState } from '@/state/events/eventsContext';
 import { persistPeople, usePeopleState } from '@/state/people/peopleContext';
-import { persistSettings, useSettingsState } from '@/state/settings/settingsContext';
 
 export function PersistenceSync({ children }: { children: React.ReactNode }) {
   const eventsState = useEventsState();
   const peopleState = usePeopleState();
-  const settingsState = useSettingsState();
   const eventsSerializedRef = useRef<string>('');
   const peopleSerializedRef = useRef<string>('');
-  const settingsSerializedRef = useRef<string>('');
 
   useEffect(() => {
     const serialized = JSON.stringify(eventsState);
@@ -28,15 +25,6 @@ export function PersistenceSync({ children }: { children: React.ReactNode }) {
     peopleSerializedRef.current = serialized;
     persistPeople(peopleState);
   }, [peopleState]);
-
-  useEffect(() => {
-    const serialized = JSON.stringify(settingsState);
-    if (settingsSerializedRef.current === serialized) {
-      return;
-    }
-    settingsSerializedRef.current = serialized;
-    persistSettings(settingsState);
-  }, [settingsState]);
 
   return <>{children}</>;
 }

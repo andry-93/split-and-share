@@ -1,18 +1,21 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { AppState, AppStateStatus, StyleSheet, View } from 'react-native';
-import { Button, Icon, Snackbar, Text, useTheme } from 'react-native-paper';
+import { Button, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { PeopleStackParamList } from '@/navigation/types';
 import { AppHeader } from '@/shared/ui/AppHeader';
+import { useMessageState } from '@/shared/hooks/useMessageState';
+import { AppMessageSnackbar } from '@/shared/ui/AppMessageSnackbar';
 import { getContactsPermissionStatus, requestContactsPermission } from '@/features/people/services/contactsPermission';
 
 type ContactsAccessScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsAccess'>;
 
 export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) {
   const theme = useTheme();
-  const [errorMessage, setErrorMessage] = useState('');
+  const { message: errorMessage, setMessage: setErrorMessage, clearMessage: clearErrorMessage, visible: isErrorVisible } =
+    useMessageState();
   const handleBack = useCallback(() => navigation.goBack(), [navigation]);
   const navigateToPicker = useCallback(() => {
     navigation.replace('ImportContactsPicker');
@@ -102,9 +105,11 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
         </Button>
       </View>
 
-      <Snackbar visible={errorMessage.length > 0} onDismiss={() => setErrorMessage('')}>
-        {errorMessage}
-      </Snackbar>
+      <AppMessageSnackbar
+        message={errorMessage}
+        visible={isErrorVisible}
+        onDismiss={clearErrorMessage}
+      />
     </SafeAreaView>
   );
 }

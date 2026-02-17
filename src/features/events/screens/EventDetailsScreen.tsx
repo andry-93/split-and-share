@@ -55,7 +55,6 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const { registerPayment, removeParticipantsFromEvent, removeExpenses } = useEventsActions();
   const event = events.find((item) => item.id === route.params.eventId);
   const [activeTab, setActiveTab] = useState<EventDetailsTab>('expenses');
-  const [debtsMode, setDebtsMode] = useState<'detailed' | 'simplified'>('detailed');
   const [rawViewportHeight, setRawViewportHeight] = useState(0);
   const [rawContentHeight, setRawContentHeight] = useState(0);
   const [debtHintHeight, setDebtHintHeight] = useState(0);
@@ -65,10 +64,6 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const activeSelectionToolbarState =
     activeTab === 'people' ? peopleToolbarState : activeTab === 'expenses' ? expensesToolbarState : null;
   const showSelectionToolbar = Boolean(activeSelectionToolbarState?.visible);
-
-  const handleViewDetailedDebts = useCallback(() => {
-    setDebtsMode('detailed');
-  }, []);
 
   useEffect(() => {
     if (activeTab !== 'people') {
@@ -114,6 +109,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     eventsState: { events, groups, paymentsByEvent },
     settingsCurrency: settings.currency,
   });
+  const debtsMode = settings.debtsViewMode;
 
   const handleMarkSimplifiedPaid = useCallback(
     (debt: SimplifiedDebt, amount: number) => {
@@ -292,8 +288,6 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
             {activeTab === 'debts' ? (
               <DebtsPanel
                 mode={debtsMode}
-                onModeChange={setDebtsMode}
-                onViewDetailedDebts={handleViewDetailedDebts}
                 detailedDebts={detailedDebts}
                 simplifiedDebts={simplifiedDebts}
                 baseDetailedCount={baseDetailedCount}

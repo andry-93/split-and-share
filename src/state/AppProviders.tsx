@@ -1,14 +1,7 @@
 import React from 'react';
-import { EventsProvider } from '@/state/events/eventsContext';
-import { PeopleProvider } from '@/state/people/peopleContext';
-import { SettingsProvider } from '@/state/settings/settingsContext';
+import { Provider } from 'react-redux';
+import { store } from '@/state/store';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  return (
-    <SettingsProvider>
-      <PeopleProvider>
-        <EventsProvider>{children}</EventsProvider>
-      </PeopleProvider>
-    </SettingsProvider>
-  );
+  return <Provider store={store}>{children}</Provider>;
 }

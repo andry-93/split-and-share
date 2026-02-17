@@ -1,67 +1,31 @@
-import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import { readJSON, writeJSON } from '@/state/storage/mmkv';
-import { parseSettingsState } from '@/state/storage/guards';
-import { STORAGE_KEYS } from '@/state/storage/storageKeys';
-import { getSystemDefaultLanguage } from '@/state/settings/languageDefaults';
-import { settingsReducer } from '@/state/settings/settingsReducer';
-import { SettingsAction, SettingsState } from '@/state/settings/settingsTypes';
-
-const SettingsStateContext = createContext<SettingsState | undefined>(undefined);
-const SettingsDispatchContext = createContext<React.Dispatch<SettingsAction> | undefined>(undefined);
-
-function initState(): SettingsState {
-  const persistedState = readJSON<unknown>(STORAGE_KEYS.settings);
-  const parsedState = parseSettingsState(persistedState);
-  if (parsedState.languageSource === 'system') {
-    return {
-      ...parsedState,
-      language: getSystemDefaultLanguage(),
-    };
-  }
-
-  return parsedState;
-}
-
-export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(settingsReducer, undefined, initState);
-
-  return (
-    <SettingsStateContext.Provider value={state}>
-      <SettingsDispatchContext.Provider value={dispatch}>{children}</SettingsDispatchContext.Provider>
-    </SettingsStateContext.Provider>
-  );
-}
+import { useMemo } from 'react';
+import { selectSettingsState } from '@/state/settings/settingsSelectors';
+import { settingsActions } from '@/state/settings/settingsSlice';
+import { SettingsState } from '@/state/settings/settingsTypes';
+import { useAppDispatch, useAppSelector } from '@/state/store';
 
 export function useSettingsState() {
-  const ctx = useContext(SettingsStateContext);
-  if (!ctx) {
-    throw new Error('useSettingsState must be used within SettingsProvider');
-  }
-  return ctx;
+  return useAppSelector(selectSettingsState);
 }
 
 export function useSettingsActions() {
-  const dispatch = useContext(SettingsDispatchContext);
-  if (!dispatch) {
-    throw new Error('useSettingsActions must be used within SettingsProvider');
-  }
+  const dispatch = useAppDispatch();
 
   return useMemo(
     () => ({
       setTheme: (value: SettingsState['theme']) => {
-        dispatch({ type: 'settings/theme', payload: { theme: value } });
+        dispatch(settingsActions.setTheme({ theme: value }));
       },
       setLanguage: (value: string) => {
-        dispatch({ type: 'settings/language', payload: { language: value } });
+        dispatch(settingsActions.setLanguage({ language: value }));
       },
       setCurrency: (value: string) => {
-        dispatch({ type: 'settings/currency', payload: { currency: value } });
+        dispatch(settingsActions.setCurrency({ currency: value }));
+      },
+      setDebtsViewMode: (value: SettingsState['debtsViewMode']) => {
+        dispatch(settingsActions.setDebtsViewMode({ debtsViewMode: value }));
       },
     }),
     [dispatch],
   );
-}
-
-export function persistSettings(state: SettingsState) {
-  writeJSON(STORAGE_KEYS.settings, state);
 }

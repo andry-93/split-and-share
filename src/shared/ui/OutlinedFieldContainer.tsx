@@ -4,9 +4,10 @@ import { useTheme } from 'react-native-paper';
 
 type OutlinedFieldContainerProps = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
+  isError?: boolean;
 }>;
 
-export function OutlinedFieldContainer({ children, style }: OutlinedFieldContainerProps) {
+export function OutlinedFieldContainer({ children, style, isError = false }: OutlinedFieldContainerProps) {
   const theme = useTheme();
 
   return (
@@ -15,7 +16,7 @@ export function OutlinedFieldContainer({ children, style }: OutlinedFieldContain
         styles.base,
         {
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.outlineVariant,
+          borderColor: isError ? theme.colors.error : theme.colors.outlineVariant,
         },
         style,
       ]}

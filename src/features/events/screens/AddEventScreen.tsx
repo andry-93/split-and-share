@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { Snackbar, Text, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { EventsStackParamList } from '@/navigation/types';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
+import { useConfirmState } from '@/shared/hooks/useConfirmState';
+import { useMessageState } from '@/shared/hooks/useMessageState';
 import { normalizeCurrencyCode } from '@/shared/utils/currency';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { EventNameField } from '@/features/events/components/add-event/EventNameField';
@@ -21,8 +23,9 @@ import { IosDatePickerModal } from '@/features/events/components/add-event/IosDa
 import { useEventDatePicker } from '@/features/events/hooks/useEventDatePicker';
 import { EVENT_CURRENCY_OPTIONS, useEventCurrency } from '@/features/events/hooks/useEventCurrency';
 import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomSheetsOnBlur';
-import { AppConfirm } from '@/shared/ui/AppConfirm';
 import { AppSingleSelectBottomSheet } from '@/shared/ui/AppSingleSelectBottomSheet';
+import { AppDeleteConfirm } from '@/shared/ui/AppDeleteConfirm';
+import { AppMessageSnackbar } from '@/shared/ui/AppMessageSnackbar';
 
 type AddEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddEvent'>;
 
@@ -48,8 +51,10 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
   const isEditMode = Boolean(targetEvent);
   const [name, setName] = useState(targetEvent?.name ?? '');
   const [description, setDescription] = useState(targetEvent?.description ?? '');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const { message: errorMessage, setMessage: setErrorMessage, clearMessage: clearErrorMessage, visible: isErrorVisible } =
+    useMessageState();
+  const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
+    useConfirmState();
   const currencySheetRef = useRef<BottomSheetModal>(null);
   const groupSheetRef = useRef<BottomSheetModal>(null);
   useDismissBottomSheetsOnBlur([currencySheetRef, groupSheetRef]);
@@ -86,11 +91,8 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
     if (!targetEvent) {
       return;
     }
-    if (
-      targetEvent.currency &&
-      EVENT_CURRENCY_OPTIONS.includes(targetEvent.currency as (typeof EVENT_CURRENCY_OPTIONS)[number])
-    ) {
-      setEventCurrency(targetEvent.currency as (typeof EVENT_CURRENCY_OPTIONS)[number]);
+    if (targetEvent.currency) {
+      setEventCurrency(targetEvent.currency);
     }
     if (targetEvent.date) {
       const parsed = new Date(targetEvent.date);
@@ -123,13 +125,23 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
   const openGroupPicker = useCallback(() => {
     groupSheetRef.current?.present();
   }, []);
-
+  const eventCurrencySheetOptions = useMemo(() => {
+    const normalizedSettingsCurrency = normalizeCurrencyCode(settings.currency);
+    const base = [...currencyOptions];
+    if (
+      !EVENT_CURRENCY_OPTIONS.includes(normalizedSettingsCurrency as (typeof EVENT_CURRENCY_OPTIONS)[number]) &&
+      !base.includes(normalizedSettingsCurrency)
+    ) {
+      base.push(normalizedSettingsCurrency);
+    }
+    return base;
+  }, [currencyOptions, settings.currency]);
   const handleSelectCurrency = useCallback(
-    (value: (typeof currencyOptions)[number]) => {
+    (value: string) => {
       setEventCurrency(value);
       currencySheetRef.current?.dismiss();
     },
-    [],
+    [setEventCurrency],
   );
   const handleSelectGroup = useCallback((value: string) => {
     setEventGroupId(value === '__none__' ? undefined : value);
@@ -168,9 +180,9 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
       return;
     }
     removeEvents({ eventIds: [targetEvent.id] });
-    setIsDeleteConfirmVisible(false);
+    closeDeleteConfirm();
     navigation.goBack();
-  }, [navigation, removeEvents, targetEvent]);
+  }, [closeDeleteConfirm, navigation, removeEvents, targetEvent]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
@@ -211,33 +223,31 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
           onPress={handleSave}
           label={isEditMode ? 'Save changes' : 'Create event'}
           secondaryLabel={isEditMode ? 'Delete' : undefined}
-          onSecondaryPress={isEditMode ? () => setIsDeleteConfirmVisible(true) : undefined}
+          onSecondaryPress={isEditMode ? openDeleteConfirm : undefined}
           disabled={name.trim().length === 0}
         />
       </KeyboardAvoidingView>
 
-      <Snackbar visible={errorMessage.length > 0} onDismiss={() => setErrorMessage('')}>
-        {errorMessage}
-      </Snackbar>
+      <AppMessageSnackbar
+        message={errorMessage}
+        visible={isErrorVisible}
+        onDismiss={clearErrorMessage}
+      />
 
-      <AppConfirm
+      <AppDeleteConfirm
         visible={isDeleteConfirmVisible}
         title="Delete event"
-        onDismiss={() => setIsDeleteConfirmVisible(false)}
+        message="This event and all related expenses, debts, and payments will be deleted."
+        onDismiss={closeDeleteConfirm}
         onConfirm={handleDelete}
-        confirmText="Delete"
-      >
-        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          This event and all related expenses, debts, and payments will be deleted.
-        </Text>
-      </AppConfirm>
+      />
 
       <CurrencyBottomSheet
         sheetRef={currencySheetRef}
         title="Currency"
-        options={currencyOptions}
+        options={eventCurrencySheetOptions}
         selectedValue={eventCurrency}
-        getLabel={(value) => currencyLabels[value]}
+        getLabel={(value) => currencyLabels[value] ?? normalizeCurrencyCode(value)}
         onSelect={handleSelectCurrency}
         snapPoints={snapPoints}
       />
