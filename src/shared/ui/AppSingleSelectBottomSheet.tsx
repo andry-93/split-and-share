@@ -1,9 +1,9 @@
-import React, {forwardRef, memo, useCallback, useMemo} from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { forwardRef, memo, useCallback } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { BottomSheetFlatList, BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetSingleSelectRow } from '@/shared/ui/BottomSheetSingleSelectRow';
-import {AppBottomSheet} from "@/shared/ui/AppBottomSheet";
-import {View} from "react-native";
+import { AppBottomSheet } from '@/shared/ui/AppBottomSheet';
 
 type Option = {
   value: string;
@@ -70,22 +70,22 @@ export const AppSingleSelectBottomSheet = forwardRef<
   );
 
   return (
-    <AppBottomSheet
-      ref={ref}
-      title={title}
-      snapPoints={snapPoints}
-      useContainer={false}
-    >
+    <AppBottomSheet ref={ref} title={title} snapPoints={snapPoints} useContainer={false}>
       <BottomSheetFlatList
         data={options}
         keyExtractor={(item: Option) => item.value}
         renderItem={renderItem}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-        }}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={<View style={{ height: Math.max(insets.bottom, 24) }} />}
       />
     </AppBottomSheet>
   );
+});
+AppSingleSelectBottomSheet.displayName = 'AppSingleSelectBottomSheet';
+
+const styles = StyleSheet.create({
+  listContent: {
+    paddingHorizontal: 16,
+  },
 });

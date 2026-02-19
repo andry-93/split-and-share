@@ -138,27 +138,27 @@ export function buildEventReportHtml({
   <head>
     <meta charset="utf-8" />
     <style>
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 24px; color: #111827; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 24px; color: #111827; font-size: 16px; line-height: 1.45; }
       .app {
         display: inline-block;
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 700;
         margin-bottom: 10px;
-        padding: 8px 12px;
+        padding: 10px 14px;
         border-radius: 10px;
         background: #2563FF;
         color: #FFFFFF;
       }
-      .title { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
-      .sub { color: #4B5563; margin: 0 0 20px; }
+      .title { font-size: 30px; font-weight: 700; margin: 0 0 10px; }
+      .sub { color: #4B5563; margin: 0 0 20px; font-size: 16px; }
       .summary { display: flex; gap: 16px; margin-bottom: 20px; }
       .card { border: 1px solid #E5E7EB; border-radius: 10px; padding: 10px 12px; min-width: 130px; }
-      .label { color: #6B7280; font-size: 12px; margin-bottom: 4px; }
-      .value { font-size: 18px; font-weight: 700; }
-      h2 { margin-top: 22px; margin-bottom: 8px; font-size: 16px; }
+      .label { color: #6B7280; font-size: 14px; margin-bottom: 4px; }
+      .value { font-size: 22px; font-weight: 700; }
+      h2 { margin-top: 24px; margin-bottom: 10px; font-size: 22px; }
       table { width: 100%; border-collapse: collapse; }
-      th, td { text-align: left; padding: 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; }
-      th { color: #4B5563; font-weight: 600; }
+      th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #E5E7EB; font-size: 16px; }
+      th { color: #4B5563; font-weight: 600; font-size: 15px; }
       .muted { color: #6B7280; }
     </style>
   </head>
