@@ -3,7 +3,7 @@ import { TextInput } from 'react-native-paper';
 import { Text } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addExpenseStyles as styles } from '@/features/events/components/add-expense/styles';
-import { getAmountInputPlaceholder } from '@/shared/utils/currency';
+import { getAmountInputPlaceholder } from '@/shared/utils/numberFormat';
 
 type AmountFieldProps = {
   currencyCode: string;

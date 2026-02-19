@@ -6,7 +6,8 @@ import {
   PaymentEntry,
 } from '@/state/events/eventsSelectors';
 import { EventsState } from '@/state/events/eventsTypes';
-import { formatCurrencyAmount, getCurrencyDisplay } from '@/shared/utils/currency';
+import { getCurrencyDisplay } from '@/shared/utils/currency';
+import { formatCurrencyAmount } from '@/shared/utils/money';
 
 type UseEventDetailsModelInput = {
   event: EventItem;

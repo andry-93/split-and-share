@@ -7,6 +7,7 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useSettingsActions, useSettingsState } from '@/state/settings/settingsContext';
 import type { SettingsState } from '@/state/settings/settingsTypes';
 import {
+  getLanguageLocale,
   getLanguageLabel,
   getOrderedLanguageOptions,
   normalizeLanguageCode,
@@ -156,6 +157,7 @@ export function SettingsScreen() {
   }, []);
   const systemLanguage = getSystemDefaultLanguage();
   const systemCurrency = getSystemDefaultCurrency();
+  const languageLocale = useMemo(() => getLanguageLocale(settings.language), [settings.language]);
 
   const handleThemeChange = useCallback(
     (value: SettingsState['theme']) => {
@@ -283,16 +285,16 @@ export function SettingsScreen() {
         {
           value: SYSTEM_CURRENCY_VALUE,
           label: 'System',
-          description: `${getCurrencyOptionLabel(systemCurrency)} • ${getCurrencyName(systemCurrency)}`,
+          description: `${getCurrencyOptionLabel(systemCurrency, languageLocale)} • ${getCurrencyName(systemCurrency, languageLocale)}`,
         },
         ...currencyOptions.map((option) => ({
           value: option,
-          label: getCurrencyOptionLabel(option),
-          description: getCurrencyName(option),
+          label: getCurrencyOptionLabel(option, languageLocale),
+          description: getCurrencyName(option, languageLocale),
         })),
         { value: CUSTOM_CURRENCY_VALUE, label: 'Custom', description: 'Set your own code or symbol' },
       ],
-    [systemCurrency],
+    [languageLocale, systemCurrency],
   );
   const debtsViewSheetOptions = useMemo(
     () =>
@@ -347,8 +349,8 @@ export function SettingsScreen() {
             title="Currency"
             description={
               settings.currencySource === 'system'
-                ? `System (${getCurrencyDisplay(settings.currency)})`
-                : getCurrencyDisplay(settings.currency)
+                ? `System (${getCurrencyDisplay(settings.currency, languageLocale)})`
+                : getCurrencyDisplay(settings.currency, languageLocale)
             }
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}

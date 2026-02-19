@@ -4,7 +4,7 @@ import { Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
 import { ExpenseItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
-import { formatCurrencyAmount } from '@/shared/utils/currency';
+import { formatCurrencyAmount } from '@/shared/utils/money';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
 import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';

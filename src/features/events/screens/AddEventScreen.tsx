@@ -140,10 +140,10 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
     () =>
       eventCurrencySheetOptions.map((value) => ({
         value,
-        label: getCurrencyOptionLabel(value),
-        description: getCurrencyName(value),
+        label: getCurrencyOptionLabel(value, languageLocale),
+        description: getCurrencyName(value, languageLocale),
       })),
-    [eventCurrencySheetOptions],
+    [eventCurrencySheetOptions, languageLocale],
   );
   const handleSelectCurrency = useCallback(
     (value: string) => {
@@ -212,7 +212,7 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
           <DescriptionField value={description} onChangeText={setDescription} />
 
           <CurrencyField
-            value={getCurrencyDisplay(eventCurrency)}
+            value={getCurrencyDisplay(eventCurrency, languageLocale)}
             onPress={openCurrencyPicker}
           />
           <GroupField
@@ -223,11 +223,7 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
           <DateField
             value={
               selectedDate
-                ? formatDateLocalized(selectedDate, {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  }, languageLocale)
+                ? formatDateLocalized(selectedDate, 'P', languageLocale)
                 : getDateInputPlaceholder(languageLocale)
             }
             hasValue={Boolean(selectedDate)}

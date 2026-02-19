@@ -1,5 +1,5 @@
 import { EventItem } from '@/features/events/types/events';
-import { formatCurrencyAmount } from '@/shared/utils/currency';
+import { formatCurrencyAmount } from '@/shared/utils/money';
 import { formatDateTimeLocalized } from '@/shared/utils/date';
 import { PaymentEntry, RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
 

@@ -7,11 +7,10 @@ import { AppList } from '@/shared/ui/AppList';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
 import {
   formatCurrencyAmount,
-  formatMoneyInputValue,
-  getAmountInputPlaceholder,
-  parseLocalizedMoneyAmount,
   roundMoney,
-} from '@/shared/utils/currency';
+  parseMoneyAmount,
+} from '@/shared/utils/money';
+import { formatMoneyInputValue, getAmountInputPlaceholder } from '@/shared/utils/numberFormat';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { useAutofocusWithRetry } from '@/shared/hooks/useAutofocusWithRetry';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
@@ -87,7 +86,7 @@ export const DebtsPanel = memo(function DebtsPanel({
       return;
     }
 
-    const parsed = parseLocalizedMoneyAmount(paymentAmount);
+    const parsed = parseMoneyAmount(paymentAmount);
     const rounded = roundMoney(parsed);
     const maxAmount = roundMoney(pendingPayment.debt.amount);
 

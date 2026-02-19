@@ -4,7 +4,7 @@ import { Text, useTheme } from 'react-native-paper';
 import { ParticipantItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
 import { PersonListRow } from '@/features/people/components/PersonListRow';
-import { formatCurrencyAmount } from '@/shared/utils/currency';
+import { formatCurrencyAmount } from '@/shared/utils/money';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';

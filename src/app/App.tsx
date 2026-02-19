@@ -14,10 +14,12 @@ import { AppNavigator } from '@/navigation/AppNavigator';
 import { AppProviders } from '@/state/AppProviders';
 import { MigrationGate } from '@/state/storage/MigrationGate';
 import { PersistenceSync } from '@/state/storage/PersistenceSync';
+import { getLanguageLocale } from '@/state/settings/languageCatalog';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { AppErrorBoundary } from '@/shared/ui/AppErrorBoundary';
+import { setGlobalCurrencyLocalePreference } from '@/shared/utils/currency';
+import { setGlobalNumberFormatPreference } from '@/shared/utils/numberFormat';
 import { RootTabParamList } from '@/navigation/types';
-import { setGlobalNumberFormatPreference } from '@/shared/utils/currency';
 
 const lightColorOverrides = {
   primary: '#2563FF',
@@ -115,6 +117,10 @@ function AppShell() {
   useEffect(() => {
     setGlobalNumberFormatPreference(settings.numberFormat);
   }, [settings.numberFormat]);
+
+  useEffect(() => {
+    setGlobalCurrencyLocalePreference(getLanguageLocale(settings.language));
+  }, [settings.language]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') {

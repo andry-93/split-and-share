@@ -22,7 +22,7 @@ import { PaidByField } from '@/features/events/components/add-expense/PaidByFiel
 import { SplitBetweenField } from '@/features/events/components/add-expense/SplitBetweenField';
 import { AppDeleteConfirm } from '@/shared/ui/AppDeleteConfirm';
 import { AppMessageSnackbar } from '@/shared/ui/AppMessageSnackbar';
-import { formatMoneyInputValue } from '@/shared/utils/currency';
+import { formatMoneyInputValue } from '@/shared/utils/numberFormat';
 
 type AddExpenseScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddExpense'>;
 

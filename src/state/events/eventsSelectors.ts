@@ -1,6 +1,6 @@
 import { EventGroupItem, EventItem, ExpenseItem, ParticipantItem } from '@/features/events/types/events';
 import { createSelector } from '@reduxjs/toolkit';
-import { fromMinorUnits, toMinorUnits } from '@/shared/utils/currency';
+import { fromMinorUnits, toMinorUnits } from '@/shared/utils/money';
 import { EventsState } from '@/state/events/eventsTypes';
 import { EventPayment } from '@/state/events/paymentsModel';
 import { RootState } from '@/state/store';
