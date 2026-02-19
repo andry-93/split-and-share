@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { TextInput as RNTextInput } from 'react-native';
 import { StyleSheet, View } from 'react-native';
-import { Divider, List, Text, useTheme } from 'react-native-paper';
+import { Button, Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useSettingsActions, useSettingsState } from '@/state/settings/settingsContext';
@@ -62,7 +62,7 @@ function validateCustomCurrencyValue(value: string, reservedValues: Set<string>)
 export function SettingsScreen() {
   const theme = useTheme();
   const settings = useSettingsState();
-  const { setTheme, setLanguage, setCurrency, setDebtsViewMode } = useSettingsActions();
+  const { setTheme, setLanguage, setCurrency, setDebtsViewMode, resetSettings } = useSettingsActions();
   const languageSheetRef = useRef<BottomSheetModal>(null);
   const currencySheetRef = useRef<BottomSheetModal>(null);
   const debtsViewSheetRef = useRef<BottomSheetModal>(null);
@@ -73,6 +73,11 @@ export function SettingsScreen() {
     isVisible: isCustomCurrencyVisible,
     open: openCustomCurrency,
     close: closeCustomCurrency,
+  } = useConfirmState();
+  const {
+    isVisible: isResetSettingsVisible,
+    open: openResetSettings,
+    close: closeResetSettings,
   } = useConfirmState();
   useDismissBottomSheetsOnBlur([languageSheetRef, currencySheetRef, debtsViewSheetRef]);
   const fullHeightSnapPoints = useMemo(() => ['90%'], []);
@@ -167,6 +172,10 @@ export function SettingsScreen() {
     },
     [setDebtsViewMode],
   );
+  const handleResetSettings = useCallback(() => {
+    resetSettings();
+    closeResetSettings();
+  }, [closeResetSettings, resetSettings]);
 
   const languageSheetOptions = useMemo(
     () =>
@@ -262,6 +271,19 @@ export function SettingsScreen() {
           About
         </Text>
         <List.Item title="Version" description={appPackage.version} style={[styles.fullBleedRow, styles.compactRow]} />
+        <Button
+          mode="contained-tonal"
+          icon="restore"
+          onPress={openResetSettings}
+          style={styles.resetButton}
+          contentStyle={styles.resetButtonContent}
+          labelStyle={styles.resetButtonLabel}
+        >
+          Reset settings
+        </Button>
+        <Text variant="bodySmall" style={[styles.resetHint, { color: theme.colors.onSurfaceVariant }]}>
+          Return app preferences to their default values.
+        </Text>
       </View>
 
       <AppSingleSelectBottomSheet
@@ -325,6 +347,17 @@ export function SettingsScreen() {
           1-10 characters.
         </Text>
       </AppConfirm>
+      <AppConfirm
+        visible={isResetSettingsVisible}
+        title="Reset settings"
+        onDismiss={closeResetSettings}
+        onConfirm={handleResetSettings}
+        confirmText="Reset"
+      >
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          This will restore app preferences to default values.
+        </Text>
+      </AppConfirm>
       </SafeAreaView>
     </BottomTabSwipeBoundary>
   );
@@ -361,6 +394,19 @@ const styles = StyleSheet.create({
   appearanceHint: {
     marginTop: 4,
     marginBottom: 4,
+  },
+  resetButton: {
+    marginTop: 8,
+    borderRadius: 12,
+  },
+  resetButtonContent: {
+    minHeight: 46,
+  },
+  resetButtonLabel: {
+    fontWeight: '600',
+  },
+  resetHint: {
+    marginTop: 6,
   },
   customCurrencyInput: {
     height: 50,

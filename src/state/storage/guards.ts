@@ -5,7 +5,9 @@ import { EventPayment } from '@/state/events/paymentsModel';
 import { EventsState } from '@/state/events/eventsTypes';
 import { PeopleState } from '@/state/people/peopleTypes';
 import { getSystemDefaultLanguage } from '@/state/settings/languageDefaults';
+import { getSystemDefaultCurrency } from '@/state/settings/currencyDefaults';
 import { normalizeLanguageCode } from '@/state/settings/languageCatalog';
+import { normalizeCurrencyCode } from '@/shared/utils/currency';
 import { SettingsState } from '@/state/settings/settingsTypes';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -161,6 +163,7 @@ export function parseSettingsState(value: unknown): SettingsState {
   const language = value.language;
   const languageSource = value.languageSource;
   const currency = value.currency;
+  const currencySource = value.currencySource;
   const debtsViewMode = value.debtsViewMode;
   if (
     (theme !== 'light' && theme !== 'dark' && theme !== 'system') ||
@@ -172,18 +175,25 @@ export function parseSettingsState(value: unknown): SettingsState {
 
   const normalizedLanguage = normalizeLanguageCode(language);
   const systemLanguage = getSystemDefaultLanguage();
+  const normalizedCurrency = normalizeCurrencyCode(currency);
+  const systemCurrency = getSystemDefaultCurrency();
   const resolvedLanguageSource: SettingsState['languageSource'] =
     languageSource === 'manual' || languageSource === 'system'
       ? languageSource
       : normalizedLanguage === systemLanguage
         ? 'system'
         : 'manual';
+  const resolvedCurrencySource: SettingsState['currencySource'] =
+    currencySource === 'manual' || currencySource === 'system'
+      ? currencySource
+      : 'system';
 
   return {
     theme,
     language: normalizedLanguage,
     languageSource: resolvedLanguageSource,
-    currency,
+    currency: normalizedCurrency,
+    currencySource: resolvedCurrencySource,
     debtsViewMode: debtsViewMode === 'detailed' ? 'detailed' : 'simplified',
   };
 }

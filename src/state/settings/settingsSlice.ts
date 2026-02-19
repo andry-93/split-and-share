@@ -21,10 +21,12 @@ export const settingsSlice = createSlice({
     },
     setCurrency: (state, action: PayloadAction<SetCurrencyPayload>) => {
       state.currency = action.payload.currency;
+      state.currencySource = 'manual';
     },
     setDebtsViewMode: (state, action: PayloadAction<SetDebtsViewModePayload>) => {
       state.debtsViewMode = action.payload.debtsViewMode;
     },
+    resetSettings: () => createDefaultSettingsState(),
   },
 });
 

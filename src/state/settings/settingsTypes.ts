@@ -3,5 +3,6 @@ export type SettingsState = {
   language: string;
   languageSource: 'system' | 'manual';
   currency: string;
+  currencySource: 'system' | 'manual';
   debtsViewMode: 'simplified' | 'detailed';
 };

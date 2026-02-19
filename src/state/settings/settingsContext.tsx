@@ -25,6 +25,9 @@ export function useSettingsActions() {
       setDebtsViewMode: (value: SettingsState['debtsViewMode']) => {
         dispatch(settingsActions.setDebtsViewMode({ debtsViewMode: value }));
       },
+      resetSettings: () => {
+        dispatch(settingsActions.resetSettings());
+      },
     }),
     [dispatch],
   );

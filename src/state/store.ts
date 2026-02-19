@@ -25,6 +25,7 @@ settingsPersistenceListener.startListening({
     settingsActions.setLanguage,
     settingsActions.setCurrency,
     settingsActions.setDebtsViewMode,
+    settingsActions.resetSettings,
   ),
   effect: (_, api) => {
     const state = api.getState() as { settings: SettingsState };
