@@ -1,5 +1,5 @@
-import React, { forwardRef, useMemo } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import React, { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
+import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Text, useTheme } from 'react-native-paper';
 
@@ -13,11 +13,35 @@ type AppBottomSheetProps = {
 export const AppBottomSheet = forwardRef<BottomSheetModal, AppBottomSheetProps>(
   ({ title, children, snapPoints, useContainer = true }, ref) => {
     const theme = useTheme();
+    const [isOpen, setIsOpen] = useState(false);
     const resolvedSnapPoints = useMemo(() => snapPoints ?? ['CONTENT_HEIGHT', '80%'], [snapPoints]);
+
+    const handleSheetChange = useCallback((index: number) => {
+      setIsOpen(index >= 0);
+    }, []);
+
+    useEffect(() => {
+      if (!isOpen) {
+        return undefined;
+      }
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (typeof ref === 'function') {
+          return true;
+        }
+        ref?.current?.dismiss();
+        return true;
+      });
+
+      return () => {
+        subscription.remove();
+      };
+    }, [isOpen, ref]);
 
     return (
       <BottomSheetModal
         ref={ref}
+        onChange={handleSheetChange}
         snapPoints={resolvedSnapPoints}
         enableDynamicSizing
         enablePanDownToClose
