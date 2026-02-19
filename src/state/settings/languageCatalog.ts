@@ -121,6 +121,22 @@ const LANGUAGE_OPTION_BY_CODE: Record<SupportedLanguageCode, { value: SupportedL
     {} as Record<SupportedLanguageCode, { value: SupportedLanguageCode; label: string }>,
   );
 
+const LANGUAGE_LOCALE_BY_CODE: Record<SupportedLanguageCode, string> = {
+  EN: 'en-US',
+  ES: 'es-ES',
+  ZH: 'zh-CN',
+  HI: 'hi-IN',
+  DE: 'de-DE',
+  FR: 'fr-FR',
+  PT: 'pt-PT',
+  JA: 'ja-JP',
+  KO: 'ko-KR',
+  IT: 'it-IT',
+  RU: 'ru-RU',
+  PL: 'pl-PL',
+  UK: 'uk-UA',
+};
+
 export function getLanguageLabel(value: string | undefined | null): string {
   const code = normalizeLanguageCode(value);
   return LANGUAGE_LABEL_BY_CODE[code];
@@ -137,4 +153,9 @@ export function getOrderedLanguageOptions(
   );
 
   return orderedCodes.map((code) => LANGUAGE_OPTION_BY_CODE[code]);
+}
+
+export function getLanguageLocale(value: string | undefined | null): string {
+  const code = normalizeLanguageCode(value);
+  return LANGUAGE_LOCALE_BY_CODE[code];
 }

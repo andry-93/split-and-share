@@ -162,6 +162,7 @@ export function parseSettingsState(value: unknown): SettingsState {
   const theme = value.theme;
   const language = value.language;
   const languageSource = value.languageSource;
+  const numberFormat = value.numberFormat;
   const currency = value.currency;
   const currencySource = value.currencySource;
   const debtsViewMode = value.debtsViewMode;
@@ -192,6 +193,13 @@ export function parseSettingsState(value: unknown): SettingsState {
     theme,
     language: normalizedLanguage,
     languageSource: resolvedLanguageSource,
+    numberFormat:
+      numberFormat === 'us' ||
+      numberFormat === 'eu' ||
+      numberFormat === 'ru' ||
+      numberFormat === 'ch'
+        ? numberFormat
+        : 'system',
     currency: normalizedCurrency,
     currencySource: resolvedCurrencySource,
     debtsViewMode: debtsViewMode === 'detailed' ? 'detailed' : 'simplified',

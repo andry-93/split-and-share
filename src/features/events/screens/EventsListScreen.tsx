@@ -18,6 +18,8 @@ import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomSheetsOnBlur';
 import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
 import { formatCurrencyAmount, normalizeCurrencyCode } from '@/shared/utils/currency';
+import { formatShortEventDate } from '@/shared/utils/date';
+import { getLanguageLocale } from '@/state/settings/languageCatalog';
 import { SelectionActionToolbar } from '@/shared/ui/SelectionActionToolbar';
 import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
@@ -46,6 +48,7 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
   const groupId = route.params?.groupId;
   const debouncedQuery = useDebouncedValue(query, 250);
   const currencyCode = useMemo(() => normalizeCurrencyCode(settings.currency), [settings.currency]);
+  const languageLocale = useMemo(() => getLanguageLocale(settings.language), [settings.language]);
   const currentUserId = useMemo(() => selectCurrentUser(people)?.id, [people]);
   const { currentGroup, effectiveGroupId, listEntries } = useEventsListModel({
     eventsState,
@@ -158,6 +161,7 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
           onEnterEditMode={enterEditMode}
           onOpenEvent={handleOpenEvent}
           fallbackCurrencyCode={currencyCode}
+          languageLocale={languageLocale}
           payments={item.payments}
           currentUserId={currentUserId}
         />
@@ -166,6 +170,7 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
     [
       currencyCode,
       currentUserId,
+      languageLocale,
       enterEditMode,
       handleOpenEvent,
       handleOpenGroup,
@@ -322,6 +327,7 @@ type EventEntryRowProps = {
   onEnterEditMode: (item: EventListEntry) => void;
   onOpenEvent: (eventId: string) => void;
   fallbackCurrencyCode: string;
+  languageLocale: string;
   payments: PaymentEntry[];
   currentUserId?: string;
 };
@@ -335,6 +341,7 @@ const EventEntryRow = memo(function EventEntryRow({
   onEnterEditMode,
   onOpenEvent,
   fallbackCurrencyCode,
+  languageLocale,
   payments,
   currentUserId,
 }: EventEntryRowProps) {
@@ -360,6 +367,7 @@ const EventEntryRow = memo(function EventEntryRow({
       onPress={handlePress}
       onLongPress={handleLongPress}
       fallbackCurrencyCode={fallbackCurrencyCode}
+      languageLocale={languageLocale}
       payments={payments}
       currentUserId={currentUserId}
     />
@@ -458,24 +466,10 @@ type EventCardProps = {
   onPress: () => void;
   onLongPress: () => void;
   fallbackCurrencyCode: string;
+  languageLocale: string;
   payments: PaymentEntry[];
   currentUserId?: string;
 };
-
-function formatEventDate(dateValue?: string | null) {
-  if (!dateValue) {
-    return '';
-  }
-  const parsedDate = new Date(dateValue);
-  if (Number.isNaN(parsedDate.getTime())) {
-    return '';
-  }
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(parsedDate);
-}
 
 const EventCard = memo(function EventCard({
   event,
@@ -484,6 +478,7 @@ const EventCard = memo(function EventCard({
   onPress,
   onLongPress,
   fallbackCurrencyCode,
+  languageLocale,
   payments,
   currentUserId,
 }: EventCardProps) {
@@ -495,7 +490,10 @@ const EventCard = memo(function EventCard({
     () => normalizeCurrencyCode(event.currency ?? fallbackCurrencyCode),
     [event.currency, fallbackCurrencyCode],
   );
-  const eventDate = useMemo(() => formatEventDate(event.date), [event.date]);
+  const eventDate = useMemo(
+    () => formatShortEventDate(event.date, languageLocale),
+    [event.date, languageLocale],
+  );
   const total = useMemo(() => selectors.selectTotalMemo(event), [event, selectors]);
   const rawDebts = useMemo(() => selectors.selectRawDebtsMemo(event), [event, selectors]);
   const effectiveDebts = useMemo(

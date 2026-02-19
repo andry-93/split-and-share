@@ -8,6 +8,7 @@ import { AppBottomSheet } from '@/shared/ui/AppBottomSheet';
 type Option = {
   value: string;
   label: string;
+  description?: string;
 };
 
 type AppSingleSelectBottomSheetProps = {
@@ -21,6 +22,7 @@ type AppSingleSelectBottomSheetProps = {
 type OptionRowProps = {
   value: string;
   label: string;
+  description?: string;
   selected: boolean;
   isLast: boolean;
   onSelect: (value: string) => void;
@@ -29,6 +31,7 @@ type OptionRowProps = {
 const OptionRow = memo(function OptionRow({
   value,
   label,
+  description,
   selected,
   isLast,
   onSelect,
@@ -40,6 +43,7 @@ const OptionRow = memo(function OptionRow({
   return (
     <BottomSheetSingleSelectRow
       label={label}
+      description={description}
       selected={selected}
       onPress={handlePress}
       isLast={isLast}
@@ -61,6 +65,7 @@ export const AppSingleSelectBottomSheet = forwardRef<
       <OptionRow
         value={item.value}
         label={item.label}
+        description={item.description}
         selected={selectedValue === item.value}
         onSelect={onSelect}
         isLast={index === options.length - 1}

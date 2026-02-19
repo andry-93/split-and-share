@@ -5,7 +5,13 @@ import { TextInput as RNTextInput } from 'react-native';
 import { RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
 import { AppList } from '@/shared/ui/AppList';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
-import { formatCurrencyAmount, roundMoney } from '@/shared/utils/currency';
+import {
+  formatCurrencyAmount,
+  formatMoneyInputValue,
+  getAmountInputPlaceholder,
+  parseLocalizedMoneyAmount,
+  roundMoney,
+} from '@/shared/utils/currency';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { useAutofocusWithRetry } from '@/shared/hooks/useAutofocusWithRetry';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
@@ -57,13 +63,13 @@ export const DebtsPanel = memo(function DebtsPanel({
 
   const openDetailedPaymentConfirm = useCallback((debt: RawDebt) => {
     setPendingPayment({ mode: 'detailed', debt });
-    setPaymentAmount(roundMoney(debt.amount).toFixed(2));
+    setPaymentAmount(formatMoneyInputValue(debt.amount));
     setPaymentError('');
   }, []);
 
   const openSimplifiedPaymentConfirm = useCallback((debt: SimplifiedDebt) => {
     setPendingPayment({ mode: 'simplified', debt });
-    setPaymentAmount(roundMoney(debt.amount).toFixed(2));
+    setPaymentAmount(formatMoneyInputValue(debt.amount));
     setPaymentError('');
   }, []);
 
@@ -81,7 +87,7 @@ export const DebtsPanel = memo(function DebtsPanel({
       return;
     }
 
-    const parsed = Number(paymentAmount.replace(',', '.').trim());
+    const parsed = parseLocalizedMoneyAmount(paymentAmount);
     const rounded = roundMoney(parsed);
     const maxAmount = roundMoney(pendingPayment.debt.amount);
 
@@ -211,7 +217,7 @@ export const DebtsPanel = memo(function DebtsPanel({
                     color: theme.colors.onSurface,
                   },
                 ]}
-                placeholder="0.00"
+                placeholder={getAmountInputPlaceholder()}
                 placeholderTextColor={theme.colors.onSurfaceVariant}
                 selectionColor={theme.colors.primary}
               />

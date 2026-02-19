@@ -12,6 +12,7 @@ export function createDefaultSettingsState(): SettingsState {
     theme: 'system',
     language: getSystemDefaultLanguage(),
     languageSource: 'system',
+    numberFormat: 'system',
     currency: getSystemDefaultCurrency(),
     currencySource: 'system',
     debtsViewMode: 'simplified',

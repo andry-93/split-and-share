@@ -17,6 +17,7 @@ import { PersistenceSync } from '@/state/storage/PersistenceSync';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { AppErrorBoundary } from '@/shared/ui/AppErrorBoundary';
 import { RootTabParamList } from '@/navigation/types';
+import { setGlobalNumberFormatPreference } from '@/shared/utils/currency';
 
 const lightColorOverrides = {
   primary: '#2563FF',
@@ -110,6 +111,10 @@ function AppShell() {
   const [exitHintVisible, setExitHintVisible] = useState(false);
   const lastBackPressAtRef = useRef(0);
   const hideHintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setGlobalNumberFormatPreference(settings.numberFormat);
+  }, [settings.numberFormat]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') {

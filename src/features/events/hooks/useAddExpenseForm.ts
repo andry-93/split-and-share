@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ParticipantItem } from '@/features/events/types/events';
-import { getCurrencyDisplay } from '@/shared/utils/currency';
+import { getCurrencyDisplay, parseLocalizedMoneyAmount } from '@/shared/utils/currency';
 import { sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 
 type UseAddExpenseFormInput = {
@@ -48,7 +48,7 @@ export function useAddExpenseForm({
     () => participantOptions.find((participant) => participant.id === paidById)?.name ?? '',
     [paidById, participantOptions],
   );
-  const parsedAmount = useMemo(() => Number(amount.replace(',', '.')), [amount]);
+  const parsedAmount = useMemo(() => parseLocalizedMoneyAmount(amount), [amount]);
 
   const isSaveDisabled = useMemo(() => {
     if (!amount.trim() || !title.trim() || !paidById.trim()) {

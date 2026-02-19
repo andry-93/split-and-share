@@ -23,7 +23,10 @@ settingsPersistenceListener.startListening({
   matcher: isAnyOf(
     settingsActions.setTheme,
     settingsActions.setLanguage,
+    settingsActions.setLanguageSystem,
+    settingsActions.setNumberFormat,
     settingsActions.setCurrency,
+    settingsActions.setCurrencySystem,
     settingsActions.setDebtsViewMode,
     settingsActions.resetSettings,
   ),

@@ -22,6 +22,7 @@ import { PaidByField } from '@/features/events/components/add-expense/PaidByFiel
 import { SplitBetweenField } from '@/features/events/components/add-expense/SplitBetweenField';
 import { AppDeleteConfirm } from '@/shared/ui/AppDeleteConfirm';
 import { AppMessageSnackbar } from '@/shared/ui/AppMessageSnackbar';
+import { formatMoneyInputValue } from '@/shared/utils/currency';
 
 type AddExpenseScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddExpense'>;
 
@@ -67,7 +68,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     participants: event?.participants ?? [],
     currency: event?.currency,
     fallbackCurrency: settings.currency,
-    initialAmount: editingExpense ? String(editingExpense.amount) : '',
+    initialAmount: editingExpense ? formatMoneyInputValue(editingExpense.amount) : '',
     initialTitle: editingExpense?.title ?? '',
     initialPaidById: editingExpense?.paidById,
   });

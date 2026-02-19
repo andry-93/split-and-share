@@ -19,8 +19,17 @@ export function useSettingsActions() {
       setLanguage: (value: string) => {
         dispatch(settingsActions.setLanguage({ language: value }));
       },
+      setLanguageSystem: () => {
+        dispatch(settingsActions.setLanguageSystem());
+      },
+      setNumberFormat: (value: SettingsState['numberFormat']) => {
+        dispatch(settingsActions.setNumberFormat({ numberFormat: value }));
+      },
       setCurrency: (value: string) => {
         dispatch(settingsActions.setCurrency({ currency: value }));
+      },
+      setCurrencySystem: () => {
+        dispatch(settingsActions.setCurrencySystem());
       },
       setDebtsViewMode: (value: SettingsState['debtsViewMode']) => {
         dispatch(settingsActions.setDebtsViewMode({ debtsViewMode: value }));

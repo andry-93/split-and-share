@@ -13,6 +13,7 @@ import {
 } from '@/state/events/eventsSelectors';
 import { getCurrencyDisplay } from '@/shared/utils/currency';
 import { buildEventReportHtml } from '@/features/events/utils/eventReport';
+import { getLanguageLocale } from '@/state/settings/languageCatalog';
 
 const PDF_GENERATION_TIMEOUT_MS = 15000;
 
@@ -68,6 +69,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
         appName: 'Split & Share',
         event,
         currencyCode,
+        locale: getLanguageLocale(settings.language),
         debtsMode: settings.debtsViewMode,
         detailedDebts,
         simplifiedDebts,
@@ -89,7 +91,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
     } finally {
       setIsGenerating(false);
     }
-  }, [event, eventsState, settings.currency, settings.debtsViewMode]);
+  }, [event, eventsState, settings.currency, settings.debtsViewMode, settings.language]);
 
   useEffect(() => {
     if (!pdfUri && !isGenerating) {

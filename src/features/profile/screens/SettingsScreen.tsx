@@ -17,12 +17,13 @@ import { AppConfirm } from '@/shared/ui/AppConfirm';
 import { CustomToggleGroup } from '@/shared/ui/CustomToggleGroup';
 import {
   getCurrencyDisplay,
-  getCurrencyFriendlyLabel,
+  getCurrencyName,
   getCurrencyOptionLabel,
   getCurrencySymbol,
   normalizeCurrencyCode,
   SUPPORTED_CURRENCY_CODES,
 } from '@/shared/utils/currency';
+import { getSystemDefaultCurrency } from '@/state/settings/currencyDefaults';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { AppSingleSelectBottomSheet } from '@/shared/ui/AppSingleSelectBottomSheet';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
@@ -32,6 +33,8 @@ import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 
 const currencyOptions = [...SUPPORTED_CURRENCY_CODES];
 const CUSTOM_CURRENCY_VALUE = '__custom_currency__';
+const SYSTEM_LANGUAGE_VALUE = '__system_language__';
+const SYSTEM_CURRENCY_VALUE = '__system_currency__';
 const debtsViewOptions: Array<{ value: SettingsState['debtsViewMode']; label: string; description: string }> = [
   {
     value: 'simplified',
@@ -44,6 +47,50 @@ const debtsViewOptions: Array<{ value: SettingsState['debtsViewMode']; label: st
     description: 'Shows full transfer breakdown without simplification.',
   },
 ];
+const numberFormatOptions: Array<{ value: SettingsState['numberFormat']; label: string; description: string }> = [
+  {
+    value: 'system',
+    label: 'System',
+    description: formatNumberExample('system'),
+  },
+  {
+    value: 'us',
+    label: 'US',
+    description: formatNumberExample('us'),
+  },
+  {
+    value: 'eu',
+    label: 'European',
+    description: formatNumberExample('eu'),
+  },
+  {
+    value: 'ru',
+    label: 'Russia',
+    description: formatNumberExample('ru'),
+  },
+  {
+    value: 'ch',
+    label: 'Switzerland',
+    description: formatNumberExample('ch'),
+  },
+];
+
+function formatNumberExample(mode: SettingsState['numberFormat']) {
+  const value = 1234.56;
+  if (mode === 'us') {
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  }
+  if (mode === 'eu') {
+    return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  }
+  if (mode === 'ru') {
+    return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  }
+  if (mode === 'ch') {
+    return new Intl.NumberFormat('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  }
+  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+}
 
 function validateCustomCurrencyValue(value: string, reservedValues: Set<string>): string | null {
   const raw = value.trim();
@@ -62,8 +109,18 @@ function validateCustomCurrencyValue(value: string, reservedValues: Set<string>)
 export function SettingsScreen() {
   const theme = useTheme();
   const settings = useSettingsState();
-  const { setTheme, setLanguage, setCurrency, setDebtsViewMode, resetSettings } = useSettingsActions();
+  const {
+    setTheme,
+    setLanguage,
+    setLanguageSystem,
+    setNumberFormat,
+    setCurrency,
+    setCurrencySystem,
+    setDebtsViewMode,
+    resetSettings,
+  } = useSettingsActions();
   const languageSheetRef = useRef<BottomSheetModal>(null);
+  const numberFormatSheetRef = useRef<BottomSheetModal>(null);
   const currencySheetRef = useRef<BottomSheetModal>(null);
   const debtsViewSheetRef = useRef<BottomSheetModal>(null);
   const [customCurrency, setCustomCurrency] = useState(normalizeCurrencyCode(settings.currency));
@@ -79,7 +136,7 @@ export function SettingsScreen() {
     open: openResetSettings,
     close: closeResetSettings,
   } = useConfirmState();
-  useDismissBottomSheetsOnBlur([languageSheetRef, currencySheetRef, debtsViewSheetRef]);
+  useDismissBottomSheetsOnBlur([languageSheetRef, numberFormatSheetRef, currencySheetRef, debtsViewSheetRef]);
   const fullHeightSnapPoints = useMemo(() => ['90%'], []);
   const defaultSnapPoints = useMemo(() => ['40%'], []);
 
@@ -90,11 +147,15 @@ export function SettingsScreen() {
   const handleOpenCurrency = useCallback(() => {
     currencySheetRef.current?.present();
   }, []);
+  const handleOpenNumberFormat = useCallback(() => {
+    numberFormatSheetRef.current?.present();
+  }, []);
 
   const handleOpenDebtsView = useCallback(() => {
     debtsViewSheetRef.current?.present();
   }, []);
   const systemLanguage = getSystemDefaultLanguage();
+  const systemCurrency = getSystemDefaultCurrency();
 
   const handleThemeChange = useCallback(
     (value: SettingsState['theme']) => {
@@ -105,10 +166,30 @@ export function SettingsScreen() {
 
   const handleSelectLanguage = useCallback(
     (option: string) => {
+      if (option === SYSTEM_LANGUAGE_VALUE) {
+        setLanguageSystem();
+        languageSheetRef.current?.dismiss();
+        return;
+      }
       setLanguage(normalizeLanguageCode(option));
       languageSheetRef.current?.dismiss();
     },
-    [setLanguage],
+    [setLanguage, setLanguageSystem],
+  );
+  const handleSelectNumberFormat = useCallback(
+    (option: string) => {
+      if (
+        option === 'system' ||
+        option === 'us' ||
+        option === 'eu' ||
+        option === 'ru' ||
+        option === 'ch'
+      ) {
+        setNumberFormat(option);
+      }
+      numberFormatSheetRef.current?.dismiss();
+    },
+    [setNumberFormat],
   );
 
   const reservedCurrencyValues = useMemo(
@@ -125,6 +206,11 @@ export function SettingsScreen() {
 
   const handleSelectCurrency = useCallback(
     (option: string) => {
+      if (option === SYSTEM_CURRENCY_VALUE) {
+        setCurrencySystem();
+        currencySheetRef.current?.dismiss();
+        return;
+      }
       if (option === CUSTOM_CURRENCY_VALUE) {
         currencySheetRef.current?.dismiss();
         const normalizedCurrent = normalizeCurrencyCode(settings.currency);
@@ -138,7 +224,7 @@ export function SettingsScreen() {
       setCurrency(option);
       currencySheetRef.current?.dismiss();
     },
-    [openCustomCurrency, reservedCurrencyValues, setCurrency, settings.currency],
+    [openCustomCurrency, reservedCurrencyValues, setCurrency, setCurrencySystem, settings.currency],
   );
   const customCurrencyValidationError = useMemo(
     () => validateCustomCurrencyValue(customCurrency, reservedCurrencyValues),
@@ -178,27 +264,48 @@ export function SettingsScreen() {
   }, [closeResetSettings, resetSettings]);
 
   const languageSheetOptions = useMemo(
-    () =>
-      getOrderedLanguageOptions(settings.language, systemLanguage).map((option) => ({
+    () => [
+      {
+        value: SYSTEM_LANGUAGE_VALUE,
+        label: 'System',
+        description: getLanguageLabel(systemLanguage),
+      },
+      ...getOrderedLanguageOptions(settings.language, systemLanguage).map((option) => ({
         value: option.value,
         label: option.label,
       })),
+    ],
     [settings.language, systemLanguage],
   );
   const currencySheetOptions = useMemo(
     () =>
       [
+        {
+          value: SYSTEM_CURRENCY_VALUE,
+          label: 'System',
+          description: `${getCurrencyOptionLabel(systemCurrency)} • ${getCurrencyName(systemCurrency)}`,
+        },
         ...currencyOptions.map((option) => ({
           value: option,
-          label: getCurrencyFriendlyLabel(option),
+          label: getCurrencyOptionLabel(option),
+          description: getCurrencyName(option),
         })),
-        { value: CUSTOM_CURRENCY_VALUE, label: 'Custom' },
+        { value: CUSTOM_CURRENCY_VALUE, label: 'Custom', description: 'Set your own code or symbol' },
       ],
-    [],
+    [systemCurrency],
   );
   const debtsViewSheetOptions = useMemo(
     () =>
       debtsViewOptions.map((option) => ({
+        value: option.value,
+        label: option.label,
+        description: option.description,
+      })),
+    [],
+  );
+  const numberFormatSheetOptions = useMemo(
+    () =>
+      numberFormatOptions.map((option) => ({
         value: option.value,
         label: option.label,
         description: option.description,
@@ -226,7 +333,11 @@ export function SettingsScreen() {
         >
           <List.Item
             title="Language"
-            description={getLanguageLabel(settings.language)}
+            description={
+              settings.languageSource === 'system'
+                ? `System (${getLanguageLabel(settings.language)})`
+                : getLanguageLabel(settings.language)
+            }
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={handleOpenLanguage}
@@ -234,10 +345,26 @@ export function SettingsScreen() {
           <Divider style={styles.preferencesDivider} />
           <List.Item
             title="Currency"
-            description={getCurrencyDisplay(settings.currency)}
+            description={
+              settings.currencySource === 'system'
+                ? `System (${getCurrencyDisplay(settings.currency)})`
+                : getCurrencyDisplay(settings.currency)
+            }
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={handleOpenCurrency}
+          />
+          <Divider style={styles.preferencesDivider} />
+          <List.Item
+            title="Number format"
+            description={
+              settings.numberFormat === 'system'
+                ? `System (${formatNumberExample('system')})`
+                : numberFormatOptions.find((option) => option.value === settings.numberFormat)?.label ?? 'System'
+            }
+            style={styles.compactRow}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={handleOpenNumberFormat}
           />
           <Divider style={styles.preferencesDivider} />
           <List.Item
@@ -290,17 +417,31 @@ export function SettingsScreen() {
         ref={languageSheetRef}
         title="Language"
         options={languageSheetOptions}
-        selectedValue={normalizeLanguageCode(settings.language)}
+        selectedValue={
+          settings.languageSource === 'system'
+            ? SYSTEM_LANGUAGE_VALUE
+            : normalizeLanguageCode(settings.language)
+        }
         onSelect={handleSelectLanguage}
         snapPoints={fullHeightSnapPoints}
       />
 
       <AppSingleSelectBottomSheet
+        ref={numberFormatSheetRef}
+        title="Number format"
+        options={numberFormatSheetOptions}
+        selectedValue={settings.numberFormat}
+        onSelect={handleSelectNumberFormat}
+        snapPoints={defaultSnapPoints}
+      />
+      <AppSingleSelectBottomSheet
         ref={currencySheetRef}
         title="Currency"
         options={currencySheetOptions}
         selectedValue={
-          currencyOptions.includes(settings.currency as (typeof currencyOptions)[number])
+          settings.currencySource === 'system'
+            ? SYSTEM_CURRENCY_VALUE
+            : currencyOptions.includes(settings.currency as (typeof currencyOptions)[number])
             ? settings.currency
             : CUSTOM_CURRENCY_VALUE
         }

@@ -3,6 +3,7 @@ import { TextInput } from 'react-native-paper';
 import { Text } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addExpenseStyles as styles } from '@/features/events/components/add-expense/styles';
+import { getAmountInputPlaceholder } from '@/shared/utils/currency';
 
 type AmountFieldProps = {
   currencyCode: string;
@@ -15,6 +16,8 @@ export const AmountField = memo(function AmountField({
   value,
   onChangeText,
 }: AmountFieldProps) {
+  const placeholder = getAmountInputPlaceholder();
+
   return (
     <>
       <Text variant="labelLarge" style={styles.sectionLabel}>
@@ -32,7 +35,7 @@ export const AmountField = memo(function AmountField({
           style={[styles.amountInlineInput, styles.transparentInput]}
           contentStyle={styles.amountInlineInputContent}
           underlineStyle={styles.hiddenUnderline}
-          placeholder="0.00"
+          placeholder={placeholder}
         />
       </OutlinedFieldContainer>
     </>

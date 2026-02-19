@@ -9,7 +9,13 @@ import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
 import { useMessageState } from '@/shared/hooks/useMessageState';
-import { getCurrencyDisplay, getCurrencyFriendlyLabel, normalizeCurrencyCode } from '@/shared/utils/currency';
+import {
+  getCurrencyDisplay,
+  getCurrencyName,
+  getCurrencyOptionLabel,
+  normalizeCurrencyCode,
+} from '@/shared/utils/currency';
+import { getLanguageLocale } from '@/state/settings/languageCatalog';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { EventNameField } from '@/features/events/components/add-event/EventNameField';
 import { DescriptionField } from '@/features/events/components/add-event/DescriptionField';
@@ -25,15 +31,9 @@ import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomShe
 import { AppSingleSelectBottomSheet } from '@/shared/ui/AppSingleSelectBottomSheet';
 import { AppDeleteConfirm } from '@/shared/ui/AppDeleteConfirm';
 import { AppMessageSnackbar } from '@/shared/ui/AppMessageSnackbar';
+import { formatDateLocalized, getDateInputPlaceholder } from '@/shared/utils/date';
 
 type AddEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddEvent'>;
-
-function formatDate(value: Date) {
-  const dd = `${value.getDate()}`.padStart(2, '0');
-  const mm = `${value.getMonth() + 1}`.padStart(2, '0');
-  const yyyy = value.getFullYear();
-  return `${dd}.${mm}.${yyyy}`;
-}
 
 export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
   const theme = useTheme();
@@ -41,6 +41,7 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
   const settings = useSettingsState();
   const { events, groups } = useEventsState();
   const { createEvent, updateEvent, removeEvents } = useEventsActions();
+  const languageLocale = useMemo(() => getLanguageLocale(settings.language), [settings.language]);
   const routeEventId = route.params?.eventId;
   const routeGroupId = route.params?.groupId;
   const targetEvent = useMemo(
@@ -73,7 +74,7 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
     themeMode: settings.theme,
     onError: setErrorMessage,
   });
-  const { currencyOptions, currencyLabels, eventCurrency, setEventCurrency } = useEventCurrency(
+  const { currencyOptions, eventCurrency, setEventCurrency } = useEventCurrency(
     targetEvent?.currency ?? settings.currency,
   );
   const [eventGroupId, setEventGroupId] = useState<string | undefined>(targetEvent?.groupId ?? routeGroupId);
@@ -139,11 +140,10 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
     () =>
       eventCurrencySheetOptions.map((value) => ({
         value,
-        label: EVENT_CURRENCY_OPTIONS.includes(value as (typeof EVENT_CURRENCY_OPTIONS)[number])
-          ? getCurrencyFriendlyLabel(value)
-          : currencyLabels[value] ?? getCurrencyDisplay(value),
+        label: getCurrencyOptionLabel(value),
+        description: getCurrencyName(value),
       })),
-    [currencyLabels, eventCurrencySheetOptions],
+    [eventCurrencySheetOptions],
   );
   const handleSelectCurrency = useCallback(
     (value: string) => {
@@ -212,7 +212,7 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
           <DescriptionField value={description} onChangeText={setDescription} />
 
           <CurrencyField
-            value={currencyLabels[eventCurrency] ?? getCurrencyDisplay(eventCurrency)}
+            value={getCurrencyDisplay(eventCurrency)}
             onPress={openCurrencyPicker}
           />
           <GroupField
@@ -221,7 +221,15 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
           />
 
           <DateField
-            value={selectedDate ? formatDate(selectedDate) : 'dd.mm.yyyy'}
+            value={
+              selectedDate
+                ? formatDateLocalized(selectedDate, {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  }, languageLocale)
+                : getDateInputPlaceholder(languageLocale)
+            }
             hasValue={Boolean(selectedDate)}
             onPress={handleOpenDatePicker}
           />

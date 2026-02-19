@@ -1,11 +1,13 @@
 import { EventItem } from '@/features/events/types/events';
 import { formatCurrencyAmount } from '@/shared/utils/currency';
+import { formatDateTimeLocalized } from '@/shared/utils/date';
 import { PaymentEntry, RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
 
 type BuildEventReportHtmlInput = {
   appName: string;
   event: EventItem;
   currencyCode: string;
+  locale?: string;
   debtsMode: 'simplified' | 'detailed';
   detailedDebts: RawDebt[];
   simplifiedDebts: SimplifiedDebt[];
@@ -21,27 +23,11 @@ function escapeHtml(value: string) {
     .replaceAll("'", '&#39;');
 }
 
-function formatDate(value?: string | null) {
-  if (!value) {
-    return '—';
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return '—';
-  }
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(parsed);
-}
-
 export function buildEventReportHtml({
   appName,
   event,
   currencyCode,
+  locale,
   debtsMode,
   detailedDebts,
   simplifiedDebts,
@@ -60,7 +46,7 @@ export function buildEventReportHtml({
               <td>${escapeHtml(expense.title)}</td>
               <td>${formatCurrencyAmount(currencyCode, expense.amount)}</td>
               <td>${escapeHtml(expense.paidBy)}</td>
-              <td>${formatDate(expense.updatedAt)}</td>
+              <td>${formatDateTimeLocalized(expense.updatedAt, locale)}</td>
             </tr>
           `,
           )
@@ -126,7 +112,7 @@ export function buildEventReportHtml({
               <td>${escapeHtml(participantById.get(payment.fromId) ?? payment.fromId)} → ${escapeHtml(participantById.get(payment.toId) ?? payment.toId)}</td>
               <td>${formatCurrencyAmount(currencyCode, payment.amount)}</td>
               <td>${escapeHtml(payment.source)}</td>
-              <td>${formatDate(payment.createdAt)}</td>
+              <td>${formatDateTimeLocalized(payment.createdAt, locale)}</td>
             </tr>
           `,
           )
@@ -165,7 +151,7 @@ export function buildEventReportHtml({
   <body>
     <div class="app">${escapeHtml(appName)}</div>
     <h1 class="title">${escapeHtml(event.name)}</h1>
-    <p class="sub">Event report generated ${formatDate(new Date().toISOString())}</p>
+    <p class="sub">Event report generated ${formatDateTimeLocalized(new Date().toISOString(), locale)}</p>
 
     <div class="summary">
       <div class="card">
