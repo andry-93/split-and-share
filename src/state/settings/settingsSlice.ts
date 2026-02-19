@@ -6,6 +6,7 @@ import {
   SetLanguagePayload,
   SetThemePayload,
 } from '@/state/settings/settingsActionTypes';
+import { normalizeLanguageCode } from '@/state/settings/languageCatalog';
 
 export const settingsSlice = createSlice({
   name: 'settings',
@@ -15,7 +16,7 @@ export const settingsSlice = createSlice({
       state.theme = action.payload.theme;
     },
     setLanguage: (state, action: PayloadAction<SetLanguagePayload>) => {
-      state.language = action.payload.language;
+      state.language = normalizeLanguageCode(action.payload.language);
       state.languageSource = 'manual';
     },
     setCurrency: (state, action: PayloadAction<SetCurrencyPayload>) => {

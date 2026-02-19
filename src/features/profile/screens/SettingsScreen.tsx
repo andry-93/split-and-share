@@ -6,14 +6,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useSettingsActions, useSettingsState } from '@/state/settings/settingsContext';
 import type { SettingsState } from '@/state/settings/settingsTypes';
+import {
+  getLanguageLabel,
+  getOrderedLanguageOptions,
+  normalizeLanguageCode,
+} from '@/state/settings/languageCatalog';
+import { getSystemDefaultLanguage } from '@/state/settings/languageDefaults';
 import appPackage from '../../../../package.json';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
 import { CustomToggleGroup } from '@/shared/ui/CustomToggleGroup';
 import {
   getCurrencyDisplay,
+  getCurrencyFriendlyLabel,
   getCurrencyOptionLabel,
   getCurrencySymbol,
   normalizeCurrencyCode,
+  SUPPORTED_CURRENCY_CODES,
 } from '@/shared/utils/currency';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { AppSingleSelectBottomSheet } from '@/shared/ui/AppSingleSelectBottomSheet';
@@ -22,8 +30,7 @@ import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomShe
 import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 
-const languageOptions = ['English', 'German', 'Spanish', 'French', 'Russian'];
-const currencyOptions = ['USD', 'EUR', 'GBP', 'RUB', 'BYN'];
+const currencyOptions = [...SUPPORTED_CURRENCY_CODES];
 const CUSTOM_CURRENCY_VALUE = '__custom_currency__';
 const debtsViewOptions: Array<{ value: SettingsState['debtsViewMode']; label: string; description: string }> = [
   {
@@ -68,7 +75,8 @@ export function SettingsScreen() {
     close: closeCustomCurrency,
   } = useConfirmState();
   useDismissBottomSheetsOnBlur([languageSheetRef, currencySheetRef, debtsViewSheetRef]);
-  const snapPoints = useMemo(() => ['40%'], []);
+  const fullHeightSnapPoints = useMemo(() => ['90%'], []);
+  const defaultSnapPoints = useMemo(() => ['40%'], []);
 
   const handleOpenLanguage = useCallback(() => {
     languageSheetRef.current?.present();
@@ -81,6 +89,7 @@ export function SettingsScreen() {
   const handleOpenDebtsView = useCallback(() => {
     debtsViewSheetRef.current?.present();
   }, []);
+  const systemLanguage = getSystemDefaultLanguage();
 
   const handleThemeChange = useCallback(
     (value: SettingsState['theme']) => {
@@ -91,7 +100,7 @@ export function SettingsScreen() {
 
   const handleSelectLanguage = useCallback(
     (option: string) => {
-      setLanguage(option);
+      setLanguage(normalizeLanguageCode(option));
       languageSheetRef.current?.dismiss();
     },
     [setLanguage],
@@ -160,15 +169,19 @@ export function SettingsScreen() {
   );
 
   const languageSheetOptions = useMemo(
-    () => languageOptions.map((option) => ({ value: option, label: option })),
-    [],
+    () =>
+      getOrderedLanguageOptions(settings.language, systemLanguage).map((option) => ({
+        value: option.value,
+        label: option.label,
+      })),
+    [settings.language, systemLanguage],
   );
   const currencySheetOptions = useMemo(
     () =>
       [
         ...currencyOptions.map((option) => ({
           value: option,
-          label: getCurrencyOptionLabel(option),
+          label: getCurrencyFriendlyLabel(option),
         })),
         { value: CUSTOM_CURRENCY_VALUE, label: 'Custom' },
       ],
@@ -204,7 +217,7 @@ export function SettingsScreen() {
         >
           <List.Item
             title="Language"
-            description={settings.language}
+            description={getLanguageLabel(settings.language)}
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={handleOpenLanguage}
@@ -255,9 +268,9 @@ export function SettingsScreen() {
         ref={languageSheetRef}
         title="Language"
         options={languageSheetOptions}
-        selectedValue={settings.language}
+        selectedValue={normalizeLanguageCode(settings.language)}
         onSelect={handleSelectLanguage}
-        snapPoints={snapPoints}
+        snapPoints={fullHeightSnapPoints}
       />
 
       <AppSingleSelectBottomSheet
@@ -270,7 +283,7 @@ export function SettingsScreen() {
             : CUSTOM_CURRENCY_VALUE
         }
         onSelect={handleSelectCurrency}
-        snapPoints={snapPoints}
+        snapPoints={fullHeightSnapPoints}
       />
       <AppSingleSelectBottomSheet
         ref={debtsViewSheetRef}
@@ -278,7 +291,7 @@ export function SettingsScreen() {
         options={debtsViewSheetOptions}
         selectedValue={settings.debtsViewMode}
         onSelect={handleSelectDebtsView}
-        snapPoints={snapPoints}
+        snapPoints={defaultSnapPoints}
       />
       <AppConfirm
         visible={isCustomCurrencyVisible}

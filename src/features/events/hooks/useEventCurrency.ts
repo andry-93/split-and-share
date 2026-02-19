@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
-import { getCurrencyDisplay, normalizeCurrencyCode } from '@/shared/utils/currency';
+import { getCurrencyDisplay, normalizeCurrencyCode, SUPPORTED_CURRENCY_CODES } from '@/shared/utils/currency';
 
-export const EVENT_CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'RUB', 'BYN'] as const;
+export const EVENT_CURRENCY_OPTIONS = SUPPORTED_CURRENCY_CODES;
 
-const EVENT_CURRENCY_LABELS: Record<string, string> = {
-  USD: getCurrencyDisplay('USD'),
-  EUR: getCurrencyDisplay('EUR'),
-  GBP: getCurrencyDisplay('GBP'),
-  RUB: getCurrencyDisplay('RUB'),
-  BYN: getCurrencyDisplay('BYN'),
-};
+const EVENT_CURRENCY_LABELS: Record<string, string> = EVENT_CURRENCY_OPTIONS.reduce(
+  (acc, code) => {
+    acc[code] = getCurrencyDisplay(code);
+    return acc;
+  },
+  {} as Record<string, string>,
+);
 
 export function useEventCurrency(settingsCurrency: string) {
   const selectedCurrency = useMemo(() => {

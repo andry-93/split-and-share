@@ -9,7 +9,7 @@ import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
 import { useMessageState } from '@/shared/hooks/useMessageState';
-import { getCurrencyDisplay, getCurrencyOptionLabel, normalizeCurrencyCode } from '@/shared/utils/currency';
+import { getCurrencyDisplay, getCurrencyFriendlyLabel, normalizeCurrencyCode } from '@/shared/utils/currency';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { EventNameField } from '@/features/events/components/add-event/EventNameField';
 import { DescriptionField } from '@/features/events/components/add-event/DescriptionField';
@@ -18,7 +18,6 @@ import { GroupField } from '@/features/events/components/add-event/GroupField';
 import { DateField } from '@/features/events/components/add-event/DateField';
 import { BottomActionBar } from '@/features/events/components/add-event/BottomActionBar';
 import { addEventStyles as featureStyles } from '@/features/events/components/add-event/styles';
-import { CurrencyBottomSheet } from '@/features/events/components/add-event/CurrencyBottomSheet';
 import { IosDatePickerModal } from '@/features/events/components/add-event/IosDatePickerModal';
 import { useEventDatePicker } from '@/features/events/hooks/useEventDatePicker';
 import { EVENT_CURRENCY_OPTIONS, useEventCurrency } from '@/features/events/hooks/useEventCurrency';
@@ -136,6 +135,16 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
     }
     return base;
   }, [currencyOptions, settings.currency]);
+  const currencySheetOptions = useMemo(
+    () =>
+      eventCurrencySheetOptions.map((value) => ({
+        value,
+        label: EVENT_CURRENCY_OPTIONS.includes(value as (typeof EVENT_CURRENCY_OPTIONS)[number])
+          ? getCurrencyFriendlyLabel(value)
+          : currencyLabels[value] ?? getCurrencyDisplay(value),
+      })),
+    [currencyLabels, eventCurrencySheetOptions],
+  );
   const handleSelectCurrency = useCallback(
     (value: string) => {
       setEventCurrency(value);
@@ -242,18 +251,13 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
         onConfirm={handleDelete}
       />
 
-      <CurrencyBottomSheet
-        sheetRef={currencySheetRef}
+      <AppSingleSelectBottomSheet
+        ref={currencySheetRef}
         title="Currency"
-        options={eventCurrencySheetOptions}
+        options={currencySheetOptions}
         selectedValue={eventCurrency}
-        getLabel={(value) =>
-          EVENT_CURRENCY_OPTIONS.includes(value as (typeof EVENT_CURRENCY_OPTIONS)[number])
-            ? getCurrencyOptionLabel(value)
-            : currencyLabels[value] ?? getCurrencyDisplay(value)
-        }
         onSelect={handleSelectCurrency}
-        snapPoints={snapPoints}
+        snapPoints={['90%']}
       />
       <AppSingleSelectBottomSheet
         ref={groupSheetRef}

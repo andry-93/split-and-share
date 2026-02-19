@@ -1,7 +1,9 @@
-import React, { forwardRef, memo, useCallback } from 'react';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import React, {forwardRef, memo, useCallback, useMemo} from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomSheetFlatList, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { BottomSheetSingleSelectRow } from '@/shared/ui/BottomSheetSingleSelectRow';
-import { AppBottomSheet } from '@/shared/ui/AppBottomSheet';
+import {AppBottomSheet} from "@/shared/ui/AppBottomSheet";
+import {View} from "react-native";
 
 type Option = {
   value: string;
@@ -52,19 +54,38 @@ export const AppSingleSelectBottomSheet = forwardRef<
   { title, options, selectedValue, onSelect, snapPoints },
   ref,
 ) {
+  const insets = useSafeAreaInsets();
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: Option; index: number }) => (
+      <OptionRow
+        value={item.value}
+        label={item.label}
+        selected={selectedValue === item.value}
+        onSelect={onSelect}
+        isLast={index === options.length - 1}
+      />
+    ),
+    [onSelect, options.length, selectedValue],
+  );
+
   return (
-    <AppBottomSheet ref={ref} title={title} snapPoints={snapPoints}>
-      {options.map((option, index) => (
-        <OptionRow
-          key={option.value}
-          value={option.value}
-          label={option.label}
-          selected={selectedValue === option.value}
-          onSelect={onSelect}
-          isLast={index === options.length - 1}
-        />
-      ))}
+    <AppBottomSheet
+      ref={ref}
+      title={title}
+      snapPoints={snapPoints}
+      useContainer={false}
+    >
+      <BottomSheetFlatList
+        data={options}
+        keyExtractor={(item: Option) => item.value}
+        renderItem={renderItem}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+        }}
+        showsVerticalScrollIndicator={false}
+        ListFooterComponent={<View style={{ height: Math.max(insets.bottom, 24) }} />}
+      />
     </AppBottomSheet>
   );
 });
-
