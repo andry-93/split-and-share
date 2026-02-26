@@ -59,7 +59,7 @@ const groupsSeed: SeedGroup[] = [
 ];
 
 const peopleSeed: SeedPerson[] = [
-  { id: 'person-me', name: 'Me', email: 'me@example.com', isMe: true },
+  { id: 'person-me', name: 'Me', isMe: true },
   { id: 'person-1', name: 'Alice Johnson', email: 'alice@example.com' },
   { id: 'person-2', name: 'Bob Lee', phone: '+1 555 0134' },
   { id: 'person-3', name: 'Charlie Kim' },
