@@ -24,13 +24,26 @@ export type UpdateGroupPayload = { groupId: string; name: string; description?: 
 
 export type AddExpensePayload = {
   eventId: string;
-  expense: { id: string; title: string; amount: number; paidBy: string; paidById?: string };
+  expense: {
+    id: string;
+    title: string;
+    amount: number;
+    paidBy: string;
+    paidById?: string;
+    splitBetweenIds: string[];
+  };
 };
 
 export type UpdateExpensePayload = {
   eventId: string;
   expenseId: string;
-  patch: { title: string; amount: number; paidBy: string; paidById?: string };
+  patch: {
+    title: string;
+    amount: number;
+    paidBy: string;
+    paidById?: string;
+    splitBetweenIds: string[];
+  };
 };
 
 export type AddParticipantsPayload = { eventId: string; participants: ParticipantItem[] };

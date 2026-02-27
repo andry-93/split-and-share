@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
+import { reportError } from '@/shared/monitoring/errorReporting';
 
 type AppErrorBoundaryProps = {
   children: React.ReactNode;
@@ -21,7 +22,10 @@ export class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, App
   }
 
   componentDidCatch(error: unknown) {
-    console.error('[AppErrorBoundary] Unhandled UI error', error);
+    reportError(error, {
+      scope: 'ui.error_boundary',
+      message: 'Unhandled UI error',
+    });
   }
 
   handleRetry = () => {
@@ -64,4 +68,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

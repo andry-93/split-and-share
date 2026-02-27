@@ -121,6 +121,12 @@ export const PersonListRow = memo(function PersonListRow({
         longPressTriggeredRef.current = false;
       }}
       hitSlop={4}
+      accessibilityRole={selectable ? 'checkbox' : 'button'}
+      accessibilityLabel={name}
+      accessibilityState={{
+        selected: selectable ? selected : undefined,
+        disabled: selectionDisabled || muted,
+      }}
       style={({ pressed }) => [
         styles.row,
         styles.pressableRow,

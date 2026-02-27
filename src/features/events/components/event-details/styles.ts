@@ -22,11 +22,53 @@ export const eventDetailsStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   summaryContent: {
+    paddingVertical: 0,
+  },
+  summaryMetricsRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  summaryMetricDivider: {
+    width: StyleSheet.hairlineWidth,
+    marginHorizontal: 8,
+    marginVertical: 6,
+  },
+  summaryOutstandingRow: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    paddingTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  summaryOutstandingMeta: {
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryModeChip: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  summaryOutstandingValue: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginLeft: 12,
   },
   metric: {
     flex: 1,
+    minWidth: 0,
+  },
+  metricLabel: {
+    letterSpacing: 0.2,
+    marginBottom: 3,
+  },
+  metricValue: {
+    fontWeight: '700',
+    lineHeight: 28,
   },
   topTabBar: {
     marginHorizontal: -16,

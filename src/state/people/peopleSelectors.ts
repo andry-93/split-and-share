@@ -2,7 +2,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import { PersonItem } from '@/features/people/types/people';
 import { PeopleState } from '@/state/people/peopleTypes';
 import { RootState } from '@/state/store';
-import { sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
+import { normalizePhoneForComparison, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 
 export const selectPeopleState = (state: RootState): PeopleState => state.people;
 export const selectPeople = (state: RootState): PersonItem[] => state.people.people;
@@ -26,12 +26,21 @@ export function createPeopleListSelectors() {
     [(people: PersonItem[]) => people, (_people: PersonItem[], query: string) => query],
     (people, query) => {
       const normalized = query.trim().toLowerCase();
+      const normalizedDigits = normalizePhoneForComparison(query);
       if (!normalized) {
         return sortPeopleWithCurrentUserFirst(people);
       }
 
       return sortPeopleWithCurrentUserFirst(
-        people.filter((person) => person.name.toLowerCase().includes(normalized)),
+        people.filter((person) => {
+          const nameMatch = person.name.toLowerCase().includes(normalized);
+          const phoneMatch =
+            (person.phone?.toLowerCase().includes(normalized) ?? false) ||
+            (normalizedDigits.length > 0 &&
+              normalizePhoneForComparison(person.phone).includes(normalizedDigits));
+          const emailMatch = person.email?.toLowerCase().includes(normalized) ?? false;
+          return nameMatch || phoneMatch || emailMatch;
+        }),
       );
     },
   );
@@ -65,7 +74,7 @@ export function createContactsPickerSelectors() {
       if (normalizedName) {
         nameSet.add(normalizedName);
       }
-      const normalizedPhone = person.phone?.trim().toLowerCase();
+      const normalizedPhone = normalizePhoneForComparison(person.phone);
       if (normalizedPhone) {
         phoneSet.add(normalizedPhone);
       }
@@ -82,10 +91,19 @@ export function createContactsPickerSelectors() {
     [(contacts: ContactCandidate[]) => contacts, (_contacts: ContactCandidate[], query: string) => query],
     (contacts, query) => {
       const normalized = query.trim().toLowerCase();
+      const normalizedDigits = normalizePhoneForComparison(query);
       if (!normalized) {
         return contacts;
       }
-      return contacts.filter((contact) => contact.name.toLowerCase().includes(normalized));
+      return contacts.filter((contact) => {
+        const nameMatch = contact.name.toLowerCase().includes(normalized);
+        const phoneMatch =
+          (contact.phone?.toLowerCase().includes(normalized) ?? false) ||
+          (normalizedDigits.length > 0 &&
+            normalizePhoneForComparison(contact.phone).includes(normalizedDigits));
+        const emailMatch = contact.email?.toLowerCase().includes(normalized) ?? false;
+        return nameMatch || phoneMatch || emailMatch;
+      });
     },
   );
 

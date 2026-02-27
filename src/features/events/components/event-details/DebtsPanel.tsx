@@ -7,13 +7,13 @@ import { AppList } from '@/shared/ui/AppList';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
 import {
   formatCurrencyAmount,
-  roundMoney,
   parseMoneyAmount,
 } from '@/shared/utils/money';
 import { formatMoneyInputValue, getAmountInputPlaceholder } from '@/shared/utils/numberFormat';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { useAutofocusWithRetry } from '@/shared/hooks/useAutofocusWithRetry';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
+import { validatePaymentAmount } from '@/domain/finance/invariants';
 
 type DebtsPanelProps = {
   mode: 'detailed' | 'simplified';
@@ -87,23 +87,28 @@ export const DebtsPanel = memo(function DebtsPanel({
     }
 
     const parsed = parseMoneyAmount(paymentAmount);
-    const rounded = roundMoney(parsed);
-    const maxAmount = roundMoney(pendingPayment.debt.amount);
+    const maxAmount = pendingPayment.debt.amount;
+    const validation = validatePaymentAmount(parsed, maxAmount);
 
-    if (!Number.isFinite(parsed) || rounded <= 0) {
+    if (!validation.valid && validation.reason === 'invalid_amount') {
       setPaymentError('Enter a valid amount.');
       return;
     }
 
-    if (rounded > maxAmount + 0.00001) {
+    if (!validation.valid && validation.reason === 'exceeds_remaining') {
       setPaymentError(`Amount cannot exceed ${formatCurrencyAmount(currencyCode, maxAmount)}.`);
       return;
     }
 
+    if (!validation.valid) {
+      setPaymentError('Enter a valid amount.');
+      return;
+    }
+
     if (pendingPayment.mode === 'detailed') {
-      onMarkDetailedPaid(pendingPayment.debt, rounded);
+      onMarkDetailedPaid(pendingPayment.debt, validation.normalizedAmount);
     } else {
-      onMarkSimplifiedPaid(pendingPayment.debt, rounded);
+      onMarkSimplifiedPaid(pendingPayment.debt, validation.normalizedAmount);
     }
 
     closePaymentConfirm();

@@ -14,9 +14,11 @@ import { AppNavigator } from '@/navigation/AppNavigator';
 import { AppProviders } from '@/state/AppProviders';
 import { MigrationGate } from '@/state/storage/MigrationGate';
 import { PersistenceSync } from '@/state/storage/PersistenceSync';
+import { getStorageInitializationError } from '@/state/storage/mmkv';
 import { getLanguageLocale } from '@/state/settings/languageCatalog';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { AppErrorBoundary } from '@/shared/ui/AppErrorBoundary';
+import { StorageInitErrorScreen } from '@/shared/ui/StorageInitErrorScreen';
 import { setGlobalCurrencyLocalePreference } from '@/shared/utils/currency';
 import { setGlobalNumberFormatPreference } from '@/shared/utils/numberFormat';
 import { RootTabParamList } from '@/navigation/types';
@@ -257,6 +259,20 @@ function AppShell() {
 }
 
 export function App() {
+  const storageInitializationError = getStorageInitializationError();
+
+  if (storageInitializationError) {
+    return (
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <PaperProvider theme={MD3LightTheme}>
+            <StorageInitErrorScreen />
+          </PaperProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>

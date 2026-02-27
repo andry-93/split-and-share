@@ -218,6 +218,7 @@ export function createInitialEventsSeed(): EventItem[] {
             amount: expense.amount,
             paidBy: payer.name,
             paidById: payer.id,
+            splitBetweenIds: [...expense.splitBetweenIds],
             createdAt: expense.createdAt ?? new Date(0).toISOString(),
             updatedAt: expense.updatedAt ?? expense.createdAt ?? new Date(0).toISOString(),
           };

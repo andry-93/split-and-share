@@ -1,13 +1,21 @@
 import { useMemo } from 'react';
 import { ParticipantItem } from '@/features/events/types/events';
 import { PersonItem } from '@/features/people/types/people';
-import { selectEventsState } from '@/state/events/eventsSelectors';
+import {
+  selectDetailedDebts,
+  selectEffectiveRawDebts,
+  selectEventById,
+  selectEventsState,
+  selectRawDebts,
+  selectSimplifiedDebts,
+} from '@/state/events/eventsSelectors';
 import { persistEvents } from '@/state/events/eventsStateInit';
 import { eventsActions } from '@/state/events/eventsSlice';
 import { createEventPayment, PaymentSource } from '@/state/events/paymentsModel';
 import { useAppDispatch, useAppSelector } from '@/state/store';
 import { createEntityId } from '@/shared/utils/id';
 import { normalizeOptionalText } from '@/shared/utils/validation';
+import { validatePaymentAmount } from '@/domain/finance/invariants';
 
 export function useEventsState() {
   return useAppSelector(selectEventsState);
@@ -15,6 +23,7 @@ export function useEventsState() {
 
 export function useEventsActions() {
   const dispatch = useAppDispatch();
+  const eventsState = useAppSelector(selectEventsState);
 
   return useMemo(
     () => ({
@@ -87,7 +96,10 @@ export function useEventsActions() {
           }),
         );
       },
-      addExpense: (payload: { eventId: string; expense: { title: string; amount: number; paidBy: string; paidById?: string } }) => {
+      addExpense: (payload: {
+        eventId: string;
+        expense: { title: string; amount: number; paidBy: string; paidById?: string; splitBetweenIds: string[] };
+      }) => {
         const trimmedTitle = payload.expense.title.trim();
         if (!trimmedTitle) {
           throw new Error('Expense title is required.');
@@ -97,12 +109,20 @@ export function useEventsActions() {
           throw new Error('Amount must be a positive number.');
         }
 
+        const normalizedSplitBetweenIds = Array.from(
+          new Set(payload.expense.splitBetweenIds ?? []),
+        ).filter(Boolean);
+        if (normalizedSplitBetweenIds.length === 0) {
+          throw new Error('Select at least one participant in split.');
+        }
+
         const nextExpense = {
           id: createEntityId('expense'),
           title: trimmedTitle,
           amount: payload.expense.amount,
           paidBy: payload.expense.paidBy,
           paidById: payload.expense.paidById,
+          splitBetweenIds: normalizedSplitBetweenIds,
         };
 
         dispatch(
@@ -115,7 +135,7 @@ export function useEventsActions() {
       updateExpense: (payload: {
         eventId: string;
         expenseId: string;
-        patch: { title: string; amount: number; paidBy: string; paidById?: string };
+        patch: { title: string; amount: number; paidBy: string; paidById?: string; splitBetweenIds: string[] };
       }) => {
         const trimmedTitle = payload.patch.title.trim();
         if (!trimmedTitle) {
@@ -124,6 +144,13 @@ export function useEventsActions() {
 
         if (!Number.isFinite(payload.patch.amount) || payload.patch.amount <= 0) {
           throw new Error('Amount must be a positive number.');
+        }
+
+        const normalizedSplitBetweenIds = Array.from(
+          new Set(payload.patch.splitBetweenIds ?? []),
+        ).filter(Boolean);
+        if (normalizedSplitBetweenIds.length === 0) {
+          throw new Error('Select at least one participant in split.');
         }
 
         dispatch(
@@ -135,6 +162,7 @@ export function useEventsActions() {
               amount: payload.patch.amount,
               paidBy: payload.patch.paidBy,
               paidById: payload.patch.paidById,
+              splitBetweenIds: normalizedSplitBetweenIds,
             },
           }),
         );
@@ -156,6 +184,30 @@ export function useEventsActions() {
         );
       },
       registerPayment: (payload: { eventId: string; fromId: string; toId: string; amount: number; source: PaymentSource }) => {
+        const event = selectEventById(eventsState, payload.eventId);
+        if (!event) {
+          return;
+        }
+
+        const rawDebts = selectRawDebts(event);
+        const currentPayments = eventsState.paymentsByEvent[payload.eventId] ?? [];
+        const effectiveRawDebts = selectEffectiveRawDebts(rawDebts, currentPayments);
+        const sourceDebts =
+          payload.source === 'detailed'
+            ? selectDetailedDebts(effectiveRawDebts)
+            : selectSimplifiedDebts(effectiveRawDebts);
+        const targetDebt = sourceDebts.find(
+          (debt) => debt.from.id === payload.fromId && debt.to.id === payload.toId,
+        );
+        if (!targetDebt) {
+          return;
+        }
+
+        const validation = validatePaymentAmount(payload.amount, targetDebt.amount);
+        if (!validation.valid) {
+          return;
+        }
+
         dispatch(
           eventsActions.registerPayment({
             eventId: payload.eventId,
@@ -164,7 +216,7 @@ export function useEventsActions() {
               eventId: payload.eventId,
               fromId: payload.fromId,
               toId: payload.toId,
-              amount: payload.amount,
+              amount: validation.normalizedAmount,
               source: payload.source,
             }),
           }),
@@ -186,7 +238,7 @@ export function useEventsActions() {
         dispatch(eventsActions.removeExpenses(payload));
       },
     }),
-    [dispatch],
+    [dispatch, eventsState],
   );
 }
 

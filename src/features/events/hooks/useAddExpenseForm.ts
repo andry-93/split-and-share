@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ParticipantItem } from '@/features/events/types/events';
-import { getCurrencyDisplay } from '@/shared/utils/currency';
+import { normalizeCurrencyCode } from '@/shared/utils/currency';
 import { parseMoneyAmount } from '@/shared/utils/money';
 import { sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 
@@ -11,6 +11,7 @@ type UseAddExpenseFormInput = {
   initialAmount?: string;
   initialTitle?: string;
   initialPaidById?: string;
+  initialSplitBetweenIds?: string[];
 };
 
 export function useAddExpenseForm({
@@ -20,12 +21,13 @@ export function useAddExpenseForm({
   initialAmount = '',
   initialTitle = '',
   initialPaidById,
+  initialSplitBetweenIds,
 }: UseAddExpenseFormInput) {
   const [amount, setAmount] = useState(initialAmount);
   const [title, setTitle] = useState(initialTitle);
   const [paidById, setPaidById] = useState(initialPaidById ?? participants[0]?.id ?? '');
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
-    participants.map((participant) => participant.name),
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>(
+    initialSplitBetweenIds?.length ? initialSplitBetweenIds : participants.map((participant) => participant.id),
   );
 
   const participantOptions = useMemo(
@@ -36,13 +38,13 @@ export function useAddExpenseForm({
       })),
     [participants],
   );
-  const participantNames = useMemo(
-    () => participantOptions.map((participant) => participant.name),
+  const participantIds = useMemo(
+    () => participantOptions.map((participant) => participant.id),
     [participantOptions],
   );
-  const selectedSet = useMemo(() => new Set(selectedParticipants), [selectedParticipants]);
-  const selectedCurrency = useMemo(
-    () => getCurrencyDisplay(currency ?? fallbackCurrency),
+  const selectedSet = useMemo(() => new Set(selectedParticipantIds), [selectedParticipantIds]);
+  const selectedCurrencyCode = useMemo(
+    () => normalizeCurrencyCode(currency ?? fallbackCurrency),
     [currency, fallbackCurrency],
   );
   const paidBy = useMemo(
@@ -55,11 +57,14 @@ export function useAddExpenseForm({
     if (!amount.trim() || !title.trim() || !paidById.trim()) {
       return true;
     }
+    if (selectedParticipantIds.length === 0) {
+      return true;
+    }
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       return true;
     }
     return false;
-  }, [amount, paidById, parsedAmount, title]);
+  }, [amount, paidById, parsedAmount, selectedParticipantIds.length, title]);
 
   useEffect(() => {
     setAmount(initialAmount);
@@ -67,26 +72,33 @@ export function useAddExpenseForm({
     if (initialPaidById) {
       setPaidById(initialPaidById);
     }
-  }, [initialAmount, initialPaidById, initialTitle]);
+    setSelectedParticipantIds(
+      initialSplitBetweenIds?.length
+        ? initialSplitBetweenIds
+        : participants.map((participant) => participant.id),
+    );
+  }, [initialAmount, initialPaidById, initialSplitBetweenIds, initialTitle, participants]);
 
   useEffect(() => {
     if (participantOptions.length === 0) {
       setPaidById('');
-      setSelectedParticipants([]);
+      setSelectedParticipantIds([]);
       return;
     }
 
-    const participantIds = new Set(participantOptions.map((participant) => participant.id));
-    setPaidById((prev) => (participantIds.has(prev) ? prev : participantOptions[0].id));
-    setSelectedParticipants((prev) => {
-      const next = prev.filter((name) => participantNames.includes(name));
-      return next.length > 0 ? next : [...participantNames];
+    const participantIdSet = new Set(participantOptions.map((participant) => participant.id));
+    setPaidById((prev) => (participantIdSet.has(prev) ? prev : participantOptions[0].id));
+    setSelectedParticipantIds((prev) => {
+      const next = prev.filter((id) => participantIdSet.has(id));
+      return next.length > 0 ? next : [...participantIds];
     });
-  }, [participantNames, participantOptions]);
+  }, [participantIds, participantOptions]);
 
-  const toggleParticipant = useCallback((name: string) => {
-    setSelectedParticipants((prev) =>
-      prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name],
+  const toggleParticipant = useCallback((participantId: string) => {
+    setSelectedParticipantIds((prev) =>
+      prev.includes(participantId)
+        ? prev.filter((item) => item !== participantId)
+        : [...prev, participantId],
     );
   }, []);
 
@@ -94,18 +106,19 @@ export function useAddExpenseForm({
     amount,
     title,
     paidById,
-    selectedParticipants,
+    selectedParticipantIds,
     selectedSet,
     participantOptions,
-    participantNames,
-    selectedCurrency,
+    participantIds,
+    selectedCurrencyCode,
     paidBy,
     parsedAmount,
     isSaveDisabled,
     setAmount,
     setTitle,
     setPaidById,
-    setSelectedParticipants,
+    setSelectedParticipantIds,
     toggleParticipant,
   };
 }
+

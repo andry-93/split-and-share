@@ -14,6 +14,8 @@ import {
 import { getCurrencyDisplay } from '@/shared/utils/currency';
 import { buildEventReportHtml } from '@/features/events/utils/eventReport';
 import { getLanguageLocale } from '@/state/settings/languageCatalog';
+import { trackProductEvent } from '@/shared/analytics/productAnalytics';
+import { reportError } from '@/shared/monitoring/errorReporting';
 
 const PDF_GENERATION_TIMEOUT_MS = 15000;
 
@@ -58,6 +60,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
 
     setIsGenerating(true);
     setSnackbarMessage('');
+    trackProductEvent('report_preview_opened', { eventId: event.id });
     try {
       const currencyCode = getCurrencyDisplay(event.currency ?? settings.currency);
       const rawDebts = selectRawDebts(event);
@@ -87,6 +90,11 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
       const file = await Promise.race([generationPromise, timeoutPromise]);
       setPdfUri(file.uri);
     } catch (error) {
+      reportError(error, {
+        scope: 'events.report.generate_pdf',
+        data: { eventId: event.id },
+      });
+      trackProductEvent('report_preview_failed', { eventId: event.id });
       setSnackbarMessage(error instanceof Error ? error.message : 'Failed to generate PDF report.');
     } finally {
       setIsGenerating(false);
@@ -103,17 +111,26 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
     if (!pdfUri) {
       return;
     }
-    const available = await Sharing.isAvailableAsync();
-    if (!available) {
-      setSnackbarMessage('Sharing is not available on this device.');
-      return;
+    try {
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        setSnackbarMessage('Sharing is not available on this device.');
+        return;
+      }
+      await Sharing.shareAsync(pdfUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share event report',
+        UTI: 'com.adobe.pdf',
+      });
+      trackProductEvent('report_shared', { eventId });
+    } catch (error) {
+      reportError(error, {
+        scope: 'events.report.share',
+        data: { eventId },
+      });
+      setSnackbarMessage(error instanceof Error ? error.message : 'Failed to share PDF.');
     }
-    await Sharing.shareAsync(pdfUri, {
-      mimeType: 'application/pdf',
-      dialogTitle: 'Share event report',
-      UTI: 'com.adobe.pdf',
-    });
-  }, [pdfUri]);
+  }, [eventId, pdfUri]);
 
   const handleDownload = useCallback(async () => {
     if (!pdfUri) {
@@ -127,14 +144,19 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
           from: pdfUri,
           to: destinationUri,
         });
+        trackProductEvent('report_downloaded', { eventId });
         setSnackbarMessage('PDF saved to app documents.');
       } else {
         setSnackbarMessage('Unable to access local storage.');
       }
     } catch (error) {
+      reportError(error, {
+        scope: 'events.report.download',
+        data: { eventId },
+      });
       setSnackbarMessage(error instanceof Error ? error.message : 'Failed to save PDF.');
     }
-  }, [fileName, pdfUri]);
+  }, [eventId, fileName, pdfUri]);
 
   const handleZoomIn = useCallback(() => {
     setZoomScale((prev) => Math.min(1.8, Number((prev + 0.1).toFixed(2))));

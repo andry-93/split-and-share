@@ -14,6 +14,7 @@ import { PersonListRow } from '@/features/people/components/PersonListRow';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { AppSearchbar } from '@/shared/ui/AppSearchbar';
 import { getContactsPermissionStatus } from '@/features/people/services/contactsPermission';
+import { normalizePhoneForComparison } from '@/shared/utils/people';
 
 function normalizeContact(item: Contacts.Contact): DeviceContact | null {
   const runtimeContact = item as Contacts.Contact & { id?: string; rawId?: string };
@@ -116,7 +117,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
   const isAlreadyAdded = useCallback(
     (contact: DeviceContact) => {
       const normalizedName = contact.name.trim().toLowerCase();
-      const normalizedPhone = contact.phone?.trim().toLowerCase();
+      const normalizedPhone = normalizePhoneForComparison(contact.phone);
       const normalizedEmail = contact.email?.trim().toLowerCase();
 
       if (normalizedPhone && peopleLookup.phoneSet.has(normalizedPhone)) {

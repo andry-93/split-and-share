@@ -84,6 +84,7 @@ export const eventsSlice = createSlice({
               expenses: [
                 {
                   ...expense,
+                  splitBetweenIds: [...expense.splitBetweenIds],
                   createdAt: now,
                   updatedAt: now,
                 },
@@ -110,6 +111,7 @@ export const eventsSlice = createSlice({
                       amount: patch.amount,
                       paidBy: patch.paidBy,
                       paidById: patch.paidById,
+                      splitBetweenIds: [...patch.splitBetweenIds],
                       updatedAt: now,
                     }
                   : expense,
@@ -167,11 +169,33 @@ export const eventsSlice = createSlice({
       const idsSet = new Set(participantIds);
       state.events = state.events.map((event) =>
         event.id === eventId
-          ? {
-              ...event,
-              updatedAt: now,
-              participants: event.participants.filter((participant) => !idsSet.has(participant.id)),
-            }
+          ? (() => {
+              const remainingParticipants = event.participants.filter(
+                (participant) => !idsSet.has(participant.id),
+              );
+              const remainingParticipantIds = new Set(
+                remainingParticipants.map((participant) => participant.id),
+              );
+
+              return {
+                ...event,
+                updatedAt: now,
+                participants: remainingParticipants,
+                expenses: event.expenses.map((expense) => {
+                  const splitBetweenIds = expense.splitBetweenIds.filter((participantId) =>
+                    remainingParticipantIds.has(participantId),
+                  );
+
+                  return {
+                    ...expense,
+                    splitBetweenIds:
+                      splitBetweenIds.length > 0
+                        ? splitBetweenIds
+                        : remainingParticipants.map((participant) => participant.id),
+                  };
+                }),
+              };
+            })()
           : event,
       );
       state.paymentsByEvent[eventId] = [];
@@ -192,17 +216,40 @@ export const eventsSlice = createSlice({
         ),
       );
 
-      state.events = state.events.map((event) => ({
-        ...event,
-        updatedAt: now,
-        participants: event.participants.filter((participant) => !idsSet.has(participant.id)),
-        expenses: event.expenses.filter((expense) => {
-          if (expense.paidById && idsSet.has(expense.paidById)) {
-            return false;
-          }
-          return !deletedNames.has(expense.paidBy.trim().toLowerCase());
-        }),
-      }));
+      state.events = state.events.map((event) => {
+        const remainingParticipants = event.participants.filter(
+          (participant) => !idsSet.has(participant.id),
+        );
+        const remainingParticipantIds = new Set(
+          remainingParticipants.map((participant) => participant.id),
+        );
+
+        return {
+          ...event,
+          updatedAt: now,
+          participants: remainingParticipants,
+          expenses: event.expenses
+            .filter((expense) => {
+              if (expense.paidById && idsSet.has(expense.paidById)) {
+                return false;
+              }
+              return !deletedNames.has(expense.paidBy.trim().toLowerCase());
+            })
+            .map((expense) => {
+              const splitBetweenIds = expense.splitBetweenIds.filter((participantId) =>
+                remainingParticipantIds.has(participantId),
+              );
+
+              return {
+                ...expense,
+                splitBetweenIds:
+                  splitBetweenIds.length > 0
+                    ? splitBetweenIds
+                    : remainingParticipants.map((participant) => participant.id),
+              };
+            }),
+        };
+      });
 
       state.paymentsByEvent = Object.fromEntries(
         Object.entries(state.paymentsByEvent).map(([eventId, payments]) => [

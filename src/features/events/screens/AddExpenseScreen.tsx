@@ -55,8 +55,8 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     paidById,
     selectedSet,
     participantOptions,
-    participantNames,
-    selectedCurrency,
+    selectedParticipantIds,
+    selectedCurrencyCode,
     paidBy,
     parsedAmount,
     isSaveDisabled,
@@ -71,6 +71,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     initialAmount: editingExpense ? formatMoneyInputValue(editingExpense.amount) : '',
     initialTitle: editingExpense?.title ?? '',
     initialPaidById: editingExpense?.paidById,
+    initialSplitBetweenIds: editingExpense?.splitBetweenIds,
   });
 
   const snapPoints = useMemo(() => ['40%'], []);
@@ -99,10 +100,10 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   );
 
   const handleSave = useCallback(() => {
-      if (!paidBy.trim()) {
-        setErrorMessage('Select who paid this expense.');
-        return;
-      }
+    if (!paidBy.trim()) {
+      setErrorMessage('Select who paid this expense.');
+      return;
+    }
 
     try {
       if (editingExpense) {
@@ -117,6 +118,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
             amount: parsedAmount,
             paidBy,
             paidById,
+            splitBetweenIds: selectedParticipantIds,
           },
         });
       } else {
@@ -130,6 +132,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
             amount: parsedAmount,
             paidBy,
             paidById,
+            splitBetweenIds: selectedParticipantIds,
           },
         });
       }
@@ -138,7 +141,19 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
       const message = error instanceof Error ? error.message : `Unable to ${editingExpense ? 'update' : 'save'} expense.`;
       setErrorMessage(message);
     }
-  }, [addExpense, editingExpense, eventId, navigation, paidBy, paidById, parsedAmount, title, updateExpense]);
+  }, [
+    addExpense,
+    editingExpense,
+    eventId,
+    navigation,
+    paidBy,
+    paidById,
+    parsedAmount,
+    selectedParticipantIds,
+    setErrorMessage,
+    title,
+    updateExpense,
+  ]);
 
   const handleDelete = useCallback(() => {
     if (!editingExpense || !eventId) {
@@ -167,7 +182,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AmountField currencyCode={selectedCurrency} value={amount} onChangeText={setAmount} />
+          <AmountField currencyCode={selectedCurrencyCode} value={amount} onChangeText={setAmount} />
 
           <TitleField value={title} onChangeText={setTitle} />
 
@@ -185,7 +200,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
               Split between
             </Text>
             <SplitBetweenField
-              participants={participantNames}
+              participants={participantOptions}
               selectedSet={selectedSet}
               onToggle={toggleParticipant}
             />

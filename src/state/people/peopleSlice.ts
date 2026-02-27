@@ -6,6 +6,7 @@ import {
   RemoveManyPayload,
   UpdatePersonPayload,
 } from '@/state/people/peopleActionTypes';
+import { normalizePhoneForComparison } from '@/shared/utils/people';
 
 export const peopleSlice = createSlice({
   name: 'people',
@@ -40,11 +41,11 @@ export const peopleSlice = createSlice({
       const existing = new Set(
         state.people.map(
           (person) =>
-            `${person.name.toLowerCase()}|${person.phone?.toLowerCase() ?? ''}|${person.email?.toLowerCase() ?? ''}`,
+            `${person.name.toLowerCase()}|${normalizePhoneForComparison(person.phone)}|${person.email?.toLowerCase() ?? ''}`,
         ),
       );
       const nextPeople = action.payload.people.filter((person) => {
-        const key = `${person.name.toLowerCase()}|${person.phone?.toLowerCase() ?? ''}|${person.email?.toLowerCase() ?? ''}`;
+        const key = `${person.name.toLowerCase()}|${normalizePhoneForComparison(person.phone)}|${person.email?.toLowerCase() ?? ''}`;
         if (existing.has(key)) {
           return false;
         }

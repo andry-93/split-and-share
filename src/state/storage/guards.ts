@@ -95,6 +95,12 @@ function normalizeEventItem(value: EventItem): EventItem {
     (value as EventItem & { updatedAt?: unknown }).updatedAt,
     createdAt,
   );
+  const participantIdsSet = new Set(
+    value.participants
+      .map((participant) => participant.id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0),
+  );
+  const allParticipantIds = Array.from(participantIdsSet);
 
   return {
     ...value,
@@ -110,9 +116,24 @@ function normalizeEventItem(value: EventItem): EventItem {
         (expense as EventItem['expenses'][number] & { updatedAt?: unknown }).updatedAt,
         expenseCreatedAt,
       );
+      const rawSplitBetween = (expense as EventItem['expenses'][number] & { splitBetweenIds?: unknown })
+        .splitBetweenIds;
+      const normalizedSplitBetween = Array.isArray(rawSplitBetween)
+        ? Array.from(
+            new Set(
+              rawSplitBetween.filter(
+                (id): id is string => typeof id === 'string' && participantIdsSet.has(id),
+              ),
+            ),
+          )
+        : [];
 
       return {
         ...expense,
+        splitBetweenIds:
+          normalizedSplitBetween.length > 0
+            ? normalizedSplitBetween
+            : allParticipantIds,
         createdAt: expenseCreatedAt,
         updatedAt: expenseUpdatedAt,
       };
@@ -212,7 +233,7 @@ export function parsePeopleState(value: unknown): PeopleState {
   if (Array.isArray(value)) {
     const people = value.map(toNormalizedPerson).filter((person): person is PersonItem => Boolean(person));
     return {
-      people: people.length > 0 ? people : fallback.people,
+      people,
     };
   }
 
@@ -224,7 +245,7 @@ export function parsePeopleState(value: unknown): PeopleState {
     .map(toNormalizedPerson)
     .filter((person): person is PersonItem => Boolean(person));
   return {
-    people: people.length > 0 ? people : fallback.people,
+    people,
   };
 }
 
@@ -237,7 +258,7 @@ export function parseEventsState(value: unknown): EventsState {
   const events = value.events.filter(isEventItem).map(normalizeEventItem);
   const groups = Array.isArray(value.groups)
     ? value.groups.filter(isEventGroupItem).map(normalizeEventGroupItem)
-    : fallback.groups;
+    : [];
   const paymentsByEventRaw = isRecord(value.paymentsByEvent) ? value.paymentsByEvent : {};
 
   const paymentsByEvent = Object.entries(paymentsByEventRaw).reduce<EventsState['paymentsByEvent']>(
@@ -253,7 +274,7 @@ export function parseEventsState(value: unknown): EventsState {
   );
 
   return {
-    events: events.length > 0 ? events : fallback.events,
+    events,
     groups,
     paymentsByEvent,
   };

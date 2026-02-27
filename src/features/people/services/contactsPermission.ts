@@ -1,4 +1,5 @@
 import { Linking } from 'react-native';
+import { reportError } from '@/shared/monitoring/errorReporting';
 
 type PermissionStatus = 'granted' | 'denied' | 'undetermined' | 'unavailable';
 
@@ -30,7 +31,10 @@ export async function getContactsPermissionStatus(): Promise<PermissionStatus> {
   try {
     const result = await contacts.getPermissionsAsync();
     return result.granted ? 'granted' : result.status;
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      scope: 'people.contacts.permission_status',
+    });
     return 'unavailable';
   }
 }
@@ -61,7 +65,10 @@ export async function requestContactsPermission(): Promise<PermissionStatus> {
       await Linking.openSettings();
     }
     return next.status;
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      scope: 'people.contacts.permission_request',
+    });
     return 'unavailable';
   }
 }

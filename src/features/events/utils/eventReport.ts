@@ -1,7 +1,7 @@
-import { EventItem } from '@/features/events/types/events';
-import { formatCurrencyAmount } from '@/shared/utils/money';
 import { formatDateTimeLocalized } from '@/shared/utils/date';
 import { PaymentEntry, RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
+import { EventItem } from '@/features/events/types/events';
+import { formatMoneyFromMinor, sumAmountsToMinor, toMinorUnits } from '@/domain/finance/minorUnits';
 
 type BuildEventReportHtmlInput = {
   appName: string;
@@ -33,7 +33,7 @@ export function buildEventReportHtml({
   simplifiedDebts,
   payments,
 }: BuildEventReportHtmlInput) {
-  const totalAmount = event.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalAmountMinor = sumAmountsToMinor(event.expenses.map((expense) => expense.amount));
   const participantById = new Map(event.participants.map((participant) => [participant.id, participant.name]));
 
   const expensesRows =
@@ -44,7 +44,7 @@ export function buildEventReportHtml({
             (expense) => `
             <tr>
               <td>${escapeHtml(expense.title)}</td>
-              <td>${formatCurrencyAmount(currencyCode, expense.amount)}</td>
+              <td>${formatMoneyFromMinor(currencyCode, toMinorUnits(expense.amount), locale)}</td>
               <td>${escapeHtml(expense.paidBy)}</td>
               <td>${formatDateTimeLocalized(expense.updatedAt, locale)}</td>
             </tr>
@@ -60,7 +60,7 @@ export function buildEventReportHtml({
             (debt) => `
             <tr>
               <td>${escapeHtml(debt.from.name)} → ${escapeHtml(debt.to.name)}</td>
-              <td>${formatCurrencyAmount(currencyCode, debt.amount)}</td>
+              <td>${formatMoneyFromMinor(currencyCode, toMinorUnits(debt.amount), locale)}</td>
               <td>Detailed</td>
             </tr>
           `,
@@ -75,16 +75,13 @@ export function buildEventReportHtml({
             (debt) => `
             <tr>
               <td>${escapeHtml(debt.from.name)} → ${escapeHtml(debt.to.name)}</td>
-              <td>${formatCurrencyAmount(currencyCode, debt.amount)}</td>
+              <td>${formatMoneyFromMinor(currencyCode, toMinorUnits(debt.amount), locale)}</td>
             </tr>
           `,
           )
           .join('');
 
-  const selectedDebtsRows =
-    debtsMode === 'detailed'
-      ? detailedRows
-      : simplifiedRows;
+  const selectedDebtsRows = debtsMode === 'detailed' ? detailedRows : simplifiedRows;
   const selectedDebtsHeader =
     debtsMode === 'detailed'
       ? `
@@ -110,7 +107,7 @@ export function buildEventReportHtml({
             (payment) => `
             <tr>
               <td>${escapeHtml(participantById.get(payment.fromId) ?? payment.fromId)} → ${escapeHtml(participantById.get(payment.toId) ?? payment.toId)}</td>
-              <td>${formatCurrencyAmount(currencyCode, payment.amount)}</td>
+              <td>${formatMoneyFromMinor(currencyCode, toMinorUnits(payment.amount), locale)}</td>
               <td>${escapeHtml(payment.source)}</td>
               <td>${formatDateTimeLocalized(payment.createdAt, locale)}</td>
             </tr>
@@ -164,7 +161,7 @@ export function buildEventReportHtml({
       </div>
       <div class="card">
         <div class="label">Total Expenses</div>
-        <div class="value">${formatCurrencyAmount(currencyCode, totalAmount)}</div>
+        <div class="value">${formatMoneyFromMinor(currencyCode, totalAmountMinor, locale)}</div>
       </div>
     </div>
 

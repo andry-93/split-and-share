@@ -25,6 +25,7 @@ export type ExpenseItem = {
   amount: number;
   paidBy: string;
   paidById?: string;
+  splitBetweenIds: string[];
   createdAt: string;
   updatedAt: string;
 };

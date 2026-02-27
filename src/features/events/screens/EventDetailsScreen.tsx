@@ -101,15 +101,20 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     paidDetailedCount,
     paidSimplifiedCount,
     participantBalanceMap,
-    totalAmountDisplay,
-    participantsCount,
-    expensesCount,
+    eventStats,
+    eventTotalAmountDisplay,
+    outstandingTotalAmountDisplay,
   } = useEventDetailsModel({
     event,
     eventsState: { events, groups, paymentsByEvent },
     settingsCurrency: settings.currency,
   });
   const debtsMode = settings.debtsViewMode;
+  const outstandingTransfersCount = useMemo(
+    () => (debtsMode === 'detailed' ? detailedDebts.length : simplifiedDebts.length),
+    [debtsMode, detailedDebts.length, simplifiedDebts.length],
+  );
+  const outstandingModeLabel = debtsMode === 'detailed' ? 'Detailed' : 'Simplified';
 
   const handleMarkSimplifiedPaid = useCallback(
     (debt: SimplifiedDebt, amount: number) => {
@@ -151,6 +156,9 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const handleAddPeople = useCallback(() => {
     navigation.navigate('AddPeopleToEvent', { eventId: event.id });
   }, [event.id, navigation]);
+  const handleOpenDebtsTab = useCallback(() => {
+    setActiveTab('debts');
+  }, []);
   const shouldShowFab = useMemo(() => {
     if (activeTab === 'expenses') {
       return !expensesToolbarState?.visible;
@@ -267,9 +275,15 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
         <View style={styles.contentArea}>
           <View style={styles.topSection}>
             <Summary
-              totalAmountDisplay={totalAmountDisplay}
-              participantsCount={participantsCount}
-              expensesCount={expensesCount}
+              totalAmountDisplay={eventTotalAmountDisplay}
+              participantsCount={eventStats.participantsCount}
+              expensesCount={eventStats.expensesCount}
+              outstanding={{
+                modeLabel: outstandingModeLabel,
+                amountDisplay: outstandingTotalAmountDisplay,
+                transfersCount: outstandingTransfersCount,
+                onPress: handleOpenDebtsTab,
+              }}
             />
             <TopTabs activeTab={activeTab} onTabChange={setActiveTab} />
           </View>

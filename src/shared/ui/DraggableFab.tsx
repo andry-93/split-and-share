@@ -1,5 +1,11 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, PanResponder, StyleSheet, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AccessibilityInfo,
+  Animated,
+  PanResponder,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { FAB } from 'react-native-paper';
 
@@ -26,6 +32,7 @@ export function DraggableFab({
 }: DraggableFabProps) {
   const { width, height } = useWindowDimensions();
   const tabBarHeight = useBottomTabBarHeight();
+  const [isScreenReaderEnabled, setScreenReaderEnabled] = useState(false);
   const pan = useRef(new Animated.ValueXY()).current;
   const currentX = useRef(0);
   const currentY = useRef(0);
@@ -33,6 +40,29 @@ export function DraggableFab({
   const startY = useRef(0);
   const didInit = useRef(false);
   const movedBeyondTapSlop = useRef(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    AccessibilityInfo.isScreenReaderEnabled()
+      .then((enabled) => {
+        if (isMounted) {
+          setScreenReaderEnabled(enabled);
+        }
+      })
+      .catch(() => {
+        // Keep draggable behavior if accessibility state lookup fails.
+      });
+
+    const subscription = AccessibilityInfo.addEventListener('screenReaderChanged', (enabled) => {
+      setScreenReaderEnabled(enabled);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, []);
 
   const clampPosition = useMemo(
     () => (x: number, y: number) => {
@@ -125,6 +155,30 @@ export function DraggableFab({
     [clampPosition, getSnapX, onPress, pan],
   );
 
+  if (isScreenReaderEnabled) {
+    return (
+      <Animated.View
+        style={[
+          styles.staticContainer,
+          {
+            opacity: visible ? 1 : 0,
+            bottom: tabBarHeight + EDGE_PADDING,
+          },
+        ]}
+        pointerEvents={visible ? 'auto' : 'none'}
+      >
+        <FAB
+          icon={icon}
+          color={color}
+          style={[styles.fab, styles.fabNoShadow, { backgroundColor }]}
+          onPress={onPress}
+          accessibilityLabel="Create"
+          accessibilityHint="Creates a new item"
+        />
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View
       style={[
@@ -137,7 +191,14 @@ export function DraggableFab({
       pointerEvents={visible ? 'auto' : 'none'}
       {...panResponder.panHandlers}
     >
-      <FAB icon={icon} color={color} style={[styles.fab, styles.fabNoShadow, { backgroundColor }]} onPress={undefined} />
+      <FAB
+        icon={icon}
+        color={color}
+        style={[styles.fab, styles.fabNoShadow, { backgroundColor }]}
+        onPress={undefined}
+        accessibilityLabel="Create"
+        accessibilityHint="Creates a new item"
+      />
     </Animated.View>
   );
 }
@@ -147,6 +208,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
+    zIndex: 20,
+  },
+  staticContainer: {
+    position: 'absolute',
+    right: EDGE_PADDING,
     zIndex: 20,
   },
   fab: {

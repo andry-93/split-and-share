@@ -85,6 +85,9 @@ export function EventReportPreviewScreen({ navigation, route }: EventReportPrevi
               style={[styles.previewWebView, { backgroundColor: '#FFFFFF' }]}
               javaScriptEnabled={false}
               domStorageEnabled={false}
+              allowFileAccess={false}
+              allowFileAccessFromFileURLs={false}
+              allowUniversalAccessFromFileURLs={false}
               showsVerticalScrollIndicator={false}
             />
             <View

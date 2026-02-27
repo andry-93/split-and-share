@@ -1,23 +1,7 @@
 import { getCurrencyDisplay } from '@/shared/utils/currency';
 import { formatDecimalAmount, parseLocalizedMoneyAmount } from '@/shared/utils/numberFormat';
-
-const MINOR_UNITS_SCALE = 100;
-
-export function toMinorUnits(amount: number): number {
-  if (!Number.isFinite(amount)) {
-    return 0;
-  }
-
-  return Math.round(amount * MINOR_UNITS_SCALE);
-}
-
-export function fromMinorUnits(amountInMinor: number): number {
-  if (!Number.isFinite(amountInMinor)) {
-    return 0;
-  }
-
-  return amountInMinor / MINOR_UNITS_SCALE;
-}
+import { fromMinorUnits, toMinorUnits } from '@/domain/finance/minorUnits';
+export { fromMinorUnits, toMinorUnits } from '@/domain/finance/minorUnits';
 
 export function roundMoney(amount: number): number {
   return fromMinorUnits(toMinorUnits(amount));
@@ -33,4 +17,3 @@ export function formatCurrencyAmount(currency: string, amount: number, locale?: 
   const rounded = roundMoney(amount);
   return `${normalized} ${formatDecimalAmount(rounded, locale)}`;
 }
-

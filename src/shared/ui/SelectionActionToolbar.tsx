@@ -30,12 +30,20 @@ export const SelectionActionToolbar = memo(function SelectionActionToolbar({
 
   return (
     <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.background }}>
-      <Appbar.Action icon="close" onPress={onClose} />
+      <Appbar.Action icon="close" onPress={onClose} accessibilityLabel="Cancel selection mode" />
       <View style={styles.selectAllWrap}>
-        <Checkbox status={checkboxStatus} onPress={onToggleSelectAll} />
+        <Checkbox
+          status={checkboxStatus}
+          onPress={onToggleSelectAll}
+        />
         <Text variant="titleSmall">{title}</Text>
       </View>
-      <Appbar.Action icon="delete-outline" onPress={onDelete} disabled={selectedCount === 0} />
+      <Appbar.Action
+        icon="delete-outline"
+        onPress={onDelete}
+        disabled={selectedCount === 0}
+        accessibilityLabel="Delete selected items"
+      />
     </Appbar.Header>
   );
 });

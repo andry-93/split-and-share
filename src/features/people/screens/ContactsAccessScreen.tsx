@@ -9,6 +9,7 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 import { useMessageState } from '@/shared/hooks/useMessageState';
 import { AppMessageSnackbar } from '@/shared/ui/AppMessageSnackbar';
 import { getContactsPermissionStatus, requestContactsPermission } from '@/features/people/services/contactsPermission';
+import { trackProductEvent } from '@/shared/analytics/productAnalytics';
 
 type ContactsAccessScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsAccess'>;
 
@@ -58,16 +59,20 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
   }, [checkPermissionAndNavigate]);
 
   const handleContinue = useCallback(async () => {
+    trackProductEvent('contacts_permission_requested');
     const status = await requestContactsPermission();
     if (status === 'granted') {
+      trackProductEvent('contacts_permission_result', { status: 'granted' });
       navigateToPicker();
       return;
     }
 
+    trackProductEvent('contacts_permission_result', { status });
+
     if (status === 'unavailable') {
       setErrorMessage('Contacts permission is unavailable on this device.');
     }
-  }, [navigateToPicker]);
+  }, [navigateToPicker, setErrorMessage]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>

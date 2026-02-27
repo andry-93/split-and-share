@@ -44,3 +44,13 @@ export function getPreferredPersonContact(person: PersonContactLike): string | u
 
   return undefined;
 }
+
+export function normalizePhoneForComparison(phone?: string | null): string {
+  const raw = `${phone ?? ''}`.trim();
+  if (!raw) {
+    return '';
+  }
+
+  // Canonical compare key: digits only.
+  return raw.replace(/\D/g, '');
+}

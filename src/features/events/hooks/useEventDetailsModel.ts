@@ -33,21 +33,29 @@ export function useEventDetailsModel({ event, eventsState, settingsCurrency }: U
     [payments, rawDebts, selectors],
   );
 
-  const totalAmount = useMemo(
+  const outstandingTotalAmount = useMemo(
     () => selectors.selectOutstandingTotalMemo(effectiveRawDebts),
     [effectiveRawDebts, selectors],
   );
-  const participantsCount = useMemo(
+  const outstandingParticipantsCount = useMemo(
     () => selectors.selectOutstandingPeopleCountMemo(effectiveRawDebts),
     [effectiveRawDebts, selectors],
   );
-  const expensesCount = useMemo(
+  const outstandingTransfersCount = useMemo(
     () => selectors.selectOutstandingTransfersCountMemo(effectiveRawDebts),
     [effectiveRawDebts, selectors],
   );
-  const totalAmountDisplay = useMemo(
-    () => formatCurrencyAmount(currencyCode, totalAmount),
-    [currencyCode, totalAmount],
+  const outstandingTotalAmountDisplay = useMemo(
+    () => formatCurrencyAmount(currencyCode, outstandingTotalAmount),
+    [currencyCode, outstandingTotalAmount],
+  );
+  const eventStats = useMemo(
+    () => selectors.selectEventStatsMemo(event),
+    [event, selectors],
+  );
+  const eventTotalAmountDisplay = useMemo(
+    () => formatCurrencyAmount(currencyCode, eventStats.totalAmount),
+    [currencyCode, eventStats.totalAmount],
   );
 
   const detailedDebts = useMemo(
@@ -80,10 +88,12 @@ export function useEventDetailsModel({ event, eventsState, settingsCurrency }: U
     rawDebts,
     payments,
     effectiveRawDebts,
-    totalAmount,
-    totalAmountDisplay,
-    participantsCount,
-    expensesCount,
+    eventStats,
+    eventTotalAmountDisplay,
+    outstandingTotalAmount,
+    outstandingTotalAmountDisplay,
+    outstandingParticipantsCount,
+    outstandingTransfersCount,
     detailedDebts,
     simplifiedDebts,
     baseDetailedCount,

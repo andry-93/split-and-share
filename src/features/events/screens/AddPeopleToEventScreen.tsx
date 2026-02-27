@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Checkbox, Text, useTheme } from 'react-native-paper';
+import { Button, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { usePeopleListModel } from '@/features/people/hooks/usePeopleListModel';
@@ -151,7 +151,10 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
       metaText={alreadyAdded ? 'Already added' : undefined}
       muted={alreadyAdded}
       isCurrentUser={isCurrentUserPerson(person)}
-      rightSlot={<Checkbox status={selected ? 'checked' : 'unchecked'} disabled={alreadyAdded} onPress={handleToggle} />}
+      selectable
+      selected={selected}
+      selectionDisabled={alreadyAdded}
+      onPress={handleToggle}
     />
   );
 });
