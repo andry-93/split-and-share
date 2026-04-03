@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
+import i18n from '@/shared/i18n';
 
 type GroupFieldProps = {
   value: string;
@@ -15,7 +16,7 @@ export const GroupField = memo(function GroupField({ value, onPress }: GroupFiel
   return (
     <>
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Group
+        {i18n.t('common.group')}
       </Text>
       <OutlinedFieldContainer style={styles.selectFieldContainer}>
         <Pressable onPress={onPress} style={styles.selectField}>

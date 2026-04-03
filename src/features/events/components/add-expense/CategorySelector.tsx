@@ -2,12 +2,13 @@ import React, { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
 import { addExpenseStyles as styles } from '@/features/events/components/add-expense/styles';
+import i18n from '@/shared/i18n';
 
 export const categoryOptions = [
-  { id: 'food', label: 'Food', icon: 'cart-outline' },
-  { id: 'transport', label: 'Transport', icon: 'car-outline' },
-  { id: 'lodging', label: 'Lodging', icon: 'home-outline' },
-  { id: 'other', label: 'Other', icon: 'dots-horizontal' },
+  { id: 'food', labelKey: 'events.categories.food', icon: 'cart-outline' },
+  { id: 'transport', labelKey: 'events.categories.transport', icon: 'car-outline' },
+  { id: 'lodging', labelKey: 'events.categories.lodging', icon: 'home-outline' },
+  { id: 'other', labelKey: 'events.categories.other', icon: 'dots-horizontal' },
 ] as const;
 
 export type CategoryId = (typeof categoryOptions)[number]['id'];
@@ -26,7 +27,7 @@ export const CategorySelector = memo(function CategorySelector({
   return (
     <>
       <Text variant="labelLarge" style={styles.sectionLabel}>
-        Category
+        {i18n.t('events.category')}
       </Text>
       <View style={styles.categoryRow}>
         {categoryOptions.map((item) => (
@@ -51,7 +52,7 @@ export const CategorySelector = memo(function CategorySelector({
                 color: value === item.id ? theme.colors.onPrimary : theme.colors.onSurfaceVariant,
               }}
             >
-              {item.label}
+              {i18n.t(item.labelKey)}
             </Text>
           </Pressable>
         ))}

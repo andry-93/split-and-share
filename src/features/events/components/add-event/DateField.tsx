@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
+import i18n from '@/shared/i18n';
 
 type DateFieldProps = {
   value: string;
@@ -16,7 +17,7 @@ export const DateField = memo(function DateField({ value, hasValue, onPress }: D
   return (
     <>
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Date
+        {i18n.t('common.date')}
       </Text>
       <OutlinedFieldContainer style={styles.selectFieldContainer}>
         <Pressable onPress={onPress} style={styles.selectField}>

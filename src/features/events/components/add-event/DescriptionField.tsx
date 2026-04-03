@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Text, TextInput } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
+import i18n from '@/shared/i18n';
 
 type DescriptionFieldProps = {
   value: string;
@@ -15,7 +16,7 @@ export const DescriptionField = memo(function DescriptionField({
   return (
     <>
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Description
+        {i18n.t('common.description')}
       </Text>
       <OutlinedFieldContainer style={styles.multilineContainer}>
         <TextInput
@@ -23,7 +24,7 @@ export const DescriptionField = memo(function DescriptionField({
           onChangeText={onChangeText}
           mode="flat"
           multiline
-          placeholder="Add details about the event (optional)"
+          placeholder={i18n.t('events.eventDescriptionPlaceholder')}
           style={[styles.multilineField, styles.transparentInput]}
           contentStyle={styles.inputContent}
           underlineStyle={styles.hiddenUnderline}

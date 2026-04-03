@@ -1,6 +1,7 @@
 import React, { Fragment, memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Card, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { getListPressedBackground } from '@/shared/ui/listPressState';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 
@@ -27,11 +28,12 @@ export const Summary = memo(function Summary({
   expensesCount,
   outstanding,
 }: SummaryProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const metrics = [
-    { key: 'total', label: 'Total', value: totalAmountDisplay },
-    { key: 'people', label: 'People', value: `${participantsCount}` },
-    { key: 'expenses', label: 'Expenses', value: `${expensesCount}` },
+    { key: 'total', label: t('events.totals.total'), value: totalAmountDisplay },
+    { key: 'people', label: t('events.totals.people'), value: `${participantsCount}` },
+    { key: 'expenses', label: t('events.totals.expenses'), value: `${expensesCount}` },
   ] as const;
 
   return (
@@ -66,7 +68,7 @@ export const Summary = memo(function Summary({
         <Pressable
           onPress={outstanding.onPress}
           accessibilityRole={outstanding.onPress ? 'button' : undefined}
-          accessibilityLabel={outstanding.onPress ? 'Open debts' : undefined}
+          accessibilityLabel={outstanding.onPress ? t('events.totals.openDebtsAction') : undefined}
           style={({ pressed }) => [
             styles.summaryOutstandingRow,
             { borderTopColor: theme.colors.outlineVariant },
@@ -74,9 +76,9 @@ export const Summary = memo(function Summary({
           ]}
         >
           <View style={styles.summaryOutstandingMeta}>
-            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              Open balance
-            </Text>
+              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {t('events.totals.openBalance')}
+              </Text>
             <View style={[styles.summaryModeChip, { backgroundColor: theme.colors.surfaceVariant }]}>
               <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
                 {outstanding.modeLabel}
@@ -90,12 +92,12 @@ export const Summary = memo(function Summary({
                   {outstanding.amountDisplay}
                 </Text>
                 <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {outstanding.transfersCount} transfers
+                  {t('events.totals.transfers', { count: outstanding.transfersCount })}
                 </Text>
               </>
             ) : (
               <Text variant="titleSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                All settled
+                {t('events.totals.settled')}
               </Text>
             )}
           </View>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
+import i18n from '@/shared/i18n';
 import { reportError } from '@/shared/monitoring/errorReporting';
 
 type AppErrorBoundaryProps = {
@@ -37,13 +38,13 @@ export class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, App
       return (
         <View style={styles.container}>
           <Text variant="titleMedium" style={styles.title}>
-            Something went wrong
+            {i18n.t('app.unhandledErrorTitle')}
           </Text>
           <Text variant="bodyMedium" style={styles.message}>
-            Please try again. If the issue persists, restart the app.
+            {i18n.t('app.unhandledErrorDescription')}
           </Text>
           <Button mode="contained" onPress={this.handleRetry}>
-            Retry
+            {i18n.t('common.retry')}
           </Button>
         </View>
       );

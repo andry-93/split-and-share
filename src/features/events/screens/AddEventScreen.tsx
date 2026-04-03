@@ -4,6 +4,7 @@ import { useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useTranslation } from 'react-i18next';
 import { EventsStackParamList } from '@/navigation/types';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
@@ -36,6 +37,7 @@ import { formatDateLocalized, getDateInputPlaceholder } from '@/shared/utils/dat
 type AddEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddEvent'>;
 
 export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
@@ -104,16 +106,16 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
   }, [setEventCurrency, setSelectedDate, targetEvent]);
   const snapPoints = useMemo(() => ['40%'], []);
   const groupOptions = useMemo(
-    () => [{ value: '__none__', label: 'No group' }, ...groups.map((group) => ({ value: group.id, label: group.name }))],
-    [groups],
+    () => [{ value: '__none__', label: t('common.noGroup') }, ...groups.map((group) => ({ value: group.id, label: group.name }))],
+    [groups, t],
   );
   const selectedGroupValue = eventGroupId ?? '__none__';
   const selectedGroupLabel = useMemo(() => {
     if (!eventGroupId) {
-      return 'No group';
+      return t('common.noGroup');
     }
-    return groups.find((group) => group.id === eventGroupId)?.name ?? 'No group';
-  }, [eventGroupId, groups]);
+    return groups.find((group) => group.id === eventGroupId)?.name ?? t('common.noGroup');
+  }, [eventGroupId, groups, t]);
 
   const handleBack = useCallback(() => {
     navigation.goBack();
@@ -179,10 +181,10 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
       }
       navigation.goBack();
     } catch (error) {
-      const message = error instanceof Error ? error.message : `Unable to ${targetEvent ? 'update' : 'create'} event.`;
+      const message = error instanceof Error ? error.message : targetEvent ? t('events.updateEventAgain') : t('events.createEventAgain');
       setErrorMessage(message);
     }
-  }, [createEvent, description, eventCurrency, eventGroupId, name, navigation, selectedDate, targetEvent, updateEvent]);
+  }, [createEvent, description, eventCurrency, eventGroupId, name, navigation, selectedDate, t, targetEvent, updateEvent]);
 
   const handleDelete = useCallback(() => {
     if (!targetEvent) {
@@ -195,7 +197,7 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title={isEditMode ? 'Edit Event' : 'Add Event'} onBackPress={handleBack} />
+      <AppHeader title={isEditMode ? t('events.editEvent') : t('events.addEvent')} onBackPress={handleBack} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -234,8 +236,8 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
         <BottomActionBar
           bottomInset={insets.bottom}
           onPress={handleSave}
-          label={isEditMode ? 'Save changes' : 'Create event'}
-          secondaryLabel={isEditMode ? 'Delete' : undefined}
+          label={isEditMode ? t('common.saveChanges') : t('events.createEvent')}
+          secondaryLabel={isEditMode ? t('common.delete') : undefined}
           onSecondaryPress={isEditMode ? openDeleteConfirm : undefined}
           disabled={name.trim().length === 0}
         />
@@ -249,15 +251,15 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
 
       <AppDeleteConfirm
         visible={isDeleteConfirmVisible}
-        title="Delete event"
-        message="This event and all related expenses, debts, and payments will be deleted."
+        title={t('events.deleteEvent.title')}
+        message={t('events.deleteEvent.message')}
         onDismiss={closeDeleteConfirm}
         onConfirm={handleDelete}
       />
 
       <AppSingleSelectBottomSheet
         ref={currencySheetRef}
-        title="Currency"
+        title={t('common.currency')}
         options={currencySheetOptions}
         selectedValue={eventCurrency}
         onSelect={handleSelectCurrency}
@@ -265,7 +267,7 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
       />
       <AppSingleSelectBottomSheet
         ref={groupSheetRef}
-        title="Group"
+        title={t('common.group')}
         options={groupOptions}
         selectedValue={selectedGroupValue}
         onSelect={handleSelectGroup}

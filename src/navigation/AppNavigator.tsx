@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { RootTabParamList } from '@/navigation/types';
 import { EventsStackNavigator } from '@/navigation/stacks/EventsStackNavigator';
 import { PeopleStackNavigator } from '@/navigation/stacks/PeopleStackNavigator';
@@ -37,6 +38,7 @@ function getTabBarDisplay(route: { name?: string } | undefined) {
 
 export function AppNavigator() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const baseTabBarStyle = {
     backgroundColor: theme.colors.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -72,7 +74,7 @@ export function AppNavigator() {
       <Tab.Screen
         name="EventsTab"
         options={({ route }) => ({
-          title: 'Events',
+          title: t('navigation.events'),
           tabBarStyle: {
             ...baseTabBarStyle,
             display: getTabBarDisplay(route),
@@ -84,7 +86,7 @@ export function AppNavigator() {
       <Tab.Screen
         name="PeopleTab"
         options={({ route }) => ({
-          title: 'People',
+          title: t('navigation.people'),
           tabBarStyle: {
             ...baseTabBarStyle,
             display: getTabBarDisplay(route),
@@ -96,7 +98,7 @@ export function AppNavigator() {
       <Tab.Screen
         name="ProfileTab"
         options={{
-          title: 'Profile',
+          title: t('navigation.profile'),
         }}
       >
         {() => <ProfileStackNavigator />}

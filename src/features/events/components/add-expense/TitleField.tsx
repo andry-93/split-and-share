@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Text, TextInput } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addExpenseStyles as styles } from '@/features/events/components/add-expense/styles';
+import i18n from '@/shared/i18n';
 
 type TitleFieldProps = {
   value: string;
@@ -12,7 +13,7 @@ export const TitleField = memo(function TitleField({ value, onChangeText }: Titl
   return (
     <>
       <Text variant="labelLarge" style={styles.sectionLabel}>
-        Title
+        {i18n.t('common.title')}
       </Text>
       <OutlinedFieldContainer style={styles.titleInputContainer}>
         <TextInput
@@ -22,7 +23,7 @@ export const TitleField = memo(function TitleField({ value, onChangeText }: Titl
           style={[styles.titleInlineInput, styles.transparentInput]}
           contentStyle={styles.titleInlineInputContent}
           underlineStyle={styles.hiddenUnderline}
-          placeholder="e.g. Dinner, Taxi, Hotel"
+          placeholder={i18n.t('events.expenseTitlePlaceholder')}
         />
       </OutlinedFieldContainer>
     </>

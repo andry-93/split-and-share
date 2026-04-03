@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Text, TextInput } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addPersonStyles as styles } from '@/features/people/components/add-person/styles';
+import i18n from '@/shared/i18n';
 
 type NoteFieldProps = {
   value: string;
@@ -12,7 +13,7 @@ export const NoteField = memo(function NoteField({ value, onChangeText }: NoteFi
   return (
     <>
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Note
+        {i18n.t('common.note')}
       </Text>
       <OutlinedFieldContainer style={styles.multilineContainer}>
         <TextInput
@@ -20,7 +21,7 @@ export const NoteField = memo(function NoteField({ value, onChangeText }: NoteFi
           onChangeText={onChangeText}
           mode="flat"
           multiline
-          placeholder="Note"
+          placeholder={i18n.t('common.note')}
           style={[styles.multilineField, styles.transparentInput]}
           contentStyle={styles.inputContent}
           underlineStyle={styles.hiddenUnderline}

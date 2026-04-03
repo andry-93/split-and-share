@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-na
 import { useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { PeopleStackParamList } from '@/navigation/types';
 import { usePeopleActions, usePeopleState } from '@/state/people/peopleContext';
 import { useEventsActions } from '@/state/events/eventsContext';
@@ -21,6 +22,7 @@ import { AppMessageSnackbar } from '@/shared/ui/AppMessageSnackbar';
 type AddPersonScreenProps = NativeStackScreenProps<PeopleStackParamList, 'AddPerson'>;
 
 export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { people } = usePeopleState();
@@ -57,13 +59,13 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
   const handleSave = useCallback(() => {
     const phoneValidation = validatePersonPhone(phone);
     if (!phoneValidation.isValid) {
-      setErrorMessage(phoneValidation.message);
+      setErrorMessage(t(phoneValidation.messageKey));
       return;
     }
 
     const emailValidation = validatePersonEmail(email);
     if (!emailValidation.isValid) {
-      setErrorMessage(emailValidation.message);
+      setErrorMessage(t(emailValidation.messageKey));
       return;
     }
 
@@ -75,11 +77,11 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
       }
       navigation.goBack();
     } catch (error) {
-      const fallbackMessage = editingPerson ? 'Unable to update person.' : 'Unable to add person.';
+      const fallbackMessage = editingPerson ? t('people.updateAgain') : t('people.addAgain');
       const message = error instanceof Error ? error.message : fallbackMessage;
       setErrorMessage(message);
     }
-  }, [addPerson, editingPerson, email, name, navigation, note, phone, updatePerson]);
+  }, [addPerson, editingPerson, email, name, navigation, note, phone, t, updatePerson]);
 
   const handleDelete = useCallback(() => {
     if (!editingPerson || editingPerson.isMe) {
@@ -93,7 +95,7 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title={isEditMode ? 'Edit Person' : 'Add Person'} onBackPress={handleBack} />
+      <AppHeader title={isEditMode ? t('people.editPerson') : t('people.addPerson')} onBackPress={handleBack} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -108,16 +110,16 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
           <NameField value={name} onChangeText={setName} />
 
           <ContactField
-            label="Phone"
-            placeholder="Phone"
+            label={t('people.phone')}
+            placeholder={t('people.phone')}
             keyboardType="phone-pad"
             value={phone}
             onChangeText={setPhone}
           />
 
           <ContactField
-            label="Email"
-            placeholder="Email"
+            label={t('people.email')}
+            placeholder={t('people.email')}
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
@@ -130,8 +132,8 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
           bottomInset={insets.bottom}
           disabled={isDisabled}
           onPress={handleSave}
-          label={isEditMode ? 'Save changes' : 'Add person'}
-          secondaryLabel={isEditMode && !isCurrentUser ? 'Delete' : undefined}
+          label={isEditMode ? t('common.saveChanges') : t('people.addPersonCta')}
+          secondaryLabel={isEditMode && !isCurrentUser ? t('common.delete') : undefined}
           onSecondaryPress={isEditMode && !isCurrentUser ? openDeleteConfirm : undefined}
         />
       </KeyboardAvoidingView>
@@ -144,8 +146,8 @@ export function AddPersonScreen({ navigation, route }: AddPersonScreenProps) {
 
       <AppDeleteConfirm
         visible={isDeleteConfirmVisible}
-        title="Delete contact"
-        message="This contact and all related event data will be deleted."
+        title={t('people.deleteContact.title')}
+        message={t('people.deleteContact.message')}
         onDismiss={closeDeleteConfirm}
         onConfirm={handleDelete}
       />

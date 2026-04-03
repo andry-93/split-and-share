@@ -4,6 +4,7 @@ import { Text } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addExpenseStyles as styles } from '@/features/events/components/add-expense/styles';
 import { getAmountInputPlaceholder } from '@/shared/utils/numberFormat';
+import i18n from '@/shared/i18n';
 
 type AmountFieldProps = {
   currencyCode: string;
@@ -21,7 +22,7 @@ export const AmountField = memo(function AmountField({
   return (
     <>
       <Text variant="labelLarge" style={styles.sectionLabel}>
-        Amount
+        {i18n.t('common.amount')}
       </Text>
       <OutlinedFieldContainer style={styles.amountInputContainer}>
         <Text variant="headlineSmall" style={styles.amountCurrency}>

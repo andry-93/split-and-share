@@ -2,6 +2,7 @@ import React, { forwardRef, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Icon, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { AppBottomSheet } from '@/shared/ui/AppBottomSheet';
 import { AppList } from '@/shared/ui/AppList';
 import { getListPressedBackground } from '@/shared/ui/listPressState';
@@ -13,6 +14,7 @@ type AddEventActionSheetProps = {
 
 export const AddEventActionSheet = forwardRef<BottomSheetModal, AddEventActionSheetProps>(
   ({ onAddEvent, onAddGroup }, ref) => {
+    const { t } = useTranslation();
     const theme = useTheme();
     const pressedBackground = getListPressedBackground(theme.dark);
     const snapPoints = useMemo(() => ['40%'], []);
@@ -20,24 +22,24 @@ export const AddEventActionSheet = forwardRef<BottomSheetModal, AddEventActionSh
       () => [
         {
           key: 'event',
-          title: 'Add event',
-          subtitle: 'Create a new event',
+          title: t('events.actionSheet.addEvent'),
+          subtitle: t('events.actionSheet.addEventSubtitle'),
           icon: 'calendar-plus',
           onPress: onAddEvent,
         },
         {
           key: 'group',
-          title: 'Add group',
-          subtitle: 'Create a folder for events',
+          title: t('events.actionSheet.addGroup'),
+          subtitle: t('events.actionSheet.addGroupSubtitle'),
           icon: 'folder-plus',
           onPress: onAddGroup,
         },
       ],
-      [onAddEvent, onAddGroup],
+      [onAddEvent, onAddGroup, t],
     );
 
     return (
-      <AppBottomSheet ref={ref} title="Create" snapPoints={snapPoints}>
+      <AppBottomSheet ref={ref} title={t('events.actionSheet.create')} snapPoints={snapPoints}>
         <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
           <AppList
             data={options}

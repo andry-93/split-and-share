@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { FAB } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 type DraggableFabProps = {
   icon: string;
@@ -30,6 +31,7 @@ export function DraggableFab({
   topBoundary = 72,
   visible = true,
 }: DraggableFabProps) {
+  const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const tabBarHeight = useBottomTabBarHeight();
   const [isScreenReaderEnabled, setScreenReaderEnabled] = useState(false);
@@ -172,8 +174,8 @@ export function DraggableFab({
           color={color}
           style={[styles.fab, styles.fabNoShadow, { backgroundColor }]}
           onPress={onPress}
-          accessibilityLabel="Create"
-          accessibilityHint="Creates a new item"
+          accessibilityLabel={t('app.createFabLabel')}
+          accessibilityHint={t('app.createFabHint')}
         />
       </Animated.View>
     );
@@ -196,8 +198,8 @@ export function DraggableFab({
         color={color}
         style={[styles.fab, styles.fabNoShadow, { backgroundColor }]}
         onPress={undefined}
-        accessibilityLabel="Create"
-        accessibilityHint="Creates a new item"
+        accessibilityLabel={t('app.createFabLabel')}
+        accessibilityHint={t('app.createFabHint')}
       />
     </Animated.View>
   );

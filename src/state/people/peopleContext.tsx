@@ -6,6 +6,7 @@ import { peopleActions } from '@/state/people/peopleSlice';
 import { useAppDispatch, useAppSelector } from '@/state/store';
 import { createEntityId } from '@/shared/utils/id';
 import { normalizeOptionalText } from '@/shared/utils/validation';
+import i18n from '@/shared/i18n';
 
 function splitLegacyContact(contact?: string) {
   const normalized = normalizeOptionalText(contact);
@@ -30,7 +31,7 @@ export function usePeopleActions() {
       addPerson: (payload: { name: string; phone?: string; email?: string; note?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
-          throw new Error('Name is required.');
+          throw new Error(i18n.t('people.nameRequired'));
         }
 
         const trimmedPhone = payload.phone?.trim();
@@ -50,7 +51,7 @@ export function usePeopleActions() {
       updatePerson: (payload: { id: string; name: string; phone?: string; email?: string; note?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
-          throw new Error('Name is required.');
+          throw new Error(i18n.t('people.nameRequired'));
         }
 
         dispatch(

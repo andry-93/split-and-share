@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Text, TextInput } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
+import i18n from '@/shared/i18n';
 
 type EventNameFieldProps = {
   value: string;
@@ -15,7 +16,7 @@ export const EventNameField = memo(function EventNameField({
   return (
     <>
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Event name
+        {i18n.t('events.eventName')}
       </Text>
       <OutlinedFieldContainer style={styles.inputContainer}>
         <TextInput
@@ -23,7 +24,7 @@ export const EventNameField = memo(function EventNameField({
           onChangeText={onChangeText}
           autoFocus
           mode="flat"
-          placeholder="e.g., Weekend Trip"
+          placeholder={i18n.t('events.eventNamePlaceholder')}
           style={[styles.inputField, styles.transparentInput]}
           contentStyle={styles.inputContent}
           underlineStyle={styles.hiddenUnderline}

@@ -1,8 +1,10 @@
 import React from 'react';
 import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 export function StorageInitErrorScreen() {
+  const { t } = useTranslation();
   const canCloseApp = Platform.OS === 'android';
 
   const handleCloseApp = () => {
@@ -14,15 +16,14 @@ export function StorageInitErrorScreen() {
   return (
     <View style={styles.container}>
       <Text variant="titleLarge" style={styles.title}>
-        Secure storage error
+        {t('app.storageInitErrorTitle')}
       </Text>
       <Text variant="bodyMedium" style={styles.message}>
-        The app could not initialize encrypted local storage. Restart the app. If it still fails,
-        reinstall the app.
+        {t('app.storageInitErrorDescription')}
       </Text>
       {canCloseApp ? (
         <Button mode="contained" onPress={handleCloseApp}>
-          Close app
+          {t('app.storageInitErrorCloseApp')}
         </Button>
       ) : null}
     </View>

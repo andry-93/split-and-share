@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
 
 type AppDeleteConfirmProps = {
@@ -18,6 +19,7 @@ export function AppDeleteConfirm({
   onConfirm,
 }: AppDeleteConfirmProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   return (
     <AppConfirm
@@ -25,7 +27,7 @@ export function AppDeleteConfirm({
       title={title}
       onDismiss={onDismiss}
       onConfirm={onConfirm}
-      confirmText="Delete"
+      confirmText={t('common.delete')}
     >
       <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
         {message}

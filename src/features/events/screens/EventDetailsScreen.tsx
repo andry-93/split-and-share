@@ -5,6 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { EventsStackParamList } from '@/navigation/types';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import { RawDebt, selectExpensesSortedByUpdatedAt, SimplifiedDebt } from '@/state/events/eventsSelectors';
@@ -48,6 +49,7 @@ function getNextTabFromSwipe(
 }
 
 export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
@@ -83,10 +85,10 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
         style={[styles.screen, { backgroundColor: theme.colors.background }]}
         edges={['top', 'left', 'right']}
       >
-        <AppHeader title="Event Details" onBackPress={() => navigation.goBack()} />
+        <AppHeader title={t('events.detailsTitle')} onBackPress={() => navigation.goBack()} />
         <View style={styles.missingState}>
-          <Text variant="titleMedium">Event not found</Text>
-          <Text variant="bodyMedium">Please go back and choose another event.</Text>
+          <Text variant="titleMedium">{t('events.notFoundTitle')}</Text>
+          <Text variant="bodyMedium">{t('events.notFoundSubtitle')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -114,7 +116,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     () => (debtsMode === 'detailed' ? detailedDebts.length : simplifiedDebts.length),
     [debtsMode, detailedDebts.length, simplifiedDebts.length],
   );
-  const outstandingModeLabel = debtsMode === 'detailed' ? 'Detailed' : 'Simplified';
+  const outstandingModeLabel = debtsMode === 'detailed' ? t('events.tabs.detailed') : t('events.tabs.simplified');
 
   const handleMarkSimplifiedPaid = useCallback(
     (debt: SimplifiedDebt, amount: number) => {

@@ -2,6 +2,7 @@ import React, { memo, useCallback, useRef, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
 import { TextInput as RNTextInput } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
 import { AppList } from '@/shared/ui/AppList';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
@@ -48,6 +49,7 @@ export const DebtsPanel = memo(function DebtsPanel({
   onHintLayout,
   onContentSizeChange,
 }: DebtsPanelProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const amountInputRef = useRef<RNTextInput | null>(null);
   const [pendingPayment, setPendingPayment] = useState<
@@ -91,17 +93,17 @@ export const DebtsPanel = memo(function DebtsPanel({
     const validation = validatePaymentAmount(parsed, maxAmount);
 
     if (!validation.valid && validation.reason === 'invalid_amount') {
-      setPaymentError('Enter a valid amount.');
+      setPaymentError(t('events.tabs.enterValidAmount'));
       return;
     }
 
     if (!validation.valid && validation.reason === 'exceeds_remaining') {
-      setPaymentError(`Amount cannot exceed ${formatCurrencyAmount(currencyCode, maxAmount)}.`);
+      setPaymentError(t('events.tabs.amountCannotExceed', { amount: formatCurrencyAmount(currencyCode, maxAmount) }));
       return;
     }
 
     if (!validation.valid) {
-      setPaymentError('Enter a valid amount.');
+      setPaymentError(t('events.tabs.enterValidAmount'));
       return;
     }
 
@@ -119,6 +121,7 @@ export const DebtsPanel = memo(function DebtsPanel({
     onMarkSimplifiedPaid,
     paymentAmount,
     pendingPayment,
+    t,
   ]);
 
   const renderRawDebtItem = useCallback(
@@ -142,15 +145,15 @@ export const DebtsPanel = memo(function DebtsPanel({
         style={[styles.debtsSharedPaidHint, { color: theme.colors.onSurfaceVariant }]}
       >
         {mode === 'detailed'
-          ? 'Detailed view is enabled in Settings. Paid status is shared.'
-          : 'Simplified view is enabled in Settings. Paid status is shared.'}
+          ? t('events.tabs.detailedHint')
+          : t('events.tabs.simplifiedHint')}
       </Text>
 
       {mode === 'detailed' ? (
         detailedDebts.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text variant="titleMedium">No debts yet</Text>
-            <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
+            <Text variant="titleMedium">{t('events.tabs.noBalancesYet')}</Text>
+            <Text variant="bodyMedium">{t('events.addExpensesToSeeBalances')}</Text>
           </View>
         ) : (
           <DebtsList
@@ -166,8 +169,8 @@ export const DebtsPanel = memo(function DebtsPanel({
         )
       ) : simplifiedDebts.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text variant="titleMedium">No debts yet</Text>
-          <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
+          <Text variant="titleMedium">{t('events.tabs.noBalancesYet')}</Text>
+          <Text variant="bodyMedium">{t('events.addExpensesToSeeBalances')}</Text>
         </View>
       ) : (
         <DebtsList
@@ -184,26 +187,25 @@ export const DebtsPanel = memo(function DebtsPanel({
 
       <AppConfirm
         visible={Boolean(pendingPayment)}
-        title="Mark as paid"
+        title={t('events.tabs.markPaid')}
         onDismiss={closePaymentConfirm}
         onConfirm={handleConfirmPayment}
         onShow={handleConfirmShow}
-        confirmText="Save payment"
+        confirmText={t('events.tabs.savePayment')}
       >
         {pendingPayment ? (
           <View style={localStyles.sheetContent}>
             <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              Transfer
+              {t('events.tabs.transfer')}
             </Text>
             <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-              {pendingPayment.debt.from.name} {pendingPayment.mode === 'detailed' ? 'owes' : 'pays'}{' '}
-              {pendingPayment.debt.to.name}
+              {pendingPayment.debt.from.name} {t('events.tabs.payTo', { name: pendingPayment.debt.to.name })}
             </Text>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              Remaining: {formatCurrencyAmount(currencyCode, pendingPayment.debt.amount)}
+              {t('events.tabs.remaining', { amount: formatCurrencyAmount(currencyCode, pendingPayment.debt.amount) })}
             </Text>
             <Text variant="labelLarge" style={localStyles.amountLabel}>
-              Amount ({currencyCode})
+              {t('events.tabs.amountWithCurrency', { currency: currencyCode })}
             </Text>
             <OutlinedFieldContainer style={localStyles.amountFieldContainer}>
               <RNTextInput
@@ -295,6 +297,7 @@ const DebtProgressHint = memo(function DebtProgressHint({
   paidCount,
   onLayout,
 }: DebtProgressHintProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isAllPaid = paidCount >= totalCount;
   const handleLayout = useCallback(
@@ -320,10 +323,10 @@ const DebtProgressHint = memo(function DebtProgressHint({
         style={{ color: isAllPaid ? theme.colors.onPrimaryContainer : theme.colors.onSecondaryContainer }}
       >
         {isAllPaid
-          ? `All ${totalCount} transfers are marked as paid.`
+          ? t('events.tabs.allTransfersPaid', { count: totalCount })
           : paidCount > 0
-            ? `${paidCount} paid, ${totalCount - paidCount} left to mark.`
-            : 'Mark transfers as paid when they are completed.'}
+            ? t('events.tabs.paidLeft', { paid: paidCount, left: totalCount - paidCount })
+            : t('events.tabs.markTransfersHint')}
       </Text>
     </View>
   );
@@ -340,16 +343,17 @@ const DetailedDebtRow = memo(function DetailedDebtRow({
   currencyCode,
   onMarkPaid,
 }: DetailedDebtRowProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const handleMarkPaid = useCallback(() => {
-    onMarkPaid(debt);
+      onMarkPaid(debt);
   }, [debt, onMarkPaid]);
 
   return (
     <View style={styles.rawDebtRow}>
       <View style={styles.rawDebtText}>
         <Text variant="titleMedium">{debt.from.name}</Text>
-        <Text variant="bodyMedium">owes {debt.to.name}</Text>
+        <Text variant="bodyMedium">{t('events.tabs.payTo', { name: debt.to.name })}</Text>
       </View>
       <View style={styles.simplifiedDebtRight}>
         <Text variant="titleMedium" style={[styles.amount, styles.simplifiedAmount]}>
@@ -363,7 +367,7 @@ const DetailedDebtRow = memo(function DetailedDebtRow({
           contentStyle={styles.markPaidButtonContent}
           labelStyle={[styles.markPaidButtonLabel, { color: theme.colors.primary }]}
         >
-          Mark as paid
+          {t('events.tabs.markPaid')}
         </Button>
       </View>
     </View>
@@ -381,6 +385,7 @@ const SimplifiedDebtRow = memo(function SimplifiedDebtRow({
   currencyCode,
   onMarkPaid,
 }: SimplifiedDebtRowProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const handleMarkPaid = useCallback(() => {
     onMarkPaid(debt);
@@ -390,7 +395,7 @@ const SimplifiedDebtRow = memo(function SimplifiedDebtRow({
     <View style={styles.rawDebtRow}>
       <View style={styles.rawDebtText}>
         <Text variant="titleMedium">{debt.from.name}</Text>
-        <Text variant="bodyMedium">pays {debt.to.name}</Text>
+        <Text variant="bodyMedium">{t('events.tabs.payTo', { name: debt.to.name })}</Text>
       </View>
       <View style={styles.simplifiedDebtRight}>
         <Text variant="titleMedium" style={[styles.amount, styles.simplifiedAmount]}>
@@ -404,7 +409,7 @@ const SimplifiedDebtRow = memo(function SimplifiedDebtRow({
           contentStyle={styles.markPaidButtonContent}
           labelStyle={[styles.markPaidButtonLabel, { color: theme.colors.primary }]}
         >
-          Mark as paid
+          {t('events.tabs.markPaid')}
         </Button>
       </View>
     </View>

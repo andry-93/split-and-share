@@ -2,6 +2,7 @@ import React, { memo, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
 import { AppPopup } from '@/shared/ui/AppPopup';
+import i18n from '@/shared/i18n';
 
 type AppConfirmProps = {
   visible: boolean;
@@ -20,8 +21,8 @@ export const AppConfirm = memo(function AppConfirm({
   onDismiss,
   onConfirm,
   onShow,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText = i18n.t('common.save'),
+  cancelText = i18n.t('common.cancel'),
   children,
 }: AppConfirmProps) {
   const theme = useTheme();

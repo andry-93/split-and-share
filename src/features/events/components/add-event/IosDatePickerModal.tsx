@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Modal, Portal, Text, Button, useTheme } from 'react-native-paper';
 import { addEventStyles as styles } from '@/features/events/components/add-event/styles';
+import i18n from '@/shared/i18n';
 
 type IosDatePickerModalProps = {
   visible: boolean;
@@ -14,9 +15,9 @@ type IosDatePickerModalProps = {
 
 export const IosDatePickerModal = memo(function IosDatePickerModal({
   visible,
-  title = 'Select date',
-  doneLabel = 'Done',
-  unavailableText = 'Date picker is not available in this build.',
+  title = i18n.t('events.datePlaceholder'),
+  doneLabel = i18n.t('common.save'),
+  unavailableText = i18n.t('misc.rebuildToEnableDatePicker'),
   onDismiss,
   onDone,
   children,

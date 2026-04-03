@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { NativeModules, Platform, useColorScheme } from 'react-native';
 import { SettingsState } from '@/state/settings/settingsTypes';
+import i18n from '@/shared/i18n';
 
 type UseEventDatePickerInput = {
   themeMode: SettingsState['theme'];
@@ -42,7 +43,7 @@ export function useEventDatePicker({ themeMode, onError }: UseEventDatePickerInp
       return;
     }
     if (!hasNativeDatePicker || !DateTimePicker) {
-      onError('Date picker is not linked in this build. Rebuild the app after installing dependency.');
+      onError(i18n.t('misc.rebuildToEnableDatePicker'));
       return;
     }
 
@@ -63,7 +64,7 @@ export function useEventDatePicker({ themeMode, onError }: UseEventDatePickerInp
           return;
         }
       } catch (_error) {
-        onError('Date picker is not available in this build.');
+        onError(i18n.t('misc.rebuildToEnableDatePicker'));
         return;
       }
     }

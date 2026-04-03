@@ -14,11 +14,11 @@ export function validatePersonContact(value: string) {
 
   const isEmail = normalized.includes('@');
   if (isEmail && !EMAIL_PATTERN.test(normalized)) {
-    return { isValid: false, message: 'Please enter a valid email.' } as const;
+    return { isValid: false, messageKey: 'people.validEmailRequired' } as const;
   }
 
   if (!isEmail && !PHONE_PATTERN.test(normalized)) {
-    return { isValid: false, message: 'Please enter a valid phone number.' } as const;
+    return { isValid: false, messageKey: 'people.validPhoneRequired' } as const;
   }
 
   return { isValid: true } as const;
@@ -31,7 +31,7 @@ export function validatePersonPhone(value: string) {
   }
 
   if (!PHONE_PATTERN.test(normalized)) {
-    return { isValid: false, message: 'Please enter a valid phone number.' } as const;
+    return { isValid: false, messageKey: 'people.validPhoneRequired' } as const;
   }
 
   return { isValid: true } as const;
@@ -44,7 +44,7 @@ export function validatePersonEmail(value: string) {
   }
 
   if (!EMAIL_PATTERN.test(normalized)) {
-    return { isValid: false, message: 'Please enter a valid email.' } as const;
+    return { isValid: false, messageKey: 'people.validEmailRequired' } as const;
   }
 
   return { isValid: true } as const;

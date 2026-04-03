@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useTranslation } from 'react-i18next';
 import { useSettingsActions, useSettingsState } from '@/state/settings/settingsContext';
 import type { SettingsState } from '@/state/settings/settingsTypes';
 import {
@@ -39,41 +40,21 @@ const SYSTEM_CURRENCY_VALUE = '__system_currency__';
 const debtsViewOptions: Array<{ value: SettingsState['debtsViewMode']; label: string; description: string }> = [
   {
     value: 'simplified',
-    label: 'Simplified',
-    description: 'Recommended. Shows the minimum transfers needed.',
+    label: 'simplified',
+    description: 'simplifiedDescription',
   },
   {
     value: 'detailed',
-    label: 'Detailed',
-    description: 'Shows full transfer breakdown without simplification.',
+    label: 'detailed',
+    description: 'detailedDescription',
   },
 ];
-const numberFormatOptions: Array<{ value: SettingsState['numberFormat']; label: string; description: string }> = [
-  {
-    value: 'system',
-    label: 'System',
-    description: formatNumberExample('system'),
-  },
-  {
-    value: 'us',
-    label: 'US',
-    description: formatNumberExample('us'),
-  },
-  {
-    value: 'eu',
-    label: 'European',
-    description: formatNumberExample('eu'),
-  },
-  {
-    value: 'ru',
-    label: 'Russia',
-    description: formatNumberExample('ru'),
-  },
-  {
-    value: 'ch',
-    label: 'Switzerland',
-    description: formatNumberExample('ch'),
-  },
+const numberFormatOptions: Array<{ value: SettingsState['numberFormat']; labelKey: string }> = [
+  { value: 'system', labelKey: 'common.system' },
+  { value: 'us', labelKey: 'settings.numberFormatUS' },
+  { value: 'eu', labelKey: 'settings.numberFormatEU' },
+  { value: 'ru', labelKey: 'settings.numberFormatRU' },
+  { value: 'ch', labelKey: 'settings.numberFormatCH' },
 ];
 
 function formatNumberExample(mode: SettingsState['numberFormat']) {
@@ -96,18 +77,19 @@ function formatNumberExample(mode: SettingsState['numberFormat']) {
 function validateCustomCurrencyValue(value: string, reservedValues: Set<string>): string | null {
   const raw = value.trim();
   if (!raw) {
-    return 'Enter a currency symbol or code.';
+    return 'settings.customCurrencyErrors.enterValue';
   }
   if (raw.length > 10) {
-    return 'Currency value must be 1-10 characters.';
+    return 'settings.customCurrencyErrors.length';
   }
   if (reservedValues.has(raw.toUpperCase())) {
-    return 'This currency already exists.';
+    return 'settings.customCurrencyErrors.exists';
   }
   return null;
 }
 
 export function SettingsScreen() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const settings = useSettingsState();
   const {
@@ -269,22 +251,22 @@ export function SettingsScreen() {
     () => [
       {
         value: SYSTEM_LANGUAGE_VALUE,
-        label: 'System',
-        description: getLanguageLabel(systemLanguage),
+          label: t('common.system'),
+          description: getLanguageLabel(systemLanguage),
       },
       ...getOrderedLanguageOptions(settings.language, systemLanguage).map((option) => ({
         value: option.value,
         label: option.label,
       })),
     ],
-    [settings.language, systemLanguage],
+    [settings.language, systemLanguage, t],
   );
   const currencySheetOptions = useMemo(
     () =>
       [
         {
           value: SYSTEM_CURRENCY_VALUE,
-          label: 'System',
+          label: t('common.system'),
           description: `${getCurrencyOptionLabel(systemCurrency, languageLocale)} • ${getCurrencyName(systemCurrency, languageLocale)}`,
         },
         ...currencyOptions.map((option) => ({
@@ -292,37 +274,37 @@ export function SettingsScreen() {
           label: getCurrencyOptionLabel(option, languageLocale),
           description: getCurrencyName(option, languageLocale),
         })),
-        { value: CUSTOM_CURRENCY_VALUE, label: 'Custom', description: 'Set your own code or symbol' },
+        { value: CUSTOM_CURRENCY_VALUE, label: t('common.custom'), description: t('settings.setOwnCodeOrSymbol') },
       ],
-    [languageLocale, systemCurrency],
+    [languageLocale, systemCurrency, t],
   );
   const debtsViewSheetOptions = useMemo(
     () =>
       debtsViewOptions.map((option) => ({
         value: option.value,
-        label: option.label,
-        description: option.description,
+        label: t(`settings.${option.label}`),
+        description: t(`settings.debtsViewDescription${option.description === 'simplifiedDescription' ? 'Simplified' : 'Detailed'}`),
       })),
-    [],
+    [t],
   );
   const numberFormatSheetOptions = useMemo(
     () =>
       numberFormatOptions.map((option) => ({
         value: option.value,
-        label: option.label,
-        description: option.description,
+        label: t(option.labelKey),
+        description: formatNumberExample(option.value),
       })),
-    [],
+    [t],
   );
 
   return (
     <BottomTabSwipeBoundary currentTab="ProfileTab">
       <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title="Settings" />
+      <AppHeader title={t('settings.title')} />
 
       <View style={styles.content}>
         <Text variant="labelLarge" style={styles.sectionLabel}>
-          Preferences
+          {t('settings.preferences')}
         </Text>
         <View
           style={[
@@ -334,10 +316,10 @@ export function SettingsScreen() {
           ]}
         >
           <List.Item
-            title="Language"
+            title={t('common.language')}
             description={
               settings.languageSource === 'system'
-                ? `System (${getLanguageLabel(settings.language)})`
+                ? t('settings.systemWithValue', { value: getLanguageLabel(settings.language) })
                 : getLanguageLabel(settings.language)
             }
             style={styles.compactRow}
@@ -346,10 +328,10 @@ export function SettingsScreen() {
           />
           <Divider style={styles.preferencesDivider} />
           <List.Item
-            title="Currency"
+            title={t('common.currency')}
             description={
               settings.currencySource === 'system'
-                ? `System (${getCurrencyDisplay(settings.currency, languageLocale)})`
+                ? t('settings.systemWithValue', { value: getCurrencyDisplay(settings.currency, languageLocale) })
                 : getCurrencyDisplay(settings.currency, languageLocale)
             }
             style={styles.compactRow}
@@ -358,11 +340,11 @@ export function SettingsScreen() {
           />
           <Divider style={styles.preferencesDivider} />
           <List.Item
-            title="Number format"
+            title={t('settings.numberFormat')}
             description={
               settings.numberFormat === 'system'
-                ? `System (${formatNumberExample('system')})`
-                : numberFormatOptions.find((option) => option.value === settings.numberFormat)?.label ?? 'System'
+                ? t('settings.systemWithValue', { value: formatNumberExample('system') })
+                : t(numberFormatOptions.find((option) => option.value === settings.numberFormat)?.labelKey ?? 'common.system')
             }
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
@@ -370,8 +352,8 @@ export function SettingsScreen() {
           />
           <Divider style={styles.preferencesDivider} />
           <List.Item
-            title="Debts view"
-            description={settings.debtsViewMode === 'detailed' ? 'Detailed' : 'Simplified'}
+            title={t('settings.debtsView')}
+            description={settings.debtsViewMode === 'detailed' ? t('settings.detailed') : t('settings.simplified')}
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={handleOpenDebtsView}
@@ -379,27 +361,27 @@ export function SettingsScreen() {
         </View>
 
         <Text variant="labelLarge" style={styles.sectionLabel}>
-          Appearance
+          {t('settings.appearance')}
         </Text>
         <CustomToggleGroup
           value={settings.theme}
           onChange={handleThemeChange}
           options={[
-            { value: 'system', label: 'System' },
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
+            { value: 'system', label: t('common.system') },
+            { value: 'light', label: t('common.light') },
+            { value: 'dark', label: t('common.dark') },
           ]}
           sizeMode="equal"
           variant="segmented"
         />
         <Text variant="bodySmall" style={[styles.appearanceHint, { color: theme.colors.onSurfaceVariant }]}>
-          System follows your device appearance.
+          {t('settings.systemFollowsDevice')}
         </Text>
 
         <Text variant="labelLarge" style={styles.sectionLabel}>
-          About
+          {t('settings.about')}
         </Text>
-        <List.Item title="Version" description={appPackage.version} style={[styles.fullBleedRow, styles.compactRow]} />
+        <List.Item title={t('settings.version')} description={appPackage.version} style={[styles.fullBleedRow, styles.compactRow]} />
         <Button
           mode="contained-tonal"
           icon="restore"
@@ -408,16 +390,16 @@ export function SettingsScreen() {
           contentStyle={styles.resetButtonContent}
           labelStyle={styles.resetButtonLabel}
         >
-          Reset settings
+          {t('settings.resetSettings')}
         </Button>
         <Text variant="bodySmall" style={[styles.resetHint, { color: theme.colors.onSurfaceVariant }]}>
-          Return app preferences to their default values.
+          {t('settings.resetSettingsHint')}
         </Text>
       </View>
 
       <AppSingleSelectBottomSheet
         ref={languageSheetRef}
-        title="Language"
+        title={t('common.language')}
         options={languageSheetOptions}
         selectedValue={
           settings.languageSource === 'system'
@@ -430,7 +412,7 @@ export function SettingsScreen() {
 
       <AppSingleSelectBottomSheet
         ref={numberFormatSheetRef}
-        title="Number format"
+        title={t('settings.numberFormat')}
         options={numberFormatSheetOptions}
         selectedValue={settings.numberFormat}
         onSelect={handleSelectNumberFormat}
@@ -438,7 +420,7 @@ export function SettingsScreen() {
       />
       <AppSingleSelectBottomSheet
         ref={currencySheetRef}
-        title="Currency"
+        title={t('common.currency')}
         options={currencySheetOptions}
         selectedValue={
           settings.currencySource === 'system'
@@ -452,7 +434,7 @@ export function SettingsScreen() {
       />
       <AppSingleSelectBottomSheet
         ref={debtsViewSheetRef}
-        title="Debts view"
+        title={t('settings.debtsView')}
         options={debtsViewSheetOptions}
         selectedValue={settings.debtsViewMode}
         onSelect={handleSelectDebtsView}
@@ -460,13 +442,13 @@ export function SettingsScreen() {
       />
       <AppConfirm
         visible={isCustomCurrencyVisible}
-        title="Custom currency"
+        title={t('settings.customCurrency')}
         onDismiss={closeCustomCurrency}
         onConfirm={handleSaveCustomCurrency}
-        confirmText="Save"
+        confirmText={t('common.save')}
       >
         <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          Enter a custom currency symbol or code.
+          {t('settings.customCurrencyHint')}
         </Text>
         <OutlinedFieldContainer isError={shouldShowCustomCurrencyError}>
           <RNTextInput
@@ -476,29 +458,29 @@ export function SettingsScreen() {
             autoCorrect={false}
             maxLength={10}
             style={[styles.customCurrencyInput, { color: theme.colors.onSurface }]}
-            placeholder="e.g. $"
+            placeholder={t('settings.customCurrencyPlaceholder')}
             placeholderTextColor={theme.colors.onSurfaceVariant}
             selectionColor={theme.colors.primary}
           />
         </OutlinedFieldContainer>
         {shouldShowCustomCurrencyError ? (
           <Text variant="bodySmall" style={{ color: theme.colors.error }}>
-            {customCurrencyValidationError}
+            {customCurrencyValidationError ? t(customCurrencyValidationError) : ''}
           </Text>
         ) : null}
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-          1-10 characters.
+          {t('settings.customCurrencyChars')}
         </Text>
       </AppConfirm>
       <AppConfirm
         visible={isResetSettingsVisible}
-        title="Reset settings"
+        title={t('settings.resetSettings')}
         onDismiss={closeResetSettings}
         onConfirm={handleResetSettings}
-        confirmText="Reset"
+        confirmText={t('common.reset')}
       >
         <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          This will restore app preferences to default values.
+          {t('settings.resetSettingsConfirm')}
         </Text>
       </AppConfirm>
       </SafeAreaView>

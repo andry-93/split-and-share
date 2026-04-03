@@ -4,6 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ActivityIndicator, Appbar, IconButton, Snackbar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import { useTranslation } from 'react-i18next';
 import { EventsStackParamList } from '@/navigation/types';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { useEventReportPreview } from '@/features/events/hooks/useEventReportPreview';
@@ -11,6 +12,7 @@ import { useEventReportPreview } from '@/features/events/hooks/useEventReportPre
 type EventReportPreviewScreenProps = NativeStackScreenProps<EventsStackParamList, 'EventReportPreview'>;
 
 export function EventReportPreviewScreen({ navigation, route }: EventReportPreviewScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const {
     event,
@@ -32,9 +34,9 @@ export function EventReportPreviewScreen({ navigation, route }: EventReportPrevi
         style={[styles.screen, { backgroundColor: theme.colors.background }]}
         edges={['top', 'left', 'right']}
       >
-        <AppHeader title="Report preview" onBackPress={navigation.goBack} />
+        <AppHeader title={t('events.report.previewTitle')} onBackPress={navigation.goBack} />
         <View style={styles.center}>
-          <Text variant="titleMedium">Event not found</Text>
+          <Text variant="titleMedium">{t('events.notFoundTitle')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -46,7 +48,7 @@ export function EventReportPreviewScreen({ navigation, route }: EventReportPrevi
       edges={['top', 'left', 'right']}
     >
       <AppHeader
-        title={`${event.name} report`}
+        title={`${event.name} ${t('events.report.titleSuffix')}`}
         onBackPress={navigation.goBack}
         rightSlot={
           <View style={styles.headerActions}>
@@ -106,7 +108,7 @@ export function EventReportPreviewScreen({ navigation, route }: EventReportPrevi
           <View style={styles.generating}>
             <ActivityIndicator />
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              Generating PDF...
+              {t('events.report.generating')}
             </Text>
           </View>
         ) : null}

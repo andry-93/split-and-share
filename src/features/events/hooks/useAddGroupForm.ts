@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
+import i18n from '@/shared/i18n';
 
 type UseAddGroupFormInput = {
   groupId?: string;
@@ -32,7 +33,7 @@ export function useAddGroupForm({ groupId, onSaved }: UseAddGroupFormInput) {
       }
       onSaved();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to save group.');
+      setErrorMessage(error instanceof Error ? error.message : i18n.t('events.saveGroupAgain'));
     }
   }, [createGroup, description, editingGroup, name, onSaved, updateGroup]);
 

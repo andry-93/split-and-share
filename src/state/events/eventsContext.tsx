@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from '@/state/store';
 import { createEntityId } from '@/shared/utils/id';
 import { normalizeOptionalText } from '@/shared/utils/validation';
 import { validatePaymentAmount } from '@/domain/finance/invariants';
+import i18n from '@/shared/i18n';
 
 export function useEventsState() {
   return useAppSelector(selectEventsState);
@@ -30,7 +31,7 @@ export function useEventsActions() {
       createEvent: (payload: { name: string; description?: string; currency?: string; date?: string | null; groupId?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
-          throw new Error('Event name is required.');
+          throw new Error(i18n.t('events.eventNameRequired'));
         }
 
         dispatch(
@@ -47,7 +48,7 @@ export function useEventsActions() {
       createGroup: (payload: { name: string; description?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
-          throw new Error('Group name is required.');
+          throw new Error(i18n.t('events.groupNameRequired'));
         }
 
         dispatch(
@@ -61,7 +62,7 @@ export function useEventsActions() {
       updateGroup: (payload: { groupId: string; name: string; description?: string }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
-          throw new Error('Group name is required.');
+          throw new Error(i18n.t('events.groupNameRequired'));
         }
 
         dispatch(
@@ -82,7 +83,7 @@ export function useEventsActions() {
       }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
-          throw new Error('Event name is required.');
+          throw new Error(i18n.t('events.eventNameRequired'));
         }
 
         dispatch(
@@ -102,18 +103,18 @@ export function useEventsActions() {
       }) => {
         const trimmedTitle = payload.expense.title.trim();
         if (!trimmedTitle) {
-          throw new Error('Expense title is required.');
+          throw new Error(i18n.t('events.expenseTitleRequired'));
         }
 
         if (!Number.isFinite(payload.expense.amount) || payload.expense.amount <= 0) {
-          throw new Error('Amount must be a positive number.');
+          throw new Error(i18n.t('events.amountPositiveRequired'));
         }
 
         const normalizedSplitBetweenIds = Array.from(
           new Set(payload.expense.splitBetweenIds ?? []),
         ).filter(Boolean);
         if (normalizedSplitBetweenIds.length === 0) {
-          throw new Error('Select at least one participant in split.');
+          throw new Error(i18n.t('events.splitBetweenRequired'));
         }
 
         const nextExpense = {
@@ -139,18 +140,18 @@ export function useEventsActions() {
       }) => {
         const trimmedTitle = payload.patch.title.trim();
         if (!trimmedTitle) {
-          throw new Error('Expense title is required.');
+          throw new Error(i18n.t('events.expenseTitleRequired'));
         }
 
         if (!Number.isFinite(payload.patch.amount) || payload.patch.amount <= 0) {
-          throw new Error('Amount must be a positive number.');
+          throw new Error(i18n.t('events.amountPositiveRequired'));
         }
 
         const normalizedSplitBetweenIds = Array.from(
           new Set(payload.patch.splitBetweenIds ?? []),
         ).filter(Boolean);
         if (normalizedSplitBetweenIds.length === 0) {
-          throw new Error('Select at least one participant in split.');
+          throw new Error(i18n.t('events.splitBetweenRequired'));
         }
 
         dispatch(

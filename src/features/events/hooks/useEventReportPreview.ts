@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
+import i18n from '@/shared/i18n';
 import { useEventsState } from '@/state/events/eventsContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import {
@@ -83,7 +84,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
       const generationPromise = Print.printToFileAsync({ html });
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(
-          () => reject(new Error('PDF generation timeout. Please try again.')),
+          () => reject(new Error(i18n.t('events.report.generateAgain'))),
           PDF_GENERATION_TIMEOUT_MS,
         );
       });
@@ -95,7 +96,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
         data: { eventId: event.id },
       });
       trackProductEvent('report_preview_failed', { eventId: event.id });
-      setSnackbarMessage(error instanceof Error ? error.message : 'Failed to generate PDF report.');
+      setSnackbarMessage(error instanceof Error ? error.message : i18n.t('events.report.generateAgain'));
     } finally {
       setIsGenerating(false);
     }
@@ -114,12 +115,12 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
     try {
       const available = await Sharing.isAvailableAsync();
       if (!available) {
-        setSnackbarMessage('Sharing is not available on this device.');
+        setSnackbarMessage(i18n.t('events.report.useAnotherDeviceToShare'));
         return;
       }
       await Sharing.shareAsync(pdfUri, {
         mimeType: 'application/pdf',
-        dialogTitle: 'Share event report',
+        dialogTitle: i18n.t('events.report.shareDialogTitle'),
         UTI: 'com.adobe.pdf',
       });
       trackProductEvent('report_shared', { eventId });
@@ -128,7 +129,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
         scope: 'events.report.share',
         data: { eventId },
       });
-      setSnackbarMessage(error instanceof Error ? error.message : 'Failed to share PDF.');
+      setSnackbarMessage(error instanceof Error ? error.message : i18n.t('events.report.shareAgain'));
     }
   }, [eventId, pdfUri]);
 
@@ -145,16 +146,16 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
           to: destinationUri,
         });
         trackProductEvent('report_downloaded', { eventId });
-        setSnackbarMessage('PDF saved to app documents.');
+        setSnackbarMessage(i18n.t('events.report.savedToDocuments'));
       } else {
-        setSnackbarMessage('Unable to access local storage.');
+        setSnackbarMessage(i18n.t('events.report.allowStorageAccess'));
       }
     } catch (error) {
       reportError(error, {
         scope: 'events.report.download',
         data: { eventId },
       });
-      setSnackbarMessage(error instanceof Error ? error.message : 'Failed to save PDF.');
+      setSnackbarMessage(error instanceof Error ? error.message : i18n.t('events.report.saveAgain'));
     }
   }, [eventId, fileName, pdfUri]);
 

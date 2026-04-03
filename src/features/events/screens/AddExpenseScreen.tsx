@@ -4,6 +4,7 @@ import { Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useTranslation } from 'react-i18next';
 import { EventsStackParamList } from '@/navigation/types';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
@@ -27,6 +28,7 @@ import { formatMoneyInputValue } from '@/shared/utils/numberFormat';
 type AddExpenseScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddExpense'>;
 
 export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
@@ -101,14 +103,14 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
 
   const handleSave = useCallback(() => {
     if (!paidBy.trim()) {
-      setErrorMessage('Select who paid this expense.');
+      setErrorMessage(t('events.selectPayer'));
       return;
     }
 
     try {
       if (editingExpense) {
         if (!eventId) {
-          throw new Error('Event not found.');
+          throw new Error(t('events.notFoundTitle'));
         }
         updateExpense({
           eventId,
@@ -123,7 +125,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
         });
       } else {
         if (!eventId) {
-          throw new Error('Event not found.');
+          throw new Error(t('events.notFoundTitle'));
         }
         addExpense({
           eventId,
@@ -138,7 +140,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
       }
       navigation.goBack();
     } catch (error) {
-      const message = error instanceof Error ? error.message : `Unable to ${editingExpense ? 'update' : 'save'} expense.`;
+      const message = error instanceof Error ? error.message : editingExpense ? t('events.updateExpenseAgain') : t('events.saveExpenseAgain');
       setErrorMessage(message);
     }
   }, [
@@ -151,6 +153,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     parsedAmount,
     selectedParticipantIds,
     setErrorMessage,
+    t,
     title,
     updateExpense,
   ]);
@@ -166,7 +169,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title={isEditMode ? 'Edit Expense' : 'Add Expense'} onBackPress={handleBack} />
+      <AppHeader title={isEditMode ? t('events.editExpense') : t('events.addExpense')} onBackPress={handleBack} />
 
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
@@ -190,14 +193,14 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
 
           <View style={featureStyles.section}>
             <Text variant="labelLarge" style={featureStyles.sectionLabel}>
-              Paid by
+              {t('events.report.paidBy')}
             </Text>
             <PaidByField paidBy={paidBy} onPress={openPaidByPicker} />
           </View>
 
           <View style={featureStyles.section}>
             <Text variant="labelLarge" style={featureStyles.sectionLabel}>
-              Split between
+              {t('events.splitBetween')}
             </Text>
             <SplitBetweenField
               participants={participantOptions}
@@ -211,8 +214,8 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           onSave={handleSave}
           disabled={isSaveDisabled}
           bottomInset={insets.bottom}
-          label={isEditMode ? 'Save changes' : 'Save expense'}
-          secondaryLabel={isEditMode ? 'Delete' : undefined}
+          label={isEditMode ? t('common.saveChanges') : t('events.saveExpense')}
+          secondaryLabel={isEditMode ? t('common.delete') : undefined}
           onSecondaryPress={isEditMode ? openDeleteConfirm : undefined}
         />
       </KeyboardAvoidingView>
@@ -225,15 +228,15 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
 
       <AppDeleteConfirm
         visible={isDeleteConfirmVisible}
-        title="Delete expense"
-        message="This expense and all related debt/payment calculations will be deleted."
+        title={t('events.deleteExpense.title')}
+        message={t('events.deleteExpense.message')}
         onDismiss={closeDeleteConfirm}
         onConfirm={handleDelete}
       />
 
       <AppSingleSelectBottomSheet
         ref={sheetRef}
-        title="Paid by"
+        title={t('events.report.paidBy')}
         options={paidByOptions}
         selectedValue={paidById}
         onSelect={handleSelectPaidBy}

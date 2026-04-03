@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-na
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { BottomActionBar } from '@/features/events/components/add-event/BottomActionBar';
@@ -13,6 +14,7 @@ import { EventsStackParamList } from '@/navigation/types';
 type AddGroupScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddGroup'>;
 
 export function AddGroupScreen({ navigation, route }: AddGroupScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const {
@@ -34,7 +36,7 @@ export function AddGroupScreen({ navigation, route }: AddGroupScreenProps) {
       style={[localStyles.screen, { backgroundColor: theme.colors.background }]}
       edges={['top', 'left', 'right']}
     >
-      <AppHeader title={editingGroup ? 'Edit group' : 'Add group'} onBackPress={navigation.goBack} />
+      <AppHeader title={editingGroup ? t('events.editGroup') : t('events.addGroup')} onBackPress={navigation.goBack} />
 
       <KeyboardAvoidingView
         style={localStyles.flex}
@@ -47,7 +49,7 @@ export function AddGroupScreen({ navigation, route }: AddGroupScreenProps) {
           showsVerticalScrollIndicator={false}
         >
           <Text variant="labelLarge" style={styles.fieldLabel}>
-            Group name
+            {t('events.groupName')}
           </Text>
           <OutlinedFieldContainer style={styles.inputContainer}>
             <TextInput
@@ -55,7 +57,7 @@ export function AddGroupScreen({ navigation, route }: AddGroupScreenProps) {
               onChangeText={setName}
               autoFocus
               mode="flat"
-              placeholder="e.g., Trips"
+              placeholder={t('events.groupNamePlaceholder')}
               style={[styles.inputField, styles.transparentInput]}
               contentStyle={styles.inputContent}
               underlineStyle={styles.hiddenUnderline}
@@ -63,7 +65,7 @@ export function AddGroupScreen({ navigation, route }: AddGroupScreenProps) {
           </OutlinedFieldContainer>
 
           <Text variant="labelLarge" style={styles.fieldLabel}>
-            Description
+            {t('common.description')}
           </Text>
           <OutlinedFieldContainer style={styles.multilineContainer}>
             <TextInput
@@ -71,7 +73,7 @@ export function AddGroupScreen({ navigation, route }: AddGroupScreenProps) {
               onChangeText={setDescription}
               mode="flat"
               multiline
-              placeholder="Optional"
+              placeholder={t('events.groupDescriptionPlaceholder')}
               style={[styles.multilineField, styles.transparentInput]}
               contentStyle={styles.inputContent}
               underlineStyle={styles.hiddenUnderline}
@@ -82,7 +84,7 @@ export function AddGroupScreen({ navigation, route }: AddGroupScreenProps) {
         <BottomActionBar
           bottomInset={insets.bottom}
           onPress={handleSave}
-          label={editingGroup ? 'Save changes' : 'Create group'}
+          label={editingGroup ? t('common.saveChanges') : t('events.createGroup')}
           disabled={name.trim().length === 0}
         />
       </KeyboardAvoidingView>

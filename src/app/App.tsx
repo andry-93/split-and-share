@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Appearance, BackHandler, NativeModules, Platform, StatusBar, useColorScheme } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider, Snackbar } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import {
   NavigationContainer,
   DarkTheme as NavDarkTheme,
@@ -22,6 +23,8 @@ import { StorageInitErrorScreen } from '@/shared/ui/StorageInitErrorScreen';
 import { setGlobalCurrencyLocalePreference } from '@/shared/utils/currency';
 import { setGlobalNumberFormatPreference } from '@/shared/utils/numberFormat';
 import { RootTabParamList } from '@/navigation/types';
+import i18n, { resolveI18nLanguage } from '@/shared/i18n';
+import '@/shared/i18n';
 
 const lightColorOverrides = {
   primary: '#2563FF',
@@ -111,6 +114,7 @@ const darkColorOverrides = {
 
 function AppShell() {
   const settings = useSettingsState();
+  const { t } = useTranslation();
   const navigationRef = useMemo(() => createNavigationContainerRef<RootTabParamList>(), []);
   const [exitHintVisible, setExitHintVisible] = useState(false);
   const lastBackPressAtRef = useRef(0);
@@ -122,6 +126,13 @@ function AppShell() {
 
   useEffect(() => {
     setGlobalCurrencyLocalePreference(getLanguageLocale(settings.language));
+  }, [settings.language]);
+
+  useEffect(() => {
+    const nextLanguage = resolveI18nLanguage(settings.language);
+    if (i18n.language !== nextLanguage) {
+      void i18n.changeLanguage(nextLanguage);
+    }
   }, [settings.language]);
 
   useEffect(() => {
@@ -251,7 +262,7 @@ function AppShell() {
           visible={exitHintVisible}
           onDismiss={() => setExitHintVisible(false)}
         >
-          Press back again to exit
+          {t('app.backExitHint')}
         </Snackbar>
       </BottomSheetModalProvider>
     </PaperProvider>

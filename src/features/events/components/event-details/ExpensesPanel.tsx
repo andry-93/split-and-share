@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { ExpenseItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
@@ -34,6 +35,7 @@ export const ExpensesPanel = memo(function ExpensesPanel({
   onOpenExpense,
   onSelectionToolbarChange,
 }: ExpensesPanelProps) {
+  const { t } = useTranslation();
   const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
     useConfirmState();
   const {
@@ -106,16 +108,16 @@ export const ExpensesPanel = memo(function ExpensesPanel({
         renderItem={({ item }) => renderExpenseItem({ item })}
         emptyComponent={
           <View style={styles.emptyState}>
-            <Text variant="titleMedium">No expenses yet</Text>
-            <Text variant="bodyMedium">Add expenses to see who owes whom.</Text>
+            <Text variant="titleMedium">{t('events.addFirstExpense')}</Text>
+            <Text variant="bodyMedium">{t('events.addExpensesToSeeBalances')}</Text>
           </View>
         }
         showDividers={false}
       />
       <SelectionDeleteConfirm
         visible={isDeleteConfirmVisible}
-        title="Delete expenses"
-        message="Selected expenses and all related debt data will be deleted."
+        title={t('events.deleteExpenses.title')}
+        message={t('events.deleteExpenses.message')}
         onDismiss={closeDeleteConfirm}
         onConfirm={handleDeleteSelected}
       />
@@ -140,6 +142,7 @@ const ExpenseCard = memo(function ExpenseCard({
   onPress,
   onLongPress,
 }: ExpenseCardProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const longPressTriggeredRef = useRef(false);
   const pressedCardBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
@@ -181,7 +184,7 @@ const ExpenseCard = memo(function ExpenseCard({
             <View style={styles.cardText}>
               <Text variant="titleMedium">{expense.title}</Text>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                Paid by {expense.paidBy}
+                {t('events.report.paidBy')} {expense.paidBy}
               </Text>
             </View>
             <Text variant="titleMedium" style={styles.amount}>

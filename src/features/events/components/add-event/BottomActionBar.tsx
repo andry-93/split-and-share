@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { addEventStyles } from '@/features/events/components/add-event/styles';
 import { BottomPrimaryActionBar } from '@/shared/ui/BottomPrimaryActionBar';
+import i18n from '@/shared/i18n';
 
 type BottomActionBarProps = {
   bottomInset: number;
@@ -15,7 +16,7 @@ export const BottomActionBar = memo(function BottomActionBar({
   bottomInset,
   disabled,
   onPress,
-  label = 'Create event',
+  label = i18n.t('events.createEvent'),
   secondaryLabel,
   onSecondaryPress,
 }: BottomActionBarProps) {

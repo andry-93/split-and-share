@@ -4,6 +4,7 @@ import * as Contacts from 'expo-contacts';
 import { ActivityIndicator, Button, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { DeviceContact } from '@/features/people/types/contacts';
 import { useContactsPickerModel } from '@/features/people/hooks/useContactsPickerModel';
 import { PeopleStackParamList } from '@/navigation/types';
@@ -39,6 +40,7 @@ function normalizeContact(item: Contacts.Contact): DeviceContact | null {
 type ContactsPickerScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsPicker'>;
 
 export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { people } = usePeopleState();
@@ -76,12 +78,12 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
       setContacts(normalized);
       setSelectedIds([]);
     } catch {
-      setErrorMessage('Unable to load contacts. Please try again.');
+      setErrorMessage(t('people.import.loadAgain'));
       setContacts([]);
     } finally {
       setLoading(false);
     }
-  }, [navigation]);
+  }, [navigation, t]);
 
   useEffect(() => {
     void loadContacts();
@@ -147,12 +149,13 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title="Select contacts" onBackPress={handleBack} />
+      <AppHeader title={t('people.import.selectContacts')} onBackPress={handleBack} />
+
 
       <AppSearchbar
         value={query}
         onChangeText={setQuery}
-        placeholder="Search contacts"
+        placeholder={t('people.import.searchContacts')}
         style={styles.search}
       />
 
@@ -164,7 +167,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
         <View style={styles.emptyState}>
           <Text variant="bodyMedium">{errorMessage}</Text>
           <Button mode="outlined" onPress={() => void loadContacts()}>
-            Retry
+            {t('common.retry')}
           </Button>
         </View>
       ) : (
@@ -193,7 +196,7 @@ export function ContactsPickerScreen({ navigation }: ContactsPickerScreenProps) 
         ]}
       >
         <Button mode="contained" onPress={handleAdd} disabled={selectedCount === 0} style={styles.actionButton}>
-          {selectedCount > 0 ? `Add selected (${selectedCount})` : 'Add selected'}
+          {selectedCount > 0 ? t('people.import.addSelectedCount', { count: selectedCount }) : t('people.import.addSelected')}
         </Button>
       </View>
     </SafeAreaView>
@@ -208,6 +211,7 @@ type ContactRowProps = {
 };
 
 const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, onToggle }: ContactRowProps) {
+  const { t } = useTranslation();
   const handlePress = useCallback(() => {
     if (alreadyAdded) {
       return;
@@ -220,7 +224,7 @@ const ContactRow = memo(function ContactRow({ contact, alreadyAdded, selected, o
       name={contact.name}
       phone={contact.phone}
       email={contact.email}
-      metaText={alreadyAdded ? 'Already added' : undefined}
+      metaText={alreadyAdded ? t('people.import.alreadyAdded') : undefined}
       muted={alreadyAdded}
       selectable
       selected={selected}

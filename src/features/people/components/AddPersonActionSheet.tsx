@@ -2,6 +2,7 @@ import React, { forwardRef, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useTranslation } from 'react-i18next';
 import { AppBottomSheet } from '@/shared/ui/AppBottomSheet';
 import { AppList } from '@/shared/ui/AppList';
 import { getListPressedBackground } from '@/shared/ui/listPressState';
@@ -13,6 +14,7 @@ export type AddPersonActionSheetProps = {
 
 export const AddPersonActionSheet = forwardRef<BottomSheetModal, AddPersonActionSheetProps>(
   ({ onAddManual, onImportContacts }, ref) => {
+    const { t } = useTranslation();
     const theme = useTheme();
     const snapPoints = useMemo(() => ['40%'], []);
     const pressedBackground = getListPressedBackground(theme.dark);
@@ -20,26 +22,26 @@ export const AddPersonActionSheet = forwardRef<BottomSheetModal, AddPersonAction
       () => [
         {
           key: 'manual',
-          title: 'Add manually',
-          subtitle: 'Enter details manually',
+          title: t('people.actionSheet.addManually'),
+          subtitle: t('people.actionSheet.enterDetailsManually'),
           icon: 'account-plus',
           onPress: onAddManual,
         },
         {
           key: 'contacts',
-          title: 'Import from contacts',
-          subtitle: 'Select from your phone contacts',
+          title: t('people.actionSheet.importFromContacts'),
+          subtitle: t('people.actionSheet.selectFromPhoneContacts'),
           icon: 'account-box',
           onPress: onImportContacts,
         },
       ],
-      [onAddManual, onImportContacts],
+      [onAddManual, onImportContacts, t],
     );
 
     return (
       <AppBottomSheet
         ref={ref}
-        title="Add person"
+        title={t('people.addPerson')}
         snapPoints={snapPoints}
       >
         <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>

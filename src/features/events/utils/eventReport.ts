@@ -2,6 +2,7 @@ import { formatDateTimeLocalized } from '@/shared/utils/date';
 import { PaymentEntry, RawDebt, SimplifiedDebt } from '@/state/events/eventsSelectors';
 import { EventItem } from '@/features/events/types/events';
 import { formatMoneyFromMinor, sumAmountsToMinor, toMinorUnits } from '@/domain/finance/minorUnits';
+import i18n from '@/shared/i18n';
 
 type BuildEventReportHtmlInput = {
   appName: string;
@@ -38,7 +39,7 @@ export function buildEventReportHtml({
 
   const expensesRows =
     event.expenses.length === 0
-      ? '<tr><td colspan="4" class="muted">No expenses</td></tr>'
+      ? `<tr><td colspan="4" class="muted">${escapeHtml(i18n.t('events.report.tableNoExpenses'))}</td></tr>`
       : event.expenses
           .map(
             (expense) => `
@@ -54,7 +55,7 @@ export function buildEventReportHtml({
 
   const detailedRows =
     detailedDebts.length === 0
-      ? '<tr><td colspan="3" class="muted">No detailed debts</td></tr>'
+      ? `<tr><td colspan="3" class="muted">${escapeHtml(i18n.t('events.report.tableNoDetailedBalances'))}</td></tr>`
       : detailedDebts
           .map(
             (debt) => `
@@ -69,7 +70,7 @@ export function buildEventReportHtml({
 
   const simplifiedRows =
     simplifiedDebts.length === 0
-      ? '<tr><td colspan="2" class="muted">No simplified debts</td></tr>'
+      ? `<tr><td colspan="2" class="muted">${escapeHtml(i18n.t('events.report.tableNoSimplifiedBalances'))}</td></tr>`
       : simplifiedDebts
           .map(
             (debt) => `
@@ -97,11 +98,12 @@ export function buildEventReportHtml({
           <th>Amount</th>
         </tr>
       `;
-  const selectedDebtsTitle = debtsMode === 'detailed' ? 'Detailed Debts' : 'Simplified Debts';
+  const selectedDebtsTitle =
+    debtsMode === 'detailed' ? i18n.t('events.report.detailedBalances') : i18n.t('events.report.simplifiedBalances');
 
   const paymentRows =
     payments.length === 0
-      ? '<tr><td colspan="4" class="muted">No paid transfers</td></tr>'
+      ? `<tr><td colspan="4" class="muted">${escapeHtml(i18n.t('events.report.tableNoPaidTransfers'))}</td></tr>`
       : payments
           .map(
             (payment) => `
@@ -148,30 +150,30 @@ export function buildEventReportHtml({
   <body>
     <div class="app">${escapeHtml(appName)}</div>
     <h1 class="title">${escapeHtml(event.name)}</h1>
-    <p class="sub">Event report generated ${formatDateTimeLocalized(new Date().toISOString(), locale)}</p>
+    <p class="sub">${escapeHtml(i18n.t('events.report.eventReportGenerated', { date: formatDateTimeLocalized(new Date().toISOString(), locale) }))}</p>
 
     <div class="summary">
       <div class="card">
-        <div class="label">Currency</div>
+        <div class="label">${escapeHtml(i18n.t('common.currency'))}</div>
         <div class="value">${escapeHtml(currencyCode)}</div>
       </div>
       <div class="card">
-        <div class="label">Participants</div>
+        <div class="label">${escapeHtml(i18n.t('events.report.participants'))}</div>
         <div class="value">${event.participants.length}</div>
       </div>
       <div class="card">
-        <div class="label">Total Expenses</div>
+        <div class="label">${escapeHtml(i18n.t('events.report.totalExpenses'))}</div>
         <div class="value">${formatMoneyFromMinor(currencyCode, totalAmountMinor, locale)}</div>
       </div>
     </div>
 
-    <h2>Participants</h2>
+    <h2>${escapeHtml(i18n.t('events.report.participants'))}</h2>
     <table>
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Phone</th>
-          <th>Email</th>
+          <th>${escapeHtml(i18n.t('events.report.name'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.phone'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.email'))}</th>
         </tr>
       </thead>
       <tbody>
@@ -189,14 +191,14 @@ export function buildEventReportHtml({
       </tbody>
     </table>
 
-    <h2>Expenses</h2>
+    <h2>${escapeHtml(i18n.t('events.report.expenses'))}</h2>
     <table>
       <thead>
         <tr>
-          <th>Title</th>
-          <th>Amount</th>
-          <th>Paid by</th>
-          <th>Updated</th>
+          <th>${escapeHtml(i18n.t('common.title'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.amount'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.paidBy'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.updated'))}</th>
         </tr>
       </thead>
       <tbody>${expensesRows}</tbody>
@@ -214,10 +216,10 @@ export function buildEventReportHtml({
     <table>
       <thead>
         <tr>
-          <th>Transfer</th>
-          <th>Amount</th>
-          <th>Source</th>
-          <th>Paid at</th>
+          <th>${escapeHtml(i18n.t('events.report.transfer'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.amount'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.source'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.paidAt'))}</th>
         </tr>
       </thead>
       <tbody>${paymentRows}</tbody>

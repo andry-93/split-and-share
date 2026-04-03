@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Appbar, Checkbox, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 type SelectionActionToolbarProps = {
   title: string;
@@ -19,6 +20,7 @@ export const SelectionActionToolbar = memo(function SelectionActionToolbar({
   onDelete,
   onClose,
 }: SelectionActionToolbarProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const allSelected = totalSelectableCount > 0 && selectedCount === totalSelectableCount;
@@ -30,7 +32,7 @@ export const SelectionActionToolbar = memo(function SelectionActionToolbar({
 
   return (
     <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.background }}>
-      <Appbar.Action icon="close" onPress={onClose} accessibilityLabel="Cancel selection mode" />
+      <Appbar.Action icon="close" onPress={onClose} accessibilityLabel={t('common.cancelSelectionMode')} />
       <View style={styles.selectAllWrap}>
         <Checkbox
           status={checkboxStatus}
@@ -42,7 +44,7 @@ export const SelectionActionToolbar = memo(function SelectionActionToolbar({
         icon="delete-outline"
         onPress={onDelete}
         disabled={selectedCount === 0}
-        accessibilityLabel="Delete selected items"
+        accessibilityLabel={t('common.deleteSelectedItems')}
       />
     </Appbar.Header>
   );

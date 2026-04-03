@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { usePeopleListModel } from '@/features/people/hooks/usePeopleListModel';
 import { EventsStackParamList } from '@/navigation/types';
 import { usePeopleState } from '@/state/people/peopleContext';
@@ -18,6 +19,7 @@ import { isCurrentUserPerson } from '@/shared/utils/people';
 type AddPeopleToEventScreenProps = NativeStackScreenProps<EventsStackParamList, 'AddPeopleToEvent'>;
 
 export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { people } = usePeopleState();
@@ -75,21 +77,22 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title="Add people" onBackPress={() => navigation.goBack()} />
+      <AppHeader title={t('events.tabs.addPeopleToEvent')} onBackPress={() => navigation.goBack()} />
+      
 
       {!allAdded ? (
         <AppSearchbar
           value={query}
           onChangeText={setQuery}
-          placeholder="Search people"
+          placeholder={t('people.searchPeople')}
           style={styles.search}
         />
       ) : null}
 
       {allAdded ? (
         <View style={styles.emptyState}>
-          <Text variant="titleMedium">Everyone is already added</Text>
-          <Text variant="bodyMedium">All people are already part of this event.</Text>
+          <Text variant="titleMedium">{t('people.import.everyoneAlreadyAdded')}</Text>
+          <Text variant="bodyMedium">{t('people.import.allAlreadyInEvent')}</Text>
         </View>
       ) : (
         <View style={styles.listWrapper}>
@@ -118,7 +121,7 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
           ]}
         >
           <Button mode="contained" onPress={handleAdd} disabled={selectedCount === 0} style={styles.actionButton}>
-            {selectedCount > 0 ? `Add selected (${selectedCount})` : 'Add selected'}
+            {selectedCount > 0 ? t('people.import.addSelectedCount', { count: selectedCount }) : t('people.import.addSelected')}
           </Button>
         </View>
       ) : null}
@@ -139,6 +142,7 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
   selected,
   onToggle,
 }: SelectablePersonRowProps) {
+  const { t } = useTranslation();
   const handleToggle = useCallback(() => {
     onToggle(person.id);
   }, [onToggle, person.id]);
@@ -148,7 +152,7 @@ const SelectablePersonRow = memo(function SelectablePersonRow({
       name={person.name}
       phone={person.phone}
       email={person.email}
-      metaText={alreadyAdded ? 'Already added' : undefined}
+      metaText={alreadyAdded ? t('people.import.alreadyAdded') : undefined}
       muted={alreadyAdded}
       isCurrentUser={isCurrentUserPerson(person)}
       selectable

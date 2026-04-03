@@ -4,6 +4,7 @@ import { Button, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { PeopleStackParamList } from '@/navigation/types';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { useMessageState } from '@/shared/hooks/useMessageState';
@@ -14,6 +15,7 @@ import { trackProductEvent } from '@/shared/analytics/productAnalytics';
 type ContactsAccessScreenProps = NativeStackScreenProps<PeopleStackParamList, 'ImportContactsAccess'>;
 
 export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { message: errorMessage, setMessage: setErrorMessage, clearMessage: clearErrorMessage, visible: isErrorVisible } =
     useMessageState();
@@ -70,26 +72,26 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
     trackProductEvent('contacts_permission_result', { status });
 
     if (status === 'unavailable') {
-      setErrorMessage('Contacts permission is unavailable on this device.');
+      setErrorMessage(t('people.import.permissionUnavailable'));
     }
-  }, [navigateToPicker, setErrorMessage]);
+  }, [navigateToPicker, setErrorMessage, t]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-      <AppHeader title="Contacts access" onBackPress={handleBack} />
+      <AppHeader title={t('people.import.accessTitle')} onBackPress={handleBack} />
 
       <View style={styles.content}>
         <View style={[styles.iconCircle, { backgroundColor: theme.colors.surfaceVariant }]}>
           <Icon source="account-group" size={36} color={theme.colors.primary} />
         </View>
         <Text variant="headlineSmall" style={styles.title}>
-          Access Your Contacts
+          {t('people.import.accessTitle')}
         </Text>
         <Text
           variant="bodyLarge"
           style={[styles.supporting, { color: theme.colors.onSurfaceVariant }]}
         >
-          To import people from your contacts, we&apos;ll need permission to access your contact list.
+          {t('people.import.accessDescription')}
         </Text>
       </View>
 
@@ -103,10 +105,10 @@ export function ContactsAccessScreen({ navigation }: ContactsAccessScreenProps) 
         ]}
       >
         <Button mode="contained" onPress={handleContinue} style={styles.primaryButton}>
-          Continue
+          {t('people.import.continue')}
         </Button>
         <Button mode="outlined" onPress={handleBack} style={styles.secondaryButton}>
-          Not now
+          {t('people.import.notNow')}
         </Button>
       </View>
 

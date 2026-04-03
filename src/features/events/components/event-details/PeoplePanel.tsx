@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { ParticipantItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
 import { PersonListRow } from '@/features/people/components/PersonListRow';
@@ -36,6 +37,7 @@ export const PeoplePanel = memo(function PeoplePanel({
   onRemoveParticipants,
   onSelectionToolbarChange,
 }: PeoplePanelProps) {
+  const { t } = useTranslation();
   const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
     useConfirmState();
 
@@ -103,8 +105,8 @@ export const PeoplePanel = memo(function PeoplePanel({
   if (sortedParticipants.length === 0) {
     return (
       <View style={styles.emptyState}>
-        <Text variant="titleMedium">No people in this event</Text>
-        <Text variant="bodyMedium">Add people to start splitting expenses.</Text>
+        <Text variant="titleMedium">{t('events.tabs.addPeopleToEvent')}</Text>
+        <Text variant="bodyMedium">{t('events.tabs.startSplittingWithGroup')}</Text>
       </View>
     );
   }
@@ -124,9 +126,9 @@ export const PeoplePanel = memo(function PeoplePanel({
 
       <SelectionDeleteConfirm
         visible={isDeleteConfirmVisible}
-        title="Remove from event"
-        message="Selected contacts will be removed from this event."
-        confirmText="Remove"
+        title={t('events.removeFromEvent.title')}
+        message={t('events.removeFromEvent.message')}
+        confirmText={t('events.removeFromEvent.confirm')}
         onDismiss={closeDeleteConfirm}
         onConfirm={handleDeleteSelected}
       />

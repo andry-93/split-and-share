@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Text, TextInput } from 'react-native-paper';
 import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { addPersonStyles as styles } from '@/features/people/components/add-person/styles';
+import i18n from '@/shared/i18n';
 
 type NameFieldProps = {
   value: string;
@@ -12,7 +13,7 @@ export const NameField = memo(function NameField({ value, onChangeText }: NameFi
   return (
     <>
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Name
+        {i18n.t('common.name')}
       </Text>
       <OutlinedFieldContainer style={styles.inputContainer}>
         <TextInput
@@ -20,7 +21,7 @@ export const NameField = memo(function NameField({ value, onChangeText }: NameFi
           onChangeText={onChangeText}
           autoFocus
           mode="flat"
-          placeholder="Name"
+          placeholder={i18n.t('common.name')}
           style={[styles.inputField, styles.transparentInput]}
           contentStyle={styles.inputContent}
           underlineStyle={styles.hiddenUnderline}

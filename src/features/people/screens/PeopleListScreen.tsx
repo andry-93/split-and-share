@@ -4,6 +4,7 @@ import { Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useTranslation } from 'react-i18next';
 import { PeopleStackParamList } from '@/navigation/types';
 import { PersonItem } from '@/features/people/types/people';
 import { AddPersonActionSheet } from '@/features/people/components/AddPersonActionSheet';
@@ -28,6 +29,7 @@ import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
 type PeopleListScreenProps = NativeStackScreenProps<PeopleStackParamList, 'People'>;
 
 export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { people } = usePeopleState();
   const { removePeople } = usePeopleActions();
@@ -117,20 +119,20 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
           {...getToolbarProps(openDeleteConfirm)}
         />
       ) : (
-        <AppHeader title="People" />
+        <AppHeader title={t('navigation.people')} />
       )}
 
       <AppSearchbar
         value={query}
         onChangeText={setQuery}
-        placeholder="Search people"
+        placeholder={t('people.searchPeople')}
         style={styles.search}
       />
 
       {filteredPeople.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text variant="titleMedium">No people yet</Text>
-          <Text variant="bodyMedium">Add people to easily split expenses.</Text>
+          <Text variant="titleMedium">{t('people.addFirstPerson')}</Text>
+          <Text variant="bodyMedium">{t('people.splitFaster')}</Text>
         </View>
       ) : (
         <View style={styles.listWrapper}>
@@ -163,8 +165,8 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
 
       <SelectionDeleteConfirm
         visible={isDeleteConfirmVisible}
-        title="Delete contacts"
-        message="Selected contacts will be deleted with all related data across events."
+        title={t('common.delete')}
+        message={t('people.deleteContact.message')}
         onDismiss={closeDeleteConfirm}
         onConfirm={handleDeleteSelected}
       />

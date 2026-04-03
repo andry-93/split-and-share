@@ -4,6 +4,7 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Appbar, Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { AddEventActionSheet } from '@/features/events/components/AddEventActionSheet';
 import { EventListEntry, useEventsListModel } from '@/features/events/hooks/useEventsListModel';
 import { EventGroupItem, EventItem } from '@/features/events/types/events';
@@ -35,6 +36,7 @@ import { useSettingsState } from '@/state/settings/settingsContext';
 type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
 export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const eventsState = useEventsState();
   const { removeEvents, removeGroups } = useEventsActions();
@@ -153,7 +155,7 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
       }
 
       return (
-        <EventEntryRow
+          <EventEntryRow
           event={item.event}
           item={item}
           selectable={isEditMode}
@@ -181,11 +183,9 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
     ],
   );
 
-  const emptyText = currentGroup
-    ? 'No events in this group'
-    : 'No events or groups found';
+  const emptyText = currentGroup ? t('events.noEventsInGroup') : t('events.noEventsOrGroupsFound');
 
-  const headerTitle = currentGroup?.name ?? 'Events';
+  const headerTitle = currentGroup?.name ?? t('navigation.events');
 
   return (
     <BottomTabSwipeBoundary currentTab="EventsTab" enabled={!isEditMode}>
@@ -210,7 +210,7 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
         <AppSearchbar
           value={query}
           onChangeText={setQuery}
-          placeholder={currentGroup ? 'Search events' : 'Search events or groups'}
+          placeholder={currentGroup ? t('navigation.events') : t('events.searchEventsOrGroups')}
           style={styles.search}
         />
 
@@ -253,8 +253,8 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
 
         <SelectionDeleteConfirm
           visible={isDeleteConfirmVisible}
-          title="Delete selected"
-          message="Selected items will be deleted. Deleting a group removes all events inside it."
+          title={t('common.delete')}
+          message={t('events.deleteSelectedMessage')}
           onDismiss={closeDeleteConfirm}
           onConfirm={handleDeleteSelected}
         />
@@ -483,6 +483,7 @@ const EventCard = memo(function EventCard({
   payments,
   currentUserId,
 }: EventCardProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const longPressTriggeredRef = useRef(false);
   const pressedCardBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
@@ -504,7 +505,7 @@ const EventCard = memo(function EventCard({
   const status = useMemo(() => {
     const currentUser = event.participants.find((participant) => participant.id === currentUserId);
     if (!currentUser) {
-      return { text: 'Settled', tone: 'neutral' as const };
+      return { text: t('events.cards.settled'), tone: 'neutral' as const };
     }
 
     let balance = 0;
@@ -518,19 +519,19 @@ const EventCard = memo(function EventCard({
     });
 
     if (Math.abs(balance) < 0.005) {
-      return { text: 'Settled', tone: 'neutral' as const };
+      return { text: t('events.cards.settled'), tone: 'neutral' as const };
     }
     if (balance > 0) {
       return {
-        text: `You get ${formatCurrencyAmount(eventCurrencyCode, balance)}`,
+        text: t('events.cards.collect', { amount: formatCurrencyAmount(eventCurrencyCode, balance) }),
         tone: 'positive' as const,
       };
     }
     return {
-      text: `You owe ${formatCurrencyAmount(eventCurrencyCode, Math.abs(balance))}`,
+      text: t('events.cards.pay', { amount: formatCurrencyAmount(eventCurrencyCode, Math.abs(balance)) }),
       tone: 'negative' as const,
     };
-  }, [currentUserId, effectiveDebts, event.participants, eventCurrencyCode]);
+  }, [currentUserId, effectiveDebts, event.participants, eventCurrencyCode, t]);
 
   const statusStyle = useMemo(() => {
     if (status.tone === 'positive') {
@@ -608,7 +609,7 @@ const EventCard = memo(function EventCard({
             <View style={styles.totalRow}>
               <View>
                 <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Total
+                  {t('events.totals.total')}
                 </Text>
                 <Text variant="titleMedium">{formatCurrencyAmount(eventCurrencyCode, total)}</Text>
               </View>

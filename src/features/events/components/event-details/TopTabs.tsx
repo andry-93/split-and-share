@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 
 export type EventDetailsTab = 'expenses' | 'debts' | 'people';
@@ -11,6 +12,7 @@ type TopTabsProps = {
 };
 
 export const TopTabs = memo(function TopTabs({ activeTab, onTabChange }: TopTabsProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   return (
@@ -25,19 +27,19 @@ export const TopTabs = memo(function TopTabs({ activeTab, onTabChange }: TopTabs
       ]}
     >
       <TabButton
-        label="Expenses"
+        label={t('events.tabs.expenses')}
         value="expenses"
         activeTab={activeTab}
         onPress={onTabChange}
       />
       <TabButton
-        label="Debts"
+        label={t('events.tabs.debts')}
         value="debts"
         activeTab={activeTab}
         onPress={onTabChange}
       />
       <TabButton
-        label="People"
+        label={t('events.tabs.people')}
         value="people"
         activeTab={activeTab}
         onPress={onTabChange}
@@ -74,4 +76,3 @@ const TabButton = memo(function TabButton({ label, value, activeTab, onPress }: 
     </Pressable>
   );
 });
-
