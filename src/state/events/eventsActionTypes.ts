@@ -27,7 +27,7 @@ export type AddExpensePayload = {
   expense: {
     id: string;
     title: string;
-    amount: number;
+    amountMinor: number;
     paidBy: string;
     paidById?: string;
     splitBetweenIds: string[];
@@ -39,7 +39,7 @@ export type UpdateExpensePayload = {
   expenseId: string;
   patch: {
     title: string;
-    amount: number;
+    amountMinor: number;
     paidBy: string;
     paidById?: string;
     splitBetweenIds: string[];

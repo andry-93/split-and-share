@@ -8,6 +8,7 @@ import { AppList } from '@/shared/ui/AppList';
 import { AppConfirm } from '@/shared/ui/AppConfirm';
 import {
   formatCurrencyAmount,
+  fromMinorUnits,
   parseMoneyAmount,
 } from '@/shared/utils/money';
 import { formatMoneyInputValue, getAmountInputPlaceholder } from '@/shared/utils/numberFormat';
@@ -25,8 +26,8 @@ type DebtsPanelProps = {
   baseSimplifiedCount: number;
   paidSimplifiedCount: number;
   currencyCode: string;
-  onMarkDetailedPaid: (debt: RawDebt, amount: number) => void;
-  onMarkSimplifiedPaid: (debt: SimplifiedDebt, amount: number) => void;
+  onMarkDetailedPaid: (debt: RawDebt, amountMinor: number) => void;
+  onMarkSimplifiedPaid: (debt: SimplifiedDebt, amountMinor: number) => void;
   rawContainerHeight?: number;
   onViewportLayout: (event: LayoutChangeEvent) => void;
   onHintLayout: (height: number) => void;
@@ -64,13 +65,13 @@ export const DebtsPanel = memo(function DebtsPanel({
 
   const openDetailedPaymentConfirm = useCallback((debt: RawDebt) => {
     setPendingPayment({ mode: 'detailed', debt });
-    setPaymentAmount(formatMoneyInputValue(debt.amount));
+    setPaymentAmount(formatMoneyInputValue(fromMinorUnits(debt.amountMinor)));
     setPaymentError('');
   }, []);
 
   const openSimplifiedPaymentConfirm = useCallback((debt: SimplifiedDebt) => {
     setPendingPayment({ mode: 'simplified', debt });
-    setPaymentAmount(formatMoneyInputValue(debt.amount));
+    setPaymentAmount(formatMoneyInputValue(fromMinorUnits(debt.amountMinor)));
     setPaymentError('');
   }, []);
 
@@ -88,9 +89,9 @@ export const DebtsPanel = memo(function DebtsPanel({
       return;
     }
 
-    const parsed = parseMoneyAmount(paymentAmount);
-    const maxAmount = pendingPayment.debt.amount;
-    const validation = validatePaymentAmount(parsed, maxAmount);
+    const amountMinor = Math.round(parseMoneyAmount(paymentAmount) * 100);
+    const maxAmountMinor = pendingPayment.debt.amountMinor;
+    const validation = validatePaymentAmount(amountMinor, maxAmountMinor);
 
     if (!validation.valid && validation.reason === 'invalid_amount') {
       setPaymentError(t('events.tabs.enterValidAmount'));
@@ -98,7 +99,7 @@ export const DebtsPanel = memo(function DebtsPanel({
     }
 
     if (!validation.valid && validation.reason === 'exceeds_remaining') {
-      setPaymentError(t('events.tabs.amountCannotExceed', { amount: formatCurrencyAmount(currencyCode, maxAmount) }));
+      setPaymentError(t('events.tabs.amountCannotExceed', { amount: formatCurrencyAmount(currencyCode, fromMinorUnits(maxAmountMinor)) }));
       return;
     }
 
@@ -108,9 +109,9 @@ export const DebtsPanel = memo(function DebtsPanel({
     }
 
     if (pendingPayment.mode === 'detailed') {
-      onMarkDetailedPaid(pendingPayment.debt, validation.normalizedAmount);
+      onMarkDetailedPaid(pendingPayment.debt, amountMinor);
     } else {
-      onMarkSimplifiedPaid(pendingPayment.debt, validation.normalizedAmount);
+      onMarkSimplifiedPaid(pendingPayment.debt, amountMinor);
     }
 
     closePaymentConfirm();
@@ -202,7 +203,7 @@ export const DebtsPanel = memo(function DebtsPanel({
               {pendingPayment.debt.from.name} {t('events.tabs.payTo', { name: pendingPayment.debt.to.name })}
             </Text>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {t('events.tabs.remaining', { amount: formatCurrencyAmount(currencyCode, pendingPayment.debt.amount) })}
+              {t('events.tabs.remaining', { amount: formatCurrencyAmount(currencyCode, fromMinorUnits(pendingPayment.debt.amountMinor)) })}
             </Text>
             <Text variant="labelLarge" style={localStyles.amountLabel}>
               {t('events.tabs.amountWithCurrency', { currency: currencyCode })}
@@ -357,7 +358,7 @@ const DetailedDebtRow = memo(function DetailedDebtRow({
       </View>
       <View style={styles.simplifiedDebtRight}>
         <Text variant="titleMedium" style={[styles.amount, styles.simplifiedAmount]}>
-          {formatCurrencyAmount(currencyCode, debt.amount)}
+          {formatCurrencyAmount(currencyCode, fromMinorUnits(debt.amountMinor))}
         </Text>
         <Button
           mode="text"
@@ -399,7 +400,7 @@ const SimplifiedDebtRow = memo(function SimplifiedDebtRow({
       </View>
       <View style={styles.simplifiedDebtRight}>
         <Text variant="titleMedium" style={[styles.amount, styles.simplifiedAmount]}>
-          {formatCurrencyAmount(currencyCode, debt.amount)}
+          {formatCurrencyAmount(currencyCode, fromMinorUnits(debt.amountMinor))}
         </Text>
         <Button
           mode="text"

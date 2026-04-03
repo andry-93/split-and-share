@@ -18,18 +18,18 @@ export function sanitizeSplitParticipantIds(
   return Array.from(new Set(allParticipantIds.filter(Boolean)));
 }
 
-export function validatePaymentAmount(amount: number, maxAmount: number): PaymentValidationResult {
-  const amountMinor = toMinorUnits(amount);
-  const maxMinor = toMinorUnits(maxAmount);
+export function validatePaymentAmount(amountMinor: number, maxAmountMinor: number): PaymentValidationResult {
+  const roundedAmountMinor = Math.round(amountMinor);
+  const roundedMaxMinor = Math.round(maxAmountMinor);
 
-  if (!Number.isFinite(amount) || amountMinor <= 0) {
+  if (!Number.isFinite(roundedAmountMinor) || roundedAmountMinor <= 0) {
     return {
       valid: false,
       reason: 'invalid_amount',
     };
   }
 
-  if (amountMinor > maxMinor) {
+  if (roundedAmountMinor > roundedMaxMinor) {
     return {
       valid: false,
       reason: 'exceeds_remaining',
@@ -38,6 +38,6 @@ export function validatePaymentAmount(amount: number, maxAmount: number): Paymen
 
   return {
     valid: true,
-    normalizedAmount: fromMinorUnits(amountMinor),
+    normalizedAmount: fromMinorUnits(roundedAmountMinor),
   };
 }

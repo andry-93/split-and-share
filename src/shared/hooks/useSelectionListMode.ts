@@ -1,6 +1,7 @@
 import { BackHandler } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSelectionMode } from '@/shared/hooks/useSelectionMode';
 
 type SelectionItem = {
@@ -18,6 +19,7 @@ export function useSelectionListMode<TItem extends SelectionItem>({
   canSelect,
   enableBeforeRemoveExit = false,
 }: UseSelectionListModeParams<TItem>) {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const {
     isEditMode,
@@ -64,7 +66,7 @@ export function useSelectionListMode<TItem extends SelectionItem>({
 
   const getToolbarProps = useCallback(
     (onDelete: () => void) => ({
-      title: `Selected ${selectedIds.length}`,
+      title: t('common.selectedCount', { count: selectedIds.length }),
       totalSelectableCount: selectableIds.length,
       selectedCount: selectedIds.length,
       onToggleSelectAll: toggleSelectAll,

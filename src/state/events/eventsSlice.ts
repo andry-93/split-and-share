@@ -108,7 +108,7 @@ export const eventsSlice = createSlice({
                   ? {
                       ...expense,
                       title: patch.title,
-                      amount: patch.amount,
+                      amountMinor: patch.amountMinor,
                       paidBy: patch.paidBy,
                       paidById: patch.paidById,
                       splitBetweenIds: [...patch.splitBetweenIds],

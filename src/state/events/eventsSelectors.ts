@@ -7,7 +7,7 @@ import {
   DebtMinor,
   toDebtMinor,
 } from '@/domain/finance/debtEngine';
-import { fromMinorUnits, sumAmountsToMinor, toMinorUnits } from '@/domain/finance/minorUnits';
+import { fromMinorUnits, sumMinorUnits, toMinorUnits } from '@/domain/finance/minorUnits';
 import { EventGroupItem, EventItem, ExpenseItem, ParticipantItem } from '@/features/events/types/events';
 import { EventPayment } from '@/state/events/paymentsModel';
 import { EventsState } from '@/state/events/eventsTypes';
@@ -17,14 +17,14 @@ export type RawDebt = {
   id: string;
   from: ParticipantItem;
   to: ParticipantItem;
-  amount: number;
+  amountMinor: number;
 };
 
 export type SimplifiedDebt = {
   id: string;
   from: ParticipantItem;
   to: ParticipantItem;
-  amount: number;
+  amountMinor: number;
 };
 
 export type PaymentEntry = EventPayment;
@@ -72,7 +72,7 @@ function mapDebtMinorToRawDebts(
         id: debt.id,
         from,
         to,
-        amount: fromMinorUnits(debt.amountMinor),
+        amountMinor: debt.amountMinor,
       } satisfies RawDebt;
     })
     .filter((debt): debt is RawDebt => debt !== null);
@@ -84,7 +84,7 @@ function toDebtMinorList(rawDebts: RawDebt[]): DebtMinor[] {
       id: debt.id,
       from: { id: debt.from.id },
       to: { id: debt.to.id },
-      amount: debt.amount,
+      amountMinor: debt.amountMinor,
     })),
   );
 }
@@ -148,7 +148,7 @@ export function selectTotalAmount(event?: EventItem) {
     return 0;
   }
 
-  return fromMinorUnits(sumAmountsToMinor(event.expenses.map((expense) => expense.amount)));
+  return fromMinorUnits(sumMinorUnits(event.expenses.map((expense) => expense.amountMinor)));
 }
 
 export function selectEventStats(event?: EventItem) {
@@ -168,7 +168,7 @@ export function selectExpensesCount(event?: EventItem) {
 }
 
 export function selectOutstandingTotal(rawDebts: RawDebt[]) {
-  return fromMinorUnits(sumAmountsToMinor(rawDebts.map((debt) => debt.amount)));
+  return fromMinorUnits(sumMinorUnits(rawDebts.map((debt) => debt.amountMinor)));
 }
 
 export function selectOutstandingPeopleCount(rawDebts: RawDebt[]) {
@@ -271,7 +271,7 @@ export function createEventDetailsSelectors() {
         balanceByIdMinor.set(participant.id, 0);
       });
       rawDebts.forEach((debt) => {
-        const debtMinor = toMinorUnits(debt.amount);
+        const debtMinor = Math.round(debt.amountMinor);
         balanceByIdMinor.set(debt.from.id, (balanceByIdMinor.get(debt.from.id) ?? 0) - debtMinor);
         balanceByIdMinor.set(debt.to.id, (balanceByIdMinor.get(debt.to.id) ?? 0) + debtMinor);
       });

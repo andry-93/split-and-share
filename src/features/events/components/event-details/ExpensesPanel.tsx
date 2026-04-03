@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ExpenseItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
-import { formatCurrencyAmount } from '@/shared/utils/money';
+import { formatCurrencyAmount, fromMinorUnits } from '@/shared/utils/money';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
 import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
@@ -188,7 +188,7 @@ const ExpenseCard = memo(function ExpenseCard({
               </Text>
             </View>
             <Text variant="titleMedium" style={styles.amount}>
-              {formatCurrencyAmount(currencyCode, expense.amount)}
+              {formatCurrencyAmount(currencyCode, fromMinorUnits(expense.amountMinor))}
             </Text>
           </Card.Content>
           {selectable ? (

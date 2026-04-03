@@ -5,7 +5,7 @@ export type EventPayment = {
   eventId: string;
   fromId: string;
   toId: string;
-  amount: number;
+  amountMinor: number;
   createdAt: string;
   source: PaymentSource;
 };
@@ -15,7 +15,7 @@ type CreateEventPaymentInput = {
   eventId: string;
   fromId: string;
   toId: string;
-  amount: number;
+  amountMinor: number;
   source: PaymentSource;
 };
 
@@ -25,7 +25,7 @@ export function createEventPayment(input: CreateEventPaymentInput): EventPayment
     eventId: input.eventId,
     fromId: input.fromId,
     toId: input.toId,
-    amount: input.amount,
+    amountMinor: input.amountMinor,
     source: input.source,
     createdAt: new Date().toISOString(),
   };

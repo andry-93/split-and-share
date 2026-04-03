@@ -13,7 +13,7 @@ export type SeedPerson = {
 export type SeedExpense = {
   id: string;
   title: string;
-  amount: number;
+  amountMinor: number;
   paidById: string;
   splitBetweenIds: string[];
   createdAt?: string;
@@ -81,7 +81,7 @@ const eventsSeed: SeedEvent[] = [
       {
         id: 'exp-1',
         title: 'Cabin rental',
-        amount: 420,
+        amountMinor: 42000,
         paidById: 'person-1',
         splitBetweenIds: ['person-me', 'person-1', 'person-2', 'person-3'],
         createdAt: '2024-12-05T10:00:00.000Z',
@@ -90,7 +90,7 @@ const eventsSeed: SeedEvent[] = [
       {
         id: 'exp-2',
         title: 'Groceries',
-        amount: 86,
+        amountMinor: 8600,
         paidById: 'person-2',
         splitBetweenIds: ['person-me', 'person-1', 'person-2', 'person-3'],
         createdAt: '2024-12-05T13:20:00.000Z',
@@ -111,7 +111,7 @@ const eventsSeed: SeedEvent[] = [
       {
         id: 'exp-3',
         title: 'Dinner bill',
-        amount: 180,
+        amountMinor: 18000,
         paidById: 'person-4',
         splitBetweenIds: ['person-me', 'person-2', 'person-4'],
         createdAt: '2024-12-10T19:35:00.000Z',
@@ -142,7 +142,7 @@ const eventsSeed: SeedEvent[] = [
       {
         id: 'exp-4',
         title: 'Lunch bill',
-        amount: 95,
+        amountMinor: 9500,
         paidById: 'person-me',
         splitBetweenIds: ['person-me', 'person-1', 'person-3'],
         createdAt: '2024-12-12T12:40:00.000Z',
@@ -215,7 +215,7 @@ export function createInitialEventsSeed(): EventItem[] {
           return {
             id: expense.id,
             title: expense.title,
-            amount: expense.amount,
+            amountMinor: expense.amountMinor,
             paidBy: payer.name,
             paidById: payer.id,
             splitBetweenIds: [...expense.splitBetweenIds],
@@ -243,7 +243,7 @@ export type EventCalculationSeed = {
   name: string;
   currency?: string;
   participantIds: string[];
-  expenses: SeedExpense[];
+  expenses: { id: string; title: string; amountMinor: number; paidById: string; splitBetweenIds: string[] }[];
 };
 
 /**
@@ -259,7 +259,7 @@ export function createCalculationSeed(): EventCalculationSeed[] {
     expenses: event.expenses.map((expense) => ({
       id: expense.id,
       title: expense.title,
-      amount: expense.amount,
+      amountMinor: expense.amount * 100,
       paidById: expense.paidById,
       splitBetweenIds: [...expense.splitBetweenIds],
     })),

@@ -50,7 +50,7 @@ const debtsViewOptions: Array<{ value: SettingsState['debtsViewMode']; label: st
   },
 ];
 const numberFormatOptions: Array<{ value: SettingsState['numberFormat']; labelKey: string }> = [
-  { value: 'system', labelKey: 'common.system' },
+  { value: 'system', labelKey: 'common.system_masculine' },
   { value: 'us', labelKey: 'settings.numberFormatUS' },
   { value: 'eu', labelKey: 'settings.numberFormatEU' },
   { value: 'ru', labelKey: 'settings.numberFormatRU' },
@@ -251,7 +251,7 @@ export function SettingsScreen() {
     () => [
       {
         value: SYSTEM_LANGUAGE_VALUE,
-          label: t('common.system'),
+          label: t('common.system_masculine'),
           description: getLanguageLabel(systemLanguage),
       },
       ...getOrderedLanguageOptions(settings.language, systemLanguage).map((option) => ({
@@ -266,7 +266,7 @@ export function SettingsScreen() {
       [
         {
           value: SYSTEM_CURRENCY_VALUE,
-          label: t('common.system'),
+          label: t('common.system_feminine'),
           description: `${getCurrencyOptionLabel(systemCurrency, languageLocale)} • ${getCurrencyName(systemCurrency, languageLocale)}`,
         },
         ...currencyOptions.map((option) => ({
@@ -319,7 +319,7 @@ export function SettingsScreen() {
             title={t('common.language')}
             description={
               settings.languageSource === 'system'
-                ? t('settings.systemWithValue', { value: getLanguageLabel(settings.language) })
+                ? t('settings.systemWithValue_masculine', { value: getLanguageLabel(settings.language) })
                 : getLanguageLabel(settings.language)
             }
             style={styles.compactRow}
@@ -331,7 +331,7 @@ export function SettingsScreen() {
             title={t('common.currency')}
             description={
               settings.currencySource === 'system'
-                ? t('settings.systemWithValue', { value: getCurrencyDisplay(settings.currency, languageLocale) })
+                ? t('settings.systemWithValue_feminine', { value: getCurrencyDisplay(settings.currency, languageLocale) })
                 : getCurrencyDisplay(settings.currency, languageLocale)
             }
             style={styles.compactRow}
@@ -343,8 +343,8 @@ export function SettingsScreen() {
             title={t('settings.numberFormat')}
             description={
               settings.numberFormat === 'system'
-                ? t('settings.systemWithValue', { value: formatNumberExample('system') })
-                : t(numberFormatOptions.find((option) => option.value === settings.numberFormat)?.labelKey ?? 'common.system')
+                ? t('settings.systemWithValue_masculine', { value: formatNumberExample('system') })
+                : t(numberFormatOptions.find((option) => option.value === settings.numberFormat)?.labelKey ?? 'common.system_masculine')
             }
             style={styles.compactRow}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
@@ -367,7 +367,7 @@ export function SettingsScreen() {
           value={settings.theme}
           onChange={handleThemeChange}
           options={[
-            { value: 'system', label: t('common.system') },
+            { value: 'system', label: t('common.system_feminine') },
             { value: 'light', label: t('common.light') },
             { value: 'dark', label: t('common.dark') },
           ]}

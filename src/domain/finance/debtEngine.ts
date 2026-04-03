@@ -46,7 +46,7 @@ export function computeRawDebts({
         return [];
       }
 
-      const totalMinor = toMinorUnits(expense.amount);
+      const totalMinor = Math.round(expense.amountMinor);
       const baseShareMinor = Math.floor(totalMinor / splitBetweenIds.length);
       const remainderMinor = totalMinor % splitBetweenIds.length;
 
@@ -172,7 +172,7 @@ export function applyPayments(rawDebts: DebtMinor[], payments: EventPayment[]): 
     id: `detailed-payment-${index}-${payment.id}`,
     fromId: payment.toId,
     toId: payment.fromId,
-    amountMinor: toMinorUnits(payment.amount),
+    amountMinor: Math.round(payment.amountMinor),
   }));
   const detailedAdjusted = computeDetailedDebts(rawDebts.concat(detailedCompensation));
   if (simplifiedPayments.length === 0) {
@@ -184,20 +184,20 @@ export function applyPayments(rawDebts: DebtMinor[], payments: EventPayment[]): 
       id: `payment-${index}-${payment.id}`,
       fromId: payment.toId,
       toId: payment.fromId,
-      amountMinor: toMinorUnits(payment.amount),
+      amountMinor: Math.round(payment.amountMinor),
     })),
   );
 
   return computeSimplifiedDebts(withSimplifiedCompensation);
 }
 
-export function toDebtMinor(rawDebts: Array<{ id: string; from: { id: string }; to: { id: string }; amount: number }>): DebtMinor[] {
+export function toDebtMinor(rawDebts: Array<{ id: string; from: { id: string }; to: { id: string }; amountMinor: number }>): DebtMinor[] {
   return compactDebts(
     rawDebts.map((debt) => ({
       id: debt.id,
       fromId: debt.from.id,
       toId: debt.to.id,
-      amountMinor: toMinorUnits(debt.amount),
+      amountMinor: Math.round(debt.amountMinor),
     })),
   );
 }

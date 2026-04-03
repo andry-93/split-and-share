@@ -51,7 +51,10 @@ export function useAddExpenseForm({
     () => participantOptions.find((participant) => participant.id === paidById)?.name ?? '',
     [paidById, participantOptions],
   );
-  const parsedAmount = useMemo(() => parseMoneyAmount(amount), [amount]);
+  const parsedAmountMinor = useMemo(() => {
+    const parsed = parseMoneyAmount(amount);
+    return Number.isFinite(parsed) ? Math.round(parsed * 100) : Number.NaN;
+  }, [amount]);
 
   const isSaveDisabled = useMemo(() => {
     if (!amount.trim() || !title.trim() || !paidById.trim()) {
@@ -60,11 +63,11 @@ export function useAddExpenseForm({
     if (selectedParticipantIds.length === 0) {
       return true;
     }
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    if (!Number.isFinite(parsedAmountMinor) || parsedAmountMinor <= 0) {
       return true;
     }
     return false;
-  }, [amount, paidById, parsedAmount, selectedParticipantIds.length, title]);
+  }, [amount, paidById, parsedAmountMinor, selectedParticipantIds.length, title]);
 
   useEffect(() => {
     setAmount(initialAmount);
@@ -112,7 +115,7 @@ export function useAddExpenseForm({
     participantIds,
     selectedCurrencyCode,
     paidBy,
-    parsedAmount,
+    parsedAmountMinor,
     isSaveDisabled,
     setAmount,
     setTitle,

@@ -9,6 +9,7 @@ import {
   selectTotalAmount,
 } from '@/state/events/eventsSelectors';
 import { EventPayment } from '@/state/events/paymentsModel';
+import { fromMinorUnits } from '@/domain/finance/minorUnits';
 
 const now = '2025-01-01T00:00:00.000Z';
 
@@ -16,7 +17,7 @@ function participant(id: string, name: string): ParticipantItem {
   return { id, name };
 }
 
-function createEvent(participants: ParticipantItem[], splitBetweenIds: string[], amount = 120): EventItem {
+function createEvent(participants: ParticipantItem[], splitBetweenIds: string[], amountMinor = 12000): EventItem {
   return {
     id: 'event-1',
     name: 'Test event',
@@ -26,7 +27,7 @@ function createEvent(participants: ParticipantItem[], splitBetweenIds: string[],
       {
         id: 'expense-1',
         title: 'Test expense',
-        amount,
+        amountMinor,
         paidBy: participants[0]?.name ?? '',
         paidById: participants[0]?.id,
         splitBetweenIds,
@@ -42,7 +43,7 @@ function payment(
   id: string,
   fromId: string,
   toId: string,
-  amount: number,
+  amountMinor: number,
   source: EventPayment['source'] = 'detailed',
 ): EventPayment {
   return {
@@ -50,7 +51,7 @@ function payment(
     eventId: 'event-1',
     fromId,
     toId,
-    amount,
+    amountMinor,
     createdAt: now,
     source,
   };
@@ -61,7 +62,7 @@ function normalizeDebts(rawDebts: RawDebt[]) {
     .map((debt) => ({
       fromId: debt.from.id,
       toId: debt.to.id,
-      amount: Number(debt.amount.toFixed(2)),
+      amountMinor: debt.amountMinor,
     }))
     .sort((left, right) =>
       `${left.fromId}-${left.toId}`.localeCompare(`${right.fromId}-${right.toId}`),
@@ -80,7 +81,7 @@ describe('eventsSelectors financial logic', () => {
     const event = createEvent(participants, ['p1', 'p2']);
     const rawDebts = selectRawDebts(event);
 
-    expect(normalizeDebts(rawDebts)).toEqual([{ fromId: 'p2', toId: 'p1', amount: 60 }]);
+    expect(normalizeDebts(rawDebts)).toEqual([{ fromId: 'p2', toId: 'p1', amountMinor: 6000 }]);
   });
 
   it('applies partial detailed payments without changing other debts', () => {
@@ -89,14 +90,14 @@ describe('eventsSelectors financial logic', () => {
       participant('p2', 'Bob'),
       participant('p3', 'Charlie'),
     ];
-    const event = createEvent(participants, ['p1', 'p2', 'p3'], 90);
+    const event = createEvent(participants, ['p1', 'p2', 'p3'], 9000);
     const rawDebts = selectRawDebts(event);
 
-    const effective = selectEffectiveRawDebts(rawDebts, [payment('pay-1', 'p2', 'p1', 10, 'detailed')]);
+    const effective = selectEffectiveRawDebts(rawDebts, [payment('pay-1', 'p2', 'p1', 1000, 'detailed')]);
 
     expect(normalizeDebts(selectDetailedDebts(effective))).toEqual([
-      { fromId: 'p2', toId: 'p1', amount: 20 },
-      { fromId: 'p3', toId: 'p1', amount: 30 },
+      { fromId: 'p2', toId: 'p1', amountMinor: 2000 },
+      { fromId: 'p3', toId: 'p1', amountMinor: 3000 },
     ]);
   });
 
@@ -106,12 +107,12 @@ describe('eventsSelectors financial logic', () => {
       participant('p2', 'Bob'),
       participant('p3', 'Charlie'),
     ];
-    const event = createEvent(participants, ['p2', 'p3'], 90);
+    const event = createEvent(participants, ['p2', 'p3'], 9000);
     const rawDebts = selectRawDebts(event);
 
     expect(normalizeDebts(rawDebts)).toEqual([
-      { fromId: 'p2', toId: 'p1', amount: 45 },
-      { fromId: 'p3', toId: 'p1', amount: 45 },
+      { fromId: 'p2', toId: 'p1', amountMinor: 4500 },
+      { fromId: 'p3', toId: 'p1', amountMinor: 4500 },
     ]);
   });
 
@@ -121,18 +122,18 @@ describe('eventsSelectors financial logic', () => {
         id: 'd-1',
         from: participant('p2', 'Bob'),
         to: participant('p1', 'Alice'),
-        amount: 60,
+        amountMinor: 6000,
       },
       {
         id: 'd-2',
         from: participant('p3', 'Charlie'),
         to: participant('p1', 'Alice'),
-        amount: 30,
+        amountMinor: 3000,
       },
     ];
 
     const effectiveRaw = selectEffectiveRawDebts(rawDebts, [
-      payment('pay-1', 'p2', 'p1', 15, 'simplified'),
+      payment('pay-1', 'p2', 'p1', 1500, 'simplified'),
     ]);
     const simplified = selectSimplifiedDebts(effectiveRaw);
 
@@ -140,12 +141,12 @@ describe('eventsSelectors financial logic', () => {
       simplified.map((debt) => ({
         fromId: debt.from.id,
         toId: debt.to.id,
-        amount: Number(debt.amount.toFixed(2)),
+        amountMinor: debt.amountMinor,
       })),
     ).toEqual(
       expect.arrayContaining([
-        { fromId: 'p2', toId: 'p1', amount: 45 },
-        { fromId: 'p3', toId: 'p1', amount: 30 },
+        { fromId: 'p2', toId: 'p1', amountMinor: 4500 },
+        { fromId: 'p3', toId: 'p1', amountMinor: 3000 },
       ]),
     );
   });
@@ -156,20 +157,20 @@ describe('eventsSelectors financial logic', () => {
         id: 'd-1',
         from: participant('p2', 'Bob'),
         to: participant('p1', 'Alice'),
-        amount: 100,
+        amountMinor: 10000,
       },
     ];
     const ordered = selectEffectiveRawDebts(rawDebts, [
-      payment('pay-1', 'p2', 'p1', 10),
-      payment('pay-2', 'p2', 'p1', 20),
+      payment('pay-1', 'p2', 'p1', 1000),
+      payment('pay-2', 'p2', 'p1', 2000),
     ]);
     const reversed = selectEffectiveRawDebts(rawDebts, [
-      payment('pay-2', 'p2', 'p1', 20),
-      payment('pay-1', 'p2', 'p1', 10),
+      payment('pay-2', 'p2', 'p1', 2000),
+      payment('pay-1', 'p2', 'p1', 1000),
     ]);
 
     expect(normalizeDebts(ordered)).toEqual(normalizeDebts(reversed));
-    expect(normalizeDebts(ordered)).toEqual([{ fromId: 'p2', toId: 'p1', amount: 70 }]);
+    expect(normalizeDebts(ordered)).toEqual([{ fromId: 'p2', toId: 'p1', amountMinor: 7000 }]);
   });
 
   it('handles overpayment by reversing debt direction deterministically', () => {
@@ -178,13 +179,13 @@ describe('eventsSelectors financial logic', () => {
         id: 'd-1',
         from: participant('p2', 'Bob'),
         to: participant('p1', 'Alice'),
-        amount: 50,
+        amountMinor: 5000,
       },
     ];
-    const effective = selectEffectiveRawDebts(rawDebts, [payment('pay-1', 'p2', 'p1', 80, 'detailed')]);
+    const effective = selectEffectiveRawDebts(rawDebts, [payment('pay-1', 'p2', 'p1', 8000, 'detailed')]);
 
     expect(normalizeDebts(selectDetailedDebts(effective))).toEqual([
-      { fromId: 'p1', toId: 'p2', amount: 30 },
+      { fromId: 'p1', toId: 'p2', amountMinor: 3000 },
     ]);
   });
 
@@ -195,10 +196,10 @@ describe('eventsSelectors financial logic', () => {
       participant('p3', 'Charlie'),
     ];
 
-    const event = createEvent(participants, ['p1', 'p2', 'p3'], 0.02);
+    const event = createEvent(participants, ['p1', 'p2', 'p3'], 2); // 0.02 -> 2 cents
     const rawDebts = selectRawDebts(event);
 
-    expect(normalizeDebts(rawDebts)).toEqual([{ fromId: 'p2', toId: 'p1', amount: 0.01 }]);
+    expect(normalizeDebts(rawDebts)).toEqual([{ fromId: 'p2', toId: 'p1', amountMinor: 1 }]);
   });
 
   it('calculates event totals in stable minor units', () => {
@@ -206,11 +207,11 @@ describe('eventsSelectors financial logic', () => {
       participant('p1', 'Alice'),
       participant('p2', 'Bob'),
     ];
-    const event = createEvent(participants, ['p1', 'p2'], 0.1);
+    const event = createEvent(participants, ['p1', 'p2'], 10); // 0.10 -> 10 cents
     event.expenses.push({
       id: 'expense-2',
       title: 'Second',
-      amount: 0.2,
+      amountMinor: 20, // 0.20 -> 20 cents
       paidBy: participants[0].name,
       paidById: participants[0].id,
       splitBetweenIds: ['p1', 'p2'],
@@ -219,6 +220,7 @@ describe('eventsSelectors financial logic', () => {
     });
 
     expect(selectTotalAmount(event)).toBe(0.3);
-    expect(selectEventStats(event).totalAmount).toBe(0.3);
+    const stats = selectEventStats(event);
+    expect(stats.totalAmount).toBe(0.3);
   });
 });

@@ -22,7 +22,7 @@ export type EventGroupItem = {
 export type ExpenseItem = {
   id: string;
   title: string;
-  amount: number;
+  amountMinor: number;
   paidBy: string;
   paidById?: string;
   splitBetweenIds: string[];

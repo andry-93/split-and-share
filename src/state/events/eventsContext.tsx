@@ -99,14 +99,14 @@ export function useEventsActions() {
       },
       addExpense: (payload: {
         eventId: string;
-        expense: { title: string; amount: number; paidBy: string; paidById?: string; splitBetweenIds: string[] };
+        expense: { title: string; amountMinor: number; paidBy: string; paidById?: string; splitBetweenIds: string[] };
       }) => {
         const trimmedTitle = payload.expense.title.trim();
         if (!trimmedTitle) {
           throw new Error(i18n.t('events.expenseTitleRequired'));
         }
 
-        if (!Number.isFinite(payload.expense.amount) || payload.expense.amount <= 0) {
+        if (!Number.isFinite(payload.expense.amountMinor) || payload.expense.amountMinor <= 0) {
           throw new Error(i18n.t('events.amountPositiveRequired'));
         }
 
@@ -120,7 +120,7 @@ export function useEventsActions() {
         const nextExpense = {
           id: createEntityId('expense'),
           title: trimmedTitle,
-          amount: payload.expense.amount,
+          amountMinor: payload.expense.amountMinor,
           paidBy: payload.expense.paidBy,
           paidById: payload.expense.paidById,
           splitBetweenIds: normalizedSplitBetweenIds,
@@ -136,14 +136,14 @@ export function useEventsActions() {
       updateExpense: (payload: {
         eventId: string;
         expenseId: string;
-        patch: { title: string; amount: number; paidBy: string; paidById?: string; splitBetweenIds: string[] };
+        patch: { title: string; amountMinor: number; paidBy: string; paidById?: string; splitBetweenIds: string[] };
       }) => {
         const trimmedTitle = payload.patch.title.trim();
         if (!trimmedTitle) {
           throw new Error(i18n.t('events.expenseTitleRequired'));
         }
 
-        if (!Number.isFinite(payload.patch.amount) || payload.patch.amount <= 0) {
+        if (!Number.isFinite(payload.patch.amountMinor) || payload.patch.amountMinor <= 0) {
           throw new Error(i18n.t('events.amountPositiveRequired'));
         }
 
@@ -160,7 +160,7 @@ export function useEventsActions() {
             expenseId: payload.expenseId,
             patch: {
               title: trimmedTitle,
-              amount: payload.patch.amount,
+              amountMinor: payload.patch.amountMinor,
               paidBy: payload.patch.paidBy,
               paidById: payload.patch.paidById,
               splitBetweenIds: normalizedSplitBetweenIds,
@@ -184,7 +184,7 @@ export function useEventsActions() {
           }),
         );
       },
-      registerPayment: (payload: { eventId: string; fromId: string; toId: string; amount: number; source: PaymentSource }) => {
+      registerPayment: (payload: { eventId: string; fromId: string; toId: string; amountMinor: number; source: PaymentSource }) => {
         const event = selectEventById(eventsState, payload.eventId);
         if (!event) {
           return;
@@ -204,7 +204,7 @@ export function useEventsActions() {
           return;
         }
 
-        const validation = validatePaymentAmount(payload.amount, targetDebt.amount);
+        const validation = validatePaymentAmount(payload.amountMinor, targetDebt.amountMinor);
         if (!validation.valid) {
           return;
         }
@@ -217,7 +217,7 @@ export function useEventsActions() {
               eventId: payload.eventId,
               fromId: payload.fromId,
               toId: payload.toId,
-              amount: validation.normalizedAmount,
+              amountMinor: payload.amountMinor,
               source: payload.source,
             }),
           }),

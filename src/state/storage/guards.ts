@@ -130,6 +130,7 @@ function normalizeEventItem(value: EventItem): EventItem {
 
       return {
         ...expense,
+        amountMinor: typeof expense.amountMinor === 'number' ? Math.round(expense.amountMinor) : 0,
         splitBetweenIds:
           normalizedSplitBetween.length > 0
             ? normalizedSplitBetween
@@ -169,7 +170,7 @@ function isEventPayment(value: unknown): value is EventPayment {
     typeof value.eventId === 'string' &&
     typeof value.fromId === 'string' &&
     typeof value.toId === 'string' &&
-    Number.isFinite(value.amount) &&
+    Number.isFinite(value.amountMinor) &&
     typeof value.createdAt === 'string' &&
     (value.source === 'detailed' || value.source === 'simplified')
   );
