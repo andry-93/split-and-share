@@ -16,6 +16,7 @@ import { OutlinedFieldContainer } from '@/shared/ui/OutlinedFieldContainer';
 import { useAutofocusWithRetry } from '@/shared/hooks/useAutofocusWithRetry';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 import { validatePaymentAmount } from '@/domain/finance/invariants';
+import { MathAccessoryBar } from '@/shared/ui/MathAccessoryBar';
 
 type DebtsPanelProps = {
   mode: 'detailed' | 'simplified';
@@ -83,6 +84,10 @@ export const DebtsPanel = memo(function DebtsPanel({
   const handleConfirmShow = useCallback(() => {
     focusAmountInputWithRetry();
   }, [focusAmountInputWithRetry]);
+
+  const handleInsertChar = useCallback((char: string) => {
+    setPaymentAmount((prev) => prev + char);
+  }, []);
 
   const handleConfirmPayment = useCallback(() => {
     if (!pendingPayment) {
@@ -228,6 +233,7 @@ export const DebtsPanel = memo(function DebtsPanel({
                 placeholderTextColor={theme.colors.onSurfaceVariant}
                 selectionColor={theme.colors.primary}
               />
+              <MathAccessoryBar onInsert={handleInsertChar} />
             </OutlinedFieldContainer>
             {paymentError ? (
               <Text variant="bodySmall" style={{ color: theme.colors.error }}>
@@ -426,8 +432,7 @@ const localStyles = StyleSheet.create({
     marginTop: 4,
   },
   amountFieldContainer: {
-    minHeight: 56,
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
   amountField: {
     height: 52,

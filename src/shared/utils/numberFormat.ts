@@ -63,7 +63,7 @@ export function formatDecimalAmount(amount: number, locale?: string): string {
   return formatter.format(amount);
 }
 
-function getDecimalSeparator(locale?: string): '.' | ',' {
+export function getDecimalSeparator(locale?: string): '.' | ',' {
   try {
     const parts = new Intl.NumberFormat(resolveNumberLocale(locale)).formatToParts(1.1);
     const decimal = parts.find((part) => part.type === 'decimal')?.value;

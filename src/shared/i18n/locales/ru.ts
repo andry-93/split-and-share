@@ -27,6 +27,7 @@ const locale = {
     noGroup: 'Без группы',
     name: 'Имя',
     note: 'Заметка',
+    apply: 'Применить',
   },
   navigation: {
     events: 'События',

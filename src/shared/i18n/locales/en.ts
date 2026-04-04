@@ -27,6 +27,7 @@ const en = {
     noGroup: 'No group',
     name: 'Name',
     note: 'Note',
+    apply: 'Apply',
   },
   navigation: {
     events: 'Events',

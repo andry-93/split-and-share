@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { TextInput as RNTextInput } from 'react-native';
+import { ScrollView, TextInput as RNTextInput } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 import { Button, Divider, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -301,8 +301,7 @@ export function SettingsScreen() {
     <BottomTabSwipeBoundary currentTab="ProfileTab">
       <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       <AppHeader title={t('settings.title')} />
-
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Text variant="labelLarge" style={styles.sectionLabel}>
           {t('settings.preferences')}
         </Text>
@@ -374,9 +373,11 @@ export function SettingsScreen() {
           sizeMode="equal"
           variant="segmented"
         />
-        <Text variant="bodySmall" style={[styles.appearanceHint, { color: theme.colors.onSurfaceVariant }]}>
-          {t('settings.systemFollowsDevice')}
-        </Text>
+        {settings.theme === 'system' && (
+          <Text variant="bodySmall" style={[styles.appearanceHint, { color: theme.colors.onSurfaceVariant }]}>
+            {t('settings.systemFollowsDevice')}
+          </Text>
+        )}
 
         <Text variant="labelLarge" style={styles.sectionLabel}>
           {t('settings.about')}
@@ -395,7 +396,7 @@ export function SettingsScreen() {
         <Text variant="bodySmall" style={[styles.resetHint, { color: theme.colors.onSurfaceVariant }]}>
           {t('settings.resetSettingsHint')}
         </Text>
-      </View>
+      </ScrollView>
 
       <AppSingleSelectBottomSheet
         ref={languageSheetRef}

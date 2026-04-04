@@ -256,12 +256,12 @@ export function createCalculationSeed(): EventCalculationSeed[] {
     name: event.name,
     currency: event.currency,
     participantIds: [...event.participantIds],
-    expenses: event.expenses.map((expense) => ({
-      id: expense.id,
-      title: expense.title,
-      amountMinor: expense.amount * 100,
-      paidById: expense.paidById,
-      splitBetweenIds: [...expense.splitBetweenIds],
-    })),
+      expenses: event.expenses.map((expense) => ({
+        id: expense.id,
+        title: expense.title,
+        amountMinor: expense.amountMinor,
+        paidById: expense.paidById,
+        splitBetweenIds: [...expense.splitBetweenIds],
+      })),
   }));
 }

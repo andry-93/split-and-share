@@ -119,12 +119,12 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const outstandingModeLabel = debtsMode === 'detailed' ? t('events.tabs.detailed') : t('events.tabs.simplified');
 
   const handleMarkSimplifiedPaid = useCallback(
-    (debt: SimplifiedDebt, amount: number) => {
+    (debt: SimplifiedDebt, amountMinor: number) => {
       registerPayment({
         eventId: event.id,
         fromId: debt.from.id,
         toId: debt.to.id,
-        amount,
+        amountMinor,
         source: 'simplified',
       });
     },
@@ -132,12 +132,12 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   );
 
   const handleMarkDetailedPaid = useCallback(
-    (debt: RawDebt, amount: number) => {
+    (debt: RawDebt, amountMinor: number) => {
       registerPayment({
         eventId: event.id,
         fromId: debt.from.id,
         toId: debt.to.id,
-        amount,
+        amountMinor,
         source: 'detailed',
       });
     },

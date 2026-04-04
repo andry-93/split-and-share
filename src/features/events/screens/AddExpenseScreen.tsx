@@ -60,6 +60,8 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     selectedParticipantIds,
     selectedCurrencyCode,
     paidBy,
+    isExpression,
+    calculationResult,
     parsedAmountMinor,
     isSaveDisabled,
     setAmount,
@@ -167,6 +169,10 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     navigation.goBack();
   }, [closeDeleteConfirm, editingExpense, eventId, navigation, removeExpenses]);
 
+  const handleApplyResult = useCallback((result: number) => {
+    setAmount(formatMoneyInputValue(result));
+  }, [setAmount]);
+
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
       <AppHeader title={isEditMode ? t('events.editExpense') : t('events.addExpense')} onBackPress={handleBack} />
@@ -185,7 +191,14 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AmountField currencyCode={selectedCurrencyCode} value={amount} onChangeText={setAmount} />
+          <AmountField
+            currencyCode={selectedCurrencyCode}
+            value={amount}
+            onChangeText={setAmount}
+            isExpression={isExpression}
+            calculationResult={calculationResult}
+            onApplyResult={handleApplyResult}
+          />
 
           <TitleField value={title} onChangeText={setTitle} />
 

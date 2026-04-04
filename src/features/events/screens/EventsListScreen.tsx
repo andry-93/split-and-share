@@ -511,14 +511,14 @@ const EventCard = memo(function EventCard({
     let balance = 0;
     effectiveDebts.forEach((debt) => {
       if (debt.from.id === currentUser.id) {
-        balance -= debt.amount;
+        balance -= debt.amountMinor;
       }
       if (debt.to.id === currentUser.id) {
-        balance += debt.amount;
+        balance += debt.amountMinor;
       }
     });
 
-    if (Math.abs(balance) < 0.005) {
+    if (Math.abs(balance) < 0.5) {
       return { text: t('events.cards.settled'), tone: 'neutral' as const };
     }
     if (balance > 0) {

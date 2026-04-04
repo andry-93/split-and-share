@@ -51,9 +51,17 @@ export function useAddExpenseForm({
     () => participantOptions.find((participant) => participant.id === paidById)?.name ?? '',
     [paidById, participantOptions],
   );
-  const parsedAmountMinor = useMemo(() => {
-    const parsed = parseMoneyAmount(amount);
-    return Number.isFinite(parsed) ? Math.round(parsed * 100) : Number.NaN;
+  const { isExpression, calculationResult, parsedAmountMinor } = useMemo(() => {
+    const normalized = amount.trim();
+    const hasOperators = /[+\-*/()]/.test(normalized);
+    const parsed = parseMoneyAmount(normalized);
+    const isValid = Number.isFinite(parsed) && parsed > 0;
+
+    return {
+      isExpression: hasOperators,
+      calculationResult: hasOperators && isValid ? parsed : null,
+      parsedAmountMinor: isValid ? Math.round(parsed * 100) : Number.NaN,
+    };
   }, [amount]);
 
   const isSaveDisabled = useMemo(() => {
@@ -115,6 +123,8 @@ export function useAddExpenseForm({
     participantIds,
     selectedCurrencyCode,
     paidBy,
+    isExpression,
+    calculationResult,
     parsedAmountMinor,
     isSaveDisabled,
     setAmount,
