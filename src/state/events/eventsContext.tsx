@@ -197,16 +197,20 @@ export function useEventsActions() {
           payload.source === 'detailed'
             ? selectDetailedDebts(effectiveRawDebts)
             : selectSimplifiedDebts(effectiveRawDebts);
-        const targetDebt = sourceDebts.find(
-          (debt) => debt.from.id === payload.fromId && debt.to.id === payload.toId,
-        );
-        if (!targetDebt) {
-          return;
-        }
+        const isPool = payload.toId.startsWith('pool-') || event.pools?.some((p) => p.id === payload.toId);
 
-        const validation = validatePaymentAmount(payload.amountMinor, targetDebt.amountMinor);
-        if (!validation.valid) {
-          return;
+        if (!isPool) {
+          const targetDebt = sourceDebts.find(
+            (debt) => debt.from.id === payload.fromId && debt.to.id === payload.toId,
+          );
+          if (!targetDebt) {
+            return;
+          }
+
+          const validation = validatePaymentAmount(payload.amountMinor, targetDebt.amountMinor);
+          if (!validation.valid) {
+            return;
+          }
         }
 
         dispatch(
@@ -237,6 +241,42 @@ export function useEventsActions() {
       },
       removeExpenses: (payload: { eventId: string; expenseIds: string[] }) => {
         dispatch(eventsActions.removeExpenses(payload));
+      },
+      addPool: (payload: { eventId: string; name: string; id?: string }) => {
+        const trimmedName = payload.name.trim();
+        if (!trimmedName) {
+          throw new Error(i18n.t('events.pools.poolNameRequired'));
+        }
+        const poolId = payload.id ?? createEntityId('pool');
+        dispatch(
+          eventsActions.addPool({
+            eventId: payload.eventId,
+            pool: {
+              id: poolId,
+              name: trimmedName,
+            },
+          }),
+        );
+        return poolId;
+      },
+      updatePool: (payload: { eventId: string; poolId: string; name: string }) => {
+        const trimmedName = payload.name.trim();
+        if (!trimmedName) {
+          throw new Error(i18n.t('events.pools.poolNameRequired'));
+        }
+        dispatch(
+          eventsActions.updatePool({
+            eventId: payload.eventId,
+            poolId: payload.poolId,
+            name: trimmedName,
+          }),
+        );
+      },
+      removePool: (payload: { eventId: string; poolIds: string[] }) => {
+        dispatch(eventsActions.removePool(payload));
+      },
+      resetEvents: () => {
+        dispatch(eventsActions.resetEvents());
       },
     }),
     [dispatch, eventsState],

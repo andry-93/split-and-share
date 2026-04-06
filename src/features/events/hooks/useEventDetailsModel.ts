@@ -83,6 +83,11 @@ export function useEventDetailsModel({ event, eventsState, settingsCurrency }: U
     [effectiveRawDebts, event.participants, selectors],
   );
 
+  const poolBalanceMap = useMemo(
+    () => selectors.selectPoolBalanceMapMemo(event, payments),
+    [event, payments, selectors],
+  );
+
   return {
     currencyCode,
     rawDebts,
@@ -101,5 +106,6 @@ export function useEventDetailsModel({ event, eventsState, settingsCurrency }: U
     paidDetailedCount,
     paidSimplifiedCount,
     participantBalanceMap,
+    poolBalanceMap,
   };
 }

@@ -51,14 +51,38 @@ export const ExpensesPanel = memo(function ExpensesPanel({
     enableBeforeRemoveExit: true,
   });
 
+  const lastStateRef = useRef<{
+    visible: boolean;
+    selectedCount: number;
+    totalSelectableCount: number;
+  } | null>(null);
+
   useEffect(() => {
     if (!onSelectionToolbarChange) {
       return;
     }
 
+    const toolbarProps = getToolbarProps(openDeleteConfirm);
+    const newState = {
+      visible: isEditMode,
+      selectedCount: toolbarProps.selectedCount,
+      totalSelectableCount: toolbarProps.totalSelectableCount,
+    };
+
+    // Only update parent if the meaningful state has changed
+    if (
+      lastStateRef.current &&
+      lastStateRef.current.visible === newState.visible &&
+      lastStateRef.current.selectedCount === newState.selectedCount &&
+      lastStateRef.current.totalSelectableCount === newState.totalSelectableCount
+    ) {
+      return;
+    }
+
+    lastStateRef.current = newState;
     onSelectionToolbarChange({
       visible: isEditMode,
-      ...getToolbarProps(openDeleteConfirm),
+      ...toolbarProps,
     });
 
     return () => {

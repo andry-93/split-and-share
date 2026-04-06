@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { createDefaultPeopleState } from '@/state/defaultState';
+import { PeopleState } from '@/state/people/peopleTypes';
 import {
   AddManyPayload,
   AddPersonPayload,
@@ -58,6 +59,12 @@ export const peopleSlice = createSlice({
     removeMany: (state, action: PayloadAction<RemoveManyPayload>) => {
       const idsToRemove = new Set(action.payload.ids);
       state.people = state.people.filter((person) => !idsToRemove.has(person.id));
+    },
+    resetPeople: (state) => {
+      state.people = createDefaultPeopleState().people;
+    },
+    rehydratePeople: (state, action: PayloadAction<PeopleState>) => {
+      state.people = action.payload.people;
     },
   },
 });

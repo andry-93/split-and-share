@@ -15,6 +15,7 @@ type AmountFieldProps = {
   isExpression?: boolean;
   calculationResult?: number | null;
   onApplyResult?: (result: number) => void;
+  label?: string;
 };
 
 export const AmountField = memo(function AmountField({
@@ -24,6 +25,7 @@ export const AmountField = memo(function AmountField({
   isExpression,
   calculationResult,
   onApplyResult,
+  label,
 }: AmountFieldProps) {
   const theme = useTheme();
   const placeholder = getAmountInputPlaceholder();
@@ -43,7 +45,7 @@ export const AmountField = memo(function AmountField({
   return (
     <>
       <Text variant="labelLarge" style={styles.sectionLabel}>
-        {i18n.t('common.amount')}
+        {label ?? i18n.t('common.amount')}
       </Text>
       <OutlinedFieldContainer style={localStyles.fieldGroup}>
         <View style={localStyles.inputRow}>

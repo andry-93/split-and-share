@@ -4,7 +4,7 @@ import { Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 
-export type EventDetailsTab = 'expenses' | 'debts' | 'people';
+export type EventDetailsTab = 'expenses' | 'debts' | 'people' | 'pools';
 
 type TopTabsProps = {
   activeTab: EventDetailsTab;
@@ -41,6 +41,12 @@ export const TopTabs = memo(function TopTabs({ activeTab, onTabChange }: TopTabs
       <TabButton
         label={t('events.tabs.people')}
         value="people"
+        activeTab={activeTab}
+        onPress={onTabChange}
+      />
+      <TabButton
+        label={t('events.pools.title')}
+        value="pools"
         activeTab={activeTab}
         onPress={onTabChange}
       />

@@ -9,6 +9,14 @@ export type EventItem = {
   updatedAt: string;
   expenses: ExpenseItem[];
   participants: ParticipantItem[];
+  pools: PoolItem[];
+};
+
+export type PoolItem = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type EventGroupItem = {

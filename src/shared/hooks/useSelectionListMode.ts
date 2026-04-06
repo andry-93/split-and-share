@@ -73,7 +73,7 @@ export function useSelectionListMode<TItem extends SelectionItem>({
       onDelete,
       onClose: exitEditMode,
     }),
-    [exitEditMode, selectableIds.length, selectedIds.length, toggleSelectAll],
+    [t, selectedIds.length, selectableIds.length, toggleSelectAll, exitEditMode],
   );
 
   return {

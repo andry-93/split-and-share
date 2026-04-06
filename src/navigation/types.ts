@@ -5,6 +5,8 @@ export type EventsStackParamList = {
   EventDetails: { eventId: string };
   EventReportPreview: { eventId: string };
   AddExpense: { eventId: string; expenseId?: string } | undefined;
+  ManagePool: { eventId: string; poolId?: string };
+  PoolTransfer: { eventId: string; poolId: string };
   AddPeopleToEvent: { eventId: string };
 };
 

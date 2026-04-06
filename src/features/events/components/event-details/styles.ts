@@ -77,7 +77,7 @@ export const eventDetailsStyles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   topTabItem: {
-    width: '33.3333%',
+    flex: 1,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',

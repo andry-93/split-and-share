@@ -226,7 +226,7 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
           renderItem={renderListItem}
           emptyComponent={
             <View style={styles.emptyState}>
-              <Text variant="bodyMedium">{emptyText}</Text>
+              <Text variant="bodyMedium" style={styles.emptyStateText}>{emptyText}</Text>
             </View>
           }
           showDividers={false}
@@ -759,5 +759,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyStateText: {
+    textAlign: 'center',
   },
 });

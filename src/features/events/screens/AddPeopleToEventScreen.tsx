@@ -91,8 +91,8 @@ export function AddPeopleToEventScreen({ navigation, route }: AddPeopleToEventSc
 
       {allAdded ? (
         <View style={styles.emptyState}>
-          <Text variant="titleMedium">{t('people.import.everyoneAlreadyAdded')}</Text>
-          <Text variant="bodyMedium">{t('people.import.allAlreadyInEvent')}</Text>
+          <Text variant="titleMedium" style={styles.emptyStateText}>{t('people.import.everyoneAlreadyAdded')}</Text>
+          <Text variant="bodyMedium" style={styles.emptyStateText}>{t('people.import.allAlreadyInEvent')}</Text>
         </View>
       ) : (
         <View style={styles.listWrapper}>
@@ -188,8 +188,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
     gap: 8,
+  },
+  emptyStateText: {
+    textAlign: 'center',
   },
   bottomBar: {
     paddingHorizontal: 16,

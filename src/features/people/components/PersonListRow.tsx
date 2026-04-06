@@ -1,6 +1,7 @@
 import React, { ReactNode, memo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Avatar, Checkbox, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { getInitialsAvatarColors } from '@/shared/utils/avatarColors';
 import { getPreferredPersonContact } from '@/shared/utils/people';
 import { getListPressedBackground } from '@/shared/ui/listPressState';
@@ -38,6 +39,7 @@ export const PersonListRow = memo(function PersonListRow({
   onPress,
   onLongPress,
 }: PersonListRowProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const longPressTriggeredRef = useRef(false);
   const contact = getPreferredPersonContact({ phone, email });
@@ -72,7 +74,7 @@ export const PersonListRow = memo(function PersonListRow({
             {isCurrentUser ? (
               <View style={[styles.youBadge, { backgroundColor: theme.colors.primaryContainer }]}>
                 <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer }}>
-                  You
+                  {t('people.meTag')}
                 </Text>
               </View>
             ) : null}

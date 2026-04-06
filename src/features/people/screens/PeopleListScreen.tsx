@@ -131,8 +131,12 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
 
       {filteredPeople.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text variant="titleMedium">{t('people.addFirstPerson')}</Text>
-          <Text variant="bodyMedium">{t('people.splitFaster')}</Text>
+          <Text variant="titleMedium" style={styles.emptyStateText}>
+            {t('people.addFirstPerson')}
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyStateText}>
+            {t('people.splitFaster')}
+          </Text>
         </View>
       ) : (
         <View style={styles.listWrapper}>
@@ -246,7 +250,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 32,
     paddingTop: 24,
     gap: 8,
+  },
+  emptyStateText: {
+    textAlign: 'center',
   },
 });

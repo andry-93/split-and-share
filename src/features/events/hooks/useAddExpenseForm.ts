@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ParticipantItem } from '@/features/events/types/events';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ParticipantItem, PoolItem } from '@/features/events/types/events';
 import { normalizeCurrencyCode } from '@/shared/utils/currency';
 import { parseMoneyAmount } from '@/shared/utils/money';
 import { sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 
 type UseAddExpenseFormInput = {
   participants: ParticipantItem[];
+  pools?: PoolItem[];
   currency?: string;
   fallbackCurrency: string;
   initialAmount?: string;
@@ -16,6 +17,7 @@ type UseAddExpenseFormInput = {
 
 export function useAddExpenseForm({
   participants,
+  pools = [],
   currency,
   fallbackCurrency,
   initialAmount = '',
@@ -38,6 +40,18 @@ export function useAddExpenseForm({
       })),
     [participants],
   );
+
+  const payerOptions = useMemo(
+    () => [
+      ...participantOptions,
+      ...pools.map((pool) => ({
+        id: pool.id,
+        name: pool.name,
+      })),
+    ],
+    [participantOptions, pools],
+  );
+
   const participantIds = useMemo(
     () => participantOptions.map((participant) => participant.id),
     [participantOptions],
@@ -48,8 +62,8 @@ export function useAddExpenseForm({
     [currency, fallbackCurrency],
   );
   const paidBy = useMemo(
-    () => participantOptions.find((participant) => participant.id === paidById)?.name ?? '',
-    [paidById, participantOptions],
+    () => payerOptions.find((option) => option.id === paidById)?.name ?? '',
+    [paidById, payerOptions],
   );
   const { isExpression, calculationResult, parsedAmountMinor } = useMemo(() => {
     const normalized = amount.trim();
@@ -77,33 +91,59 @@ export function useAddExpenseForm({
     return false;
   }, [amount, paidById, parsedAmountMinor, selectedParticipantIds.length, title]);
 
-  useEffect(() => {
-    setAmount(initialAmount);
-    setTitle(initialTitle);
-    if (initialPaidById) {
-      setPaidById(initialPaidById);
-    }
-    setSelectedParticipantIds(
-      initialSplitBetweenIds?.length
-        ? initialSplitBetweenIds
-        : participants.map((participant) => participant.id),
-    );
-  }, [initialAmount, initialPaidById, initialSplitBetweenIds, initialTitle, participants]);
+  // Track the identity of the expense being edited to avoid redundant resets
+  const lastInitializedIdRef = useRef<string | undefined>(undefined);
+  const currentExpenseId = initialTitle + initialAmount + initialPaidById + (initialSplitBetweenIds?.join(',') ?? '');
 
   useEffect(() => {
-    if (participantOptions.length === 0) {
-      setPaidById('');
-      setSelectedParticipantIds([]);
+    // Only reset state if the initial values have actually changed in a way that implies a different expense
+    if (lastInitializedIdRef.current === currentExpenseId) {
+      return;
+    }
+    
+    lastInitializedIdRef.current = currentExpenseId;
+
+    setAmount(initialAmount);
+    setTitle(initialTitle);
+    
+    if (initialPaidById !== undefined && initialPaidById !== paidById) {
+      setPaidById(initialPaidById);
+    }
+
+    const defaultIds = participants.map((p) => p.id);
+    const nextSelectedIds = initialSplitBetweenIds?.length ? initialSplitBetweenIds : defaultIds;
+    
+    setSelectedParticipantIds((prev) => {
+      if (nextSelectedIds.length === prev.length && nextSelectedIds.every((v, i) => v === prev[i])) {
+        return prev;
+      }
+      return nextSelectedIds;
+    });
+  }, [initialAmount, initialPaidById, initialSplitBetweenIds, initialTitle, participants, currentExpenseId]);
+
+  useEffect(() => {
+    if (payerOptions.length === 0) {
+      if (paidById !== '') setPaidById('');
+      if (selectedParticipantIds.length !== 0) setSelectedParticipantIds([]);
       return;
     }
 
-    const participantIdSet = new Set(participantOptions.map((participant) => participant.id));
-    setPaidById((prev) => (participantIdSet.has(prev) ? prev : participantOptions[0].id));
+    const payerOptionIds = new Set(payerOptions.map((option) => option.id));
+    if (paidById && !payerOptionIds.has(paidById)) {
+      setPaidById(payerOptions[0].id);
+    }
+    
+    const participantIdSet = new Set(participantOptions.map((p) => p.id));
     setSelectedParticipantIds((prev) => {
       const next = prev.filter((id) => participantIdSet.has(id));
-      return next.length > 0 ? next : [...participantIds];
+      const final = next.length > 0 ? next : [...participantIds];
+      
+      if (final.length === prev.length && final.every((v, i) => v === prev[i])) {
+        return prev;
+      }
+      return final;
     });
-  }, [participantIds, participantOptions]);
+  }, [participantIds, participantOptions, payerOptions]);
 
   const toggleParticipant = useCallback((participantId: string) => {
     setSelectedParticipantIds((prev) =>
@@ -120,6 +160,7 @@ export function useAddExpenseForm({
     selectedParticipantIds,
     selectedSet,
     participantOptions,
+    payerOptions,
     participantIds,
     selectedCurrencyCode,
     paidBy,
@@ -134,4 +175,3 @@ export function useAddExpenseForm({
     toggleParticipant,
   };
 }
-

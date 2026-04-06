@@ -17,6 +17,8 @@ const hiddenTabRoutes = new Set([
   'AddGroup',
   'EventReportPreview',
   'AddExpense',
+  'ManagePool',
+  'PoolTransfer',
   'AddPeopleToEvent',
   'AddPerson',
   'ImportContactsAccess',

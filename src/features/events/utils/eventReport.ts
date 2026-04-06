@@ -13,6 +13,7 @@ type BuildEventReportHtmlInput = {
   detailedDebts: RawDebt[];
   simplifiedDebts: SimplifiedDebt[];
   payments: PaymentEntry[];
+  poolBalanceMap: Map<string, number>;
 };
 
 function escapeHtml(value: string) {
@@ -33,9 +34,12 @@ export function buildEventReportHtml({
   detailedDebts,
   simplifiedDebts,
   payments,
+  poolBalanceMap,
 }: BuildEventReportHtmlInput) {
   const totalAmountMinor = sumMinorUnits(event.expenses.map((expense) => expense.amountMinor));
+  
   const participantById = new Map(event.participants.map((participant) => [participant.id, participant.name]));
+  (event.pools ?? []).forEach(pool => participantById.set(pool.id, pool.name));
 
   const expensesRows =
     event.expenses.length === 0
@@ -117,6 +121,23 @@ export function buildEventReportHtml({
           )
           .join('');
 
+  const pools = event.pools ?? [];
+  const poolRows =
+    pools.length === 0
+      ? `<tr><td colspan="2" class="muted">${escapeHtml(i18n.t('events.report.tableNoPools'))}</td></tr>`
+      : pools
+          .map(
+            (pool) => `
+            <tr>
+              <td>${escapeHtml(pool.name)}</td>
+              <td style="color: ${(poolBalanceMap.get(pool.id) ?? 0) >= 0 ? '#16A34A' : '#DC2626'}">
+                ${formatMoneyFromMinor(currencyCode, toMinorUnits(poolBalanceMap.get(pool.id) ?? 0), locale)}
+              </td>
+            </tr>
+          `,
+          )
+          .join('');
+
   return `
 <!DOCTYPE html>
 <html>
@@ -190,6 +211,19 @@ export function buildEventReportHtml({
           .join('')}
       </tbody>
     </table>
+
+    ${pools.length > 0 ? `
+    <h2>${escapeHtml(i18n.t('events.report.pools'))}</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>${escapeHtml(i18n.t('events.report.poolName'))}</th>
+          <th>${escapeHtml(i18n.t('events.report.balance'))}</th>
+        </tr>
+      </thead>
+      <tbody>${poolRows}</tbody>
+    </table>
+    ` : ''}
 
     <h2>${escapeHtml(i18n.t('events.report.expenses'))}</h2>
     <table>

@@ -34,6 +34,18 @@ export function useSettingsActions() {
       setDebtsViewMode: (value: SettingsState['debtsViewMode']) => {
         dispatch(settingsActions.setDebtsViewMode({ debtsViewMode: value }));
       },
+      setSecurityEnabled: (value: boolean) => {
+        dispatch(settingsActions.setSecurityEnabled({ isSecurityEnabled: value }));
+      },
+      setBiometricsEnabled: (value: boolean) => {
+        dispatch(settingsActions.setBiometricsEnabled({ isBiometricsEnabled: value }));
+      },
+      setMasterPasswordHash: (value: string | null) => {
+        dispatch(settingsActions.setMasterPasswordHash({ masterPasswordHash: value }));
+      },
+      setAutoLockGracePeriod: (value: number) => {
+        dispatch(settingsActions.setAutoLockGracePeriod({ autoLockGracePeriod: value }));
+      },
       resetSettings: () => {
         dispatch(settingsActions.resetSettings());
       },

@@ -95,9 +95,16 @@ export function selectRawDebts(event?: EventItem): RawDebt[] {
   }
 
   const participantById = createParticipantMap(event.participants);
+  (event.pools ?? []).forEach((pool) => {
+    participantById.set(pool.id, { id: pool.id, name: pool.name });
+  });
+
   const rawDebts = computeRawDebts({
     eventId: event.id,
-    participants: event.participants,
+    participants: [
+      ...event.participants,
+      ...(event.pools ?? []).map((pool) => ({ id: pool.id, name: pool.name })),
+    ],
     expenses: event.expenses,
   });
 
@@ -220,6 +227,47 @@ export function selectExpensesSortedByUpdatedAt(expenses: ExpenseItem[]) {
   );
 }
 
+export function selectPoolBalanceMap(event: EventItem, payments: PaymentEntry[]) {
+  const pools = event.pools ?? [];
+  const balanceByIdMinor = new Map<string, number>();
+  pools.forEach((pool) => {
+    balanceByIdMinor.set(pool.id, 0);
+  });
+
+  // 1. Add Cash In from payments
+  payments.forEach((payment) => {
+    if (balanceByIdMinor.has(payment.toId)) {
+      balanceByIdMinor.set(
+        payment.toId,
+        (balanceByIdMinor.get(payment.toId) ?? 0) + Math.round(payment.amountMinor),
+      );
+    }
+    // 2. Subtract Cash Out from payments (e.g. pool paying a person)
+    if (balanceByIdMinor.has(payment.fromId)) {
+      balanceByIdMinor.set(
+        payment.fromId,
+        (balanceByIdMinor.get(payment.fromId) ?? 0) - Math.round(payment.amountMinor),
+      );
+    }
+  });
+
+  // 3. Subtract Cash Out from expenses (pool paying for things)
+  event.expenses.forEach((expense) => {
+    if (expense.paidById && balanceByIdMinor.has(expense.paidById)) {
+      balanceByIdMinor.set(
+        expense.paidById,
+        (balanceByIdMinor.get(expense.paidById) ?? 0) - Math.round(expense.amountMinor),
+      );
+    }
+  });
+
+  const balanceById = new Map<string, number>();
+  balanceByIdMinor.forEach((value, key) => {
+    balanceById.set(key, fromMinorUnits(value));
+  });
+  return balanceById;
+}
+
 export function createEventDetailsSelectors() {
   const selectEventStatsMemo = createSelector(
     [(event: EventItem) => event],
@@ -284,6 +332,11 @@ export function createEventDetailsSelectors() {
     },
   );
 
+  const selectPoolBalanceMapMemo = createSelector(
+    [(event: EventItem) => event, (_event: EventItem, payments: PaymentEntry[]) => payments],
+    (event, payments) => selectPoolBalanceMap(event, payments),
+  );
+
   return {
     selectEventStatsMemo,
     selectRawDebtsMemo,
@@ -295,6 +348,7 @@ export function createEventDetailsSelectors() {
     selectOutstandingPeopleCountMemo,
     selectOutstandingTransfersCountMemo,
     selectParticipantBalanceMapMemo,
+    selectPoolBalanceMapMemo,
   };
 }
 

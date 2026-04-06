@@ -9,6 +9,7 @@ import {
   selectDetailedDebts,
   selectEffectiveRawDebts,
   selectPayments,
+  selectPoolBalanceMap,
   selectRawDebts,
   selectSimplifiedDebts,
 } from '@/state/events/eventsSelectors';
@@ -69,6 +70,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
       const effectiveRawDebts = selectEffectiveRawDebts(rawDebts, payments);
       const detailedDebts = selectDetailedDebts(effectiveRawDebts);
       const simplifiedDebts = selectSimplifiedDebts(effectiveRawDebts);
+      const poolBalanceMap = selectPoolBalanceMap(event, effectiveRawDebts);
       const html = buildEventReportHtml({
         appName: 'Split & Share',
         event,
@@ -78,6 +80,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
         detailedDebts,
         simplifiedDebts,
         payments,
+        poolBalanceMap,
       });
       setReportHtml(html);
 

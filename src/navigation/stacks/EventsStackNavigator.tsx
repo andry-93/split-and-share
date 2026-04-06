@@ -8,6 +8,9 @@ import { AddExpenseScreen } from '@/features/events/screens/AddExpenseScreen';
 import { AddPeopleToEventScreen } from '@/features/events/screens/AddPeopleToEventScreen';
 import { AddGroupScreen } from '@/features/events/screens/AddGroupScreen';
 import { EventReportPreviewScreen } from '@/features/events/screens/EventReportPreviewScreen';
+import { ManagePoolScreen } from '@/features/events/screens/ManagePoolScreen';
+import { PoolTransferScreen } from '@/features/events/screens/PoolTransferScreen';
+
 const Stack = createNativeStackNavigator<EventsStackParamList>();
 
 export function EventsStackNavigator() {
@@ -19,6 +22,8 @@ export function EventsStackNavigator() {
       <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
       <Stack.Screen name="EventReportPreview" component={EventReportPreviewScreen} />
       <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
+      <Stack.Screen name="ManagePool" component={ManagePoolScreen} />
+      <Stack.Screen name="PoolTransfer" component={PoolTransferScreen} />
       <Stack.Screen name="AddPeopleToEvent" component={AddPeopleToEventScreen} />
     </Stack.Navigator>
   );

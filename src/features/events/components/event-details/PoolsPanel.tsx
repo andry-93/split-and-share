@@ -1,18 +1,17 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { IconButton, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
-import { ParticipantItem } from '@/features/events/types/events';
+import { PoolItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
-import { PersonListRow } from '@/features/people/components/PersonListRow';
 import { formatCurrencyAmount } from '@/shared/utils/money';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
-import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
 import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
 import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
+import { PersonListRow } from '@/features/people/components/PersonListRow';
 
-export type PeopleSelectionToolbarState = {
+export type PoolsSelectionToolbarState = {
   visible: boolean;
   title: string;
   totalSelectableCount: number;
@@ -22,29 +21,29 @@ export type PeopleSelectionToolbarState = {
   onClose: () => void;
 };
 
-type PeoplePanelProps = {
-  participants: ParticipantItem[];
-  participantBalanceMap: Map<string, number>;
+type PoolsPanelProps = {
+  pools: PoolItem[];
+  poolBalanceMap: Map<string, number>;
   currencyCode: string;
-  onRemoveParticipants: (participantIds: string[]) => void;
-  onSelectionToolbarChange?: (state: PeopleSelectionToolbarState | null) => void;
+  onRemovePools: (poolIds: string[]) => void;
+  onPressPool: (poolId: string) => void;
+  onTopUpPool: (poolId: string) => void;
+  onSelectionToolbarChange?: (state: PoolsSelectionToolbarState | null) => void;
 };
 
-export const PeoplePanel = memo(function PeoplePanel({
-  participants,
-  participantBalanceMap,
+export const PoolsPanel = memo(function PoolsPanel({
+  pools,
+  poolBalanceMap,
   currencyCode,
-  onRemoveParticipants,
+  onRemovePools,
+  onPressPool,
+  onTopUpPool,
   onSelectionToolbarChange,
-}: PeoplePanelProps) {
+}: PoolsPanelProps) {
   const { t } = useTranslation();
   const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
     useConfirmState();
 
-  const sortedParticipants = useMemo(
-    () => sortPeopleWithCurrentUserFirst(participants),
-    [participants],
-  );
   const {
     isEditMode,
     selectedIds,
@@ -53,8 +52,8 @@ export const PeoplePanel = memo(function PeoplePanel({
     toggleSelection,
     enterEditMode,
     getToolbarProps,
-  } = useSelectionListMode<ParticipantItem>({
-    items: sortedParticipants,
+  } = useSelectionListMode<PoolItem>({
+    items: pools,
     enableBeforeRemoveExit: true,
   });
 
@@ -62,10 +61,10 @@ export const PeoplePanel = memo(function PeoplePanel({
     if (selectedIds.length === 0) {
       return;
     }
-    onRemoveParticipants(selectedIds);
+    onRemovePools(selectedIds);
     closeDeleteConfirm();
     exitEditMode();
-  }, [closeDeleteConfirm, exitEditMode, onRemoveParticipants, selectedIds]);
+  }, [closeDeleteConfirm, exitEditMode, onRemovePools, selectedIds]);
 
   const lastStateRef = useRef<{
     visible: boolean;
@@ -104,33 +103,31 @@ export const PeoplePanel = memo(function PeoplePanel({
     return () => {
       onSelectionToolbarChange(null);
     };
-  }, [
-    getToolbarProps,
-    isEditMode,
-    openDeleteConfirm,
-    onSelectionToolbarChange,
-  ]);
+  }, [getToolbarProps, isEditMode, openDeleteConfirm, onSelectionToolbarChange]);
 
-  const renderParticipantItem = useCallback(
-    ({ item }: { item: ParticipantItem }) => (
-      <ParticipantBalanceRow
-        participant={item}
-        balance={participantBalanceMap.get(item.id) ?? 0}
-        currencyCode={currencyCode}
-        selectable={isEditMode}
-        selected={selectedSet.has(item.id)}
-        onPress={isEditMode ? () => toggleSelection(item) : undefined}
-        onLongPress={!isEditMode ? () => enterEditMode(item) : undefined}
-      />
-    ),
-    [currencyCode, enterEditMode, isEditMode, participantBalanceMap, selectedSet, toggleSelection],
+  const renderPoolItem = useCallback(
+    ({ item }: { item: PoolItem }) => {
+      const balance = poolBalanceMap.get(item.id) ?? 0;
+      return (
+        <PoolBalanceRow
+          pool={item}
+          balance={balance}
+          currencyCode={currencyCode}
+          selectable={isEditMode}
+          selected={selectedSet.has(item.id)}
+          onPress={isEditMode ? () => toggleSelection(item) : () => onPressPool(item.id)}
+          onAdd={!isEditMode ? () => onTopUpPool(item.id) : undefined}
+          onLongPress={!isEditMode ? () => enterEditMode(item) : undefined}
+        />
+      );
+    },
+    [currencyCode, enterEditMode, isEditMode, onPressPool, onTopUpPool, poolBalanceMap, selectedSet, toggleSelection],
   );
 
-  if (sortedParticipants.length === 0) {
+  if (pools.length === 0) {
     return (
       <View style={styles.emptyState}>
-        <Text variant="titleMedium">{t('events.tabs.addPeopleToEvent')}</Text>
-        <Text variant="bodyMedium">{t('events.tabs.startSplittingWithGroup')}</Text>
+        <Text variant="titleMedium">{t('events.pools.empty')}</Text>
       </View>
     );
   }
@@ -138,21 +135,18 @@ export const PeoplePanel = memo(function PeoplePanel({
   return (
     <View style={[styles.rawListWrapper, styles.peopleSectionSpacing]}>
       <AppList
-        data={sortedParticipants}
+        data={pools}
         keyExtractor={(item) => item.id}
         containerStyle={styles.rawListContainer}
         listStyle={styles.rawList}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        renderItem={({ item }) => renderParticipantItem({ item })}
+        renderItem={({ item }) => renderPoolItem({ item })}
       />
 
       <SelectionDeleteConfirm
         visible={isDeleteConfirmVisible}
-        title={t('events.removeFromEvent.title')}
-        message={t('events.removeFromEvent.message')}
-        confirmText={t('events.removeFromEvent.confirm')}
+        title={t('events.pools.deletePool.title')}
+        message={t('events.pools.deletePool.message')}
+        confirmText={t('common.delete')}
         onDismiss={closeDeleteConfirm}
         onConfirm={handleDeleteSelected}
       />
@@ -160,34 +154,30 @@ export const PeoplePanel = memo(function PeoplePanel({
   );
 });
 
-type ParticipantBalanceRowProps = {
-  participant: ParticipantItem;
+type PoolBalanceRowProps = {
+  pool: PoolItem;
   balance: number;
   currencyCode: string;
   selectable: boolean;
   selected: boolean;
   onPress?: () => void;
+  onAdd?: () => void;
   onLongPress?: () => void;
 };
 
-const ParticipantBalanceRow = memo(function ParticipantBalanceRow({
-  participant,
+const PoolBalanceRow = memo(function PoolBalanceRow({
+  pool,
   balance,
   currencyCode,
   selectable,
   selected,
   onPress,
+  onAdd,
   onLongPress,
-}: ParticipantBalanceRowProps) {
+}: PoolBalanceRowProps) {
   const theme = useTheme();
-  const absoluteBalance = Math.abs(balance);
-  const formattedBalance =
-    balance > 0
-      ? `+${formatCurrencyAmount(currencyCode, absoluteBalance)}`
-      : balance < 0
-        ? `-${formatCurrencyAmount(currencyCode, absoluteBalance)}`
-        : formatCurrencyAmount(currencyCode, 0);
-
+  const formattedBalance = formatCurrencyAmount(currencyCode, Math.abs(balance));
+  
   const balanceStyle = balance > 0
     ? {
         backgroundColor: 'rgba(22, 163, 74, 0.16)',
@@ -207,22 +197,30 @@ const ParticipantBalanceRow = memo(function ParticipantBalanceRow({
         };
 
   const balanceChip = (
-    <View style={[styles.balancePill, { backgroundColor: balanceStyle.backgroundColor, borderColor: balanceStyle.borderColor }]}>
-      <Text variant="labelMedium" style={{ color: balanceStyle.color }}>
-        {formattedBalance}
-      </Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={[styles.balancePill, { backgroundColor: balanceStyle.backgroundColor, borderColor: balanceStyle.borderColor }]}>
+        <Text variant="labelMedium" style={{ color: balanceStyle.color }}>
+          {balance > 0 ? '+' : balance < 0 ? '-' : ''}{formattedBalance}
+        </Text>
+      </View>
+      {onAdd && (
+        <IconButton
+          icon="plus-circle-outline"
+          size={24}
+          onPress={onAdd}
+          iconColor={theme.colors.primary}
+          style={{ marginLeft: 4, marginRight: -8 }}
+        />
+      )}
     </View>
   );
 
   return (
     <PersonListRow
-      name={participant.name}
-      phone={participant.phone}
-      email={participant.email}
+      name={pool.name}
       rightSlot={selectable ? undefined : balanceChip}
       selectable={selectable}
       selected={selected}
-      isCurrentUser={isCurrentUserPerson(participant)}
       onPress={onPress}
       onLongPress={onLongPress}
     />

@@ -1,6 +1,13 @@
 import { ParticipantItem } from '@/features/events/types/events';
 import { EventPayment } from '@/state/events/paymentsModel';
 
+export type UpdateParticipantEverywherePayload = {
+  personId: string;
+  name: string;
+  phone?: string;
+  email?: string;
+};
+
 export type CreateEventPayload = {
   id: string;
   name: string;
@@ -53,3 +60,22 @@ export type RemovePeopleEverywherePayload = { personIds: string[] };
 export type RemoveEventsPayload = { eventIds: string[] };
 export type RemoveGroupsPayload = { groupIds: string[] };
 export type RemoveExpensesPayload = { eventId: string; expenseIds: string[] };
+
+export type AddPoolPayload = {
+  eventId: string;
+  pool: {
+    id: string;
+    name: string;
+  };
+};
+
+export type UpdatePoolPayload = {
+  eventId: string;
+  poolId: string;
+  name: string;
+};
+
+export type RemovePoolPayload = {
+  eventId: string;
+  poolIds: string[];
+};

@@ -58,7 +58,21 @@ function isEventItem(value: unknown): value is EventItem {
     typeof value.name === 'string' &&
     (typeof value.groupId === 'undefined' || typeof value.groupId === 'string') &&
     Array.isArray(value.expenses) &&
-    Array.isArray(value.participants)
+    Array.isArray(value.participants) &&
+    (typeof value.pools === 'undefined' || Array.isArray(value.pools))
+  );
+}
+
+function isPoolItem(value: unknown): value is EventItem['pools'][number] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.createdAt === 'string' &&
+    typeof value.updatedAt === 'string'
   );
 }
 
@@ -106,6 +120,7 @@ function normalizeEventItem(value: EventItem): EventItem {
     ...value,
     createdAt,
     updatedAt,
+    pools: Array.isArray(value.pools) ? value.pools.filter(isPoolItem) : [],
     expenses: value.expenses.map((expense) => {
       const fallbackExpenseCreatedAt = createdAt;
       const expenseCreatedAt = normalizeIsoDateString(
@@ -225,6 +240,10 @@ export function parseSettingsState(value: unknown): SettingsState {
     currency: normalizedCurrency,
     currencySource: resolvedCurrencySource,
     debtsViewMode: debtsViewMode === 'detailed' ? 'detailed' : 'simplified',
+    isSecurityEnabled: typeof value.isSecurityEnabled === 'boolean' ? value.isSecurityEnabled : false,
+    isBiometricsEnabled: typeof value.isBiometricsEnabled === 'boolean' ? value.isBiometricsEnabled : false,
+    masterPasswordHash: typeof value.masterPasswordHash === 'string' ? value.masterPasswordHash : null,
+    autoLockGracePeriod: typeof value.autoLockGracePeriod === 'number' ? value.autoLockGracePeriod : 30,
   };
 }
 

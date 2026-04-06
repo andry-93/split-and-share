@@ -14,8 +14,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { AppProviders } from '@/state/AppProviders';
 import { MigrationGate } from '@/state/storage/MigrationGate';
-import { PersistenceSync } from '@/state/storage/PersistenceSync';
-import { getStorageInitializationError } from '@/state/storage/mmkv';
+import { getIsStorageInitialized, getStorageInitializationError, initializeStorage } from '@/state/storage/mmkv';
 import { getLanguageLocale } from '@/state/settings/languageCatalog';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { AppErrorBoundary } from '@/shared/ui/AppErrorBoundary';
@@ -25,6 +24,8 @@ import { setGlobalNumberFormatPreference } from '@/shared/utils/numberFormat';
 import { RootTabParamList } from '@/navigation/types';
 import i18n, { resolveI18nLanguage } from '@/shared/i18n';
 import '@/shared/i18n';
+import { SecurityGate } from '@/shared/ui/security/SecurityGate';
+import { rehydrateStore } from '@/state/store';
 
 const lightColorOverrides = {
   primary: '#2563FF',
@@ -256,7 +257,9 @@ function AppShell() {
       />
       <BottomSheetModalProvider>
         <NavigationContainer ref={navigationRef} theme={navTheme}>
-          <AppNavigator />
+          <SecurityGate>
+            <AppNavigator />
+          </SecurityGate>
         </NavigationContainer>
         <Snackbar
           visible={exitHintVisible}
@@ -270,7 +273,23 @@ function AppShell() {
 }
 
 export function App() {
-  const storageInitializationError = getStorageInitializationError();
+  const [initError, setInitError] = useState<unknown>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    async function init() {
+      try {
+        await initializeStorage();
+        rehydrateStore();
+        setIsReady(true);
+      } catch (error) {
+        setInitError(error);
+      }
+    }
+    init();
+  }, []);
+
+  const storageInitializationError = initError || getStorageInitializationError();
 
   if (storageInitializationError) {
     return (
@@ -284,16 +303,18 @@ export function App() {
     );
   }
 
+  if (!isReady) {
+    return null; // Or a splash screen
+  }
+
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <MigrationGate>
           <AppProviders>
-            <PersistenceSync>
-              <AppErrorBoundary>
-                <AppShell />
-              </AppErrorBoundary>
-            </PersistenceSync>
+            <AppErrorBoundary>
+              <AppShell />
+            </AppErrorBoundary>
           </AppProviders>
         </MigrationGate>
       </GestureHandlerRootView>

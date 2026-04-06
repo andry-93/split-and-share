@@ -8,14 +8,28 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { EventsStackParamList } from '@/navigation/types';
 import { useEventsActions, useEventsState } from '@/state/events/eventsContext';
-import { RawDebt, selectExpensesSortedByUpdatedAt, SimplifiedDebt } from '@/state/events/eventsSelectors';
+import {
+  RawDebt,
+  selectExpensesSortedByUpdatedAt,
+  SimplifiedDebt,
+} from '@/state/events/eventsSelectors';
 import { useSettingsState } from '@/state/settings/settingsContext';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { DraggableFab } from '@/shared/ui/DraggableFab';
 import { useEventDetailsModel } from '@/features/events/hooks/useEventDetailsModel';
 import { DebtsPanel } from '@/features/events/components/event-details/DebtsPanel';
-import { ExpensesPanel, ExpensesSelectionToolbarState } from '@/features/events/components/event-details/ExpensesPanel';
-import { PeoplePanel, PeopleSelectionToolbarState } from '@/features/events/components/event-details/PeoplePanel';
+import {
+  ExpensesPanel,
+  ExpensesSelectionToolbarState,
+} from '@/features/events/components/event-details/ExpensesPanel';
+import {
+  PeoplePanel,
+  PeopleSelectionToolbarState,
+} from '@/features/events/components/event-details/PeoplePanel';
+import {
+  PoolsPanel,
+  PoolsSelectionToolbarState,
+} from '@/features/events/components/event-details/PoolsPanel';
 import { Summary } from '@/features/events/components/event-details/Summary';
 import { EventDetailsTab, TopTabs } from '@/features/events/components/event-details/TopTabs';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
@@ -24,7 +38,7 @@ import { SelectionActionToolbar } from '@/shared/ui/SelectionActionToolbar';
 type EventDetailsScreenProps = NativeStackScreenProps<EventsStackParamList, 'EventDetails'>;
 
 const DEBTS_LIST_BOTTOM_GAP = 12;
-const TAB_ORDER: EventDetailsTab[] = ['expenses', 'debts', 'people'];
+const TAB_ORDER: EventDetailsTab[] = ['expenses', 'debts', 'people', 'pools'];
 const HORIZONTAL_THRESHOLD = 64;
 const VELOCITY_THRESHOLD = 420;
 
@@ -54,17 +68,31 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const insets = useSafeAreaInsets();
   const settings = useSettingsState();
   const { events, groups, paymentsByEvent } = useEventsState();
-  const { registerPayment, removeParticipantsFromEvent, removeExpenses } = useEventsActions();
+  const { registerPayment, removeParticipantsFromEvent, removeExpenses, removePool } =
+    useEventsActions();
   const event = events.find((item) => item.id === route.params.eventId);
   const [activeTab, setActiveTab] = useState<EventDetailsTab>('expenses');
   const [rawViewportHeight, setRawViewportHeight] = useState(0);
   const [rawContentHeight, setRawContentHeight] = useState(0);
   const [debtHintHeight, setDebtHintHeight] = useState(0);
-  const [peopleToolbarState, setPeopleToolbarState] = useState<PeopleSelectionToolbarState | null>(null);
-  const [expensesToolbarState, setExpensesToolbarState] = useState<ExpensesSelectionToolbarState | null>(null);
+  const [peopleToolbarState, setPeopleToolbarState] = useState<PeopleSelectionToolbarState | null>(
+    null,
+  );
+  const [expensesToolbarState, setExpensesToolbarState] =
+    useState<ExpensesSelectionToolbarState | null>(null);
+  const [poolsToolbarState, setPoolsToolbarState] = useState<PoolsSelectionToolbarState | null>(
+    null,
+  );
+
   const activeTabIndex = TAB_ORDER.indexOf(activeTab);
   const activeSelectionToolbarState =
-    activeTab === 'people' ? peopleToolbarState : activeTab === 'expenses' ? expensesToolbarState : null;
+    activeTab === 'people'
+      ? peopleToolbarState
+      : activeTab === 'expenses'
+        ? expensesToolbarState
+        : activeTab === 'pools'
+          ? poolsToolbarState
+          : null;
   const showSelectionToolbar = Boolean(activeSelectionToolbarState?.visible);
 
   useEffect(() => {
@@ -76,6 +104,12 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   useEffect(() => {
     if (activeTab !== 'expenses') {
       setExpensesToolbarState(null);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'pools') {
+      setPoolsToolbarState(null);
     }
   }, [activeTab]);
 
@@ -103,6 +137,7 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     paidDetailedCount,
     paidSimplifiedCount,
     participantBalanceMap,
+    poolBalanceMap,
     eventStats,
     eventTotalAmountDisplay,
     outstandingTotalAmountDisplay,
@@ -116,7 +151,8 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     () => (debtsMode === 'detailed' ? detailedDebts.length : simplifiedDebts.length),
     [debtsMode, detailedDebts.length, simplifiedDebts.length],
   );
-  const outstandingModeLabel = debtsMode === 'detailed' ? t('events.tabs.detailed') : t('events.tabs.simplified');
+  const outstandingModeLabel =
+    debtsMode === 'detailed' ? t('events.tabs.detailed') : t('events.tabs.simplified');
 
   const handleMarkSimplifiedPaid = useCallback(
     (debt: SimplifiedDebt, amountMinor: number) => {
@@ -158,9 +194,25 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
   const handleAddPeople = useCallback(() => {
     navigation.navigate('AddPeopleToEvent', { eventId: event.id });
   }, [event.id, navigation]);
+
+  const handleOpenPool = useCallback(
+    (poolId?: string) => {
+      navigation.navigate('ManagePool', { eventId: event.id, poolId });
+    },
+    [event.id, navigation],
+  );
+
+  const handleTopUpPool = useCallback(
+    (poolId: string) => {
+      navigation.navigate('PoolTransfer', { eventId: event.id, poolId });
+    },
+    [event.id, navigation],
+  );
+
   const handleOpenDebtsTab = useCallback(() => {
     setActiveTab('debts');
   }, []);
+
   const shouldShowFab = useMemo(() => {
     if (activeTab === 'expenses') {
       return !expensesToolbarState?.visible;
@@ -168,8 +220,17 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     if (activeTab === 'people') {
       return !peopleToolbarState?.visible;
     }
+    if (activeTab === 'pools') {
+      return !poolsToolbarState?.visible;
+    }
     return false;
-  }, [activeTab, expensesToolbarState?.visible, peopleToolbarState?.visible]);
+  }, [
+    activeTab,
+    expensesToolbarState?.visible,
+    peopleToolbarState?.visible,
+    poolsToolbarState?.visible,
+  ]);
+
   const handleFabPress = useCallback(() => {
     if (activeTab === 'expenses') {
       handleAddExpense();
@@ -177,8 +238,12 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
     }
     if (activeTab === 'people') {
       handleAddPeople();
+      return;
     }
-  }, [activeTab, handleAddExpense, handleAddPeople]);
+    if (activeTab === 'pools') {
+      handleOpenPool();
+    }
+  }, [activeTab, handleAddExpense, handleAddPeople, handleOpenPool]);
 
   const handleEditEvent = useCallback(() => {
     navigation.navigate('AddEvent', { eventId: event.id });
@@ -327,6 +392,18 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
                 currencyCode={currencyCode}
                 onRemoveParticipants={handleRemoveParticipants}
                 onSelectionToolbarChange={setPeopleToolbarState}
+              />
+            ) : null}
+
+            {activeTab === 'pools' ? (
+              <PoolsPanel
+                pools={event.pools || []}
+                poolBalanceMap={poolBalanceMap}
+                currencyCode={currencyCode}
+                onRemovePools={(ids) => removePool({ eventId: event.id, poolIds: ids })}
+                onPressPool={handleOpenPool}
+                onTopUpPool={handleTopUpPool}
+                onSelectionToolbarChange={setPoolsToolbarState}
               />
             ) : null}
           </View>

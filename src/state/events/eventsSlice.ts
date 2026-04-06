@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { EventGroupItem } from '@/features/events/types/events';
+import { EventsState } from '@/state/events/eventsTypes';
 import { createDefaultEventsState } from '@/state/defaultState';
 import {
   AddExpensePayload,
@@ -15,12 +16,28 @@ import {
   UpdateEventPayload,
   UpdateExpensePayload,
   UpdateGroupPayload,
+  AddPoolPayload,
+  UpdatePoolPayload,
+  RemovePoolPayload,
+  UpdateParticipantEverywherePayload,
 } from '@/state/events/eventsActionTypes';
 
 export const eventsSlice = createSlice({
   name: 'events',
   initialState: createDefaultEventsState(),
   reducers: {
+    updateParticipantEverywhere: (state, action: PayloadAction<UpdateParticipantEverywherePayload>) => {
+      const { personId, name, phone, email } = action.payload;
+      state.events = state.events.map((event) => ({
+        ...event,
+        participants: event.participants.map((p) =>
+          p.id === personId ? { ...p, name, phone, email } : p,
+        ),
+        expenses: event.expenses.map((expense) =>
+          expense.paidById === personId ? { ...expense, paidBy: name } : expense,
+        ),
+      }));
+    },
     createEvent: (state, action: PayloadAction<CreateEventPayload>) => {
       const now = new Date().toISOString();
       const { id, name, description, currency, date, groupId } = action.payload;
@@ -35,6 +52,7 @@ export const eventsSlice = createSlice({
         updatedAt: now,
         expenses: [],
         participants: [],
+        pools: [],
       });
     },
     createGroup: (state, action: PayloadAction<CreateGroupPayload>) => {
@@ -299,6 +317,86 @@ export const eventsSlice = createSlice({
           : event,
       );
       state.paymentsByEvent[eventId] = [];
+    },
+    addPool: (state, action: PayloadAction<AddPoolPayload>) => {
+      const now = new Date().toISOString();
+      const { eventId, pool } = action.payload;
+      state.events = state.events.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              updatedAt: now,
+              pools: [
+                {
+                  ...pool,
+                  createdAt: now,
+                  updatedAt: now,
+                },
+                ...(event.pools ?? []),
+              ],
+            }
+          : event,
+      );
+    },
+    updatePool: (state, action: PayloadAction<UpdatePoolPayload>) => {
+      const now = new Date().toISOString();
+      const { eventId, poolId, name } = action.payload;
+      state.events = state.events.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              updatedAt: now,
+              pools: (event.pools ?? []).map((pool) =>
+                pool.id === poolId
+                  ? {
+                      ...pool,
+                      name,
+                      updatedAt: now,
+                    }
+                  : pool,
+              ),
+            }
+          : event,
+      );
+    },
+    removePool: (state, action: PayloadAction<RemovePoolPayload>) => {
+      const now = new Date().toISOString();
+      const { eventId, poolIds } = action.payload;
+      const idsSet = new Set(poolIds);
+
+      state.events = state.events.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              updatedAt: now,
+              pools: (event.pools ?? []).filter((pool) => !idsSet.has(pool.id)),
+              expenses: event.expenses.map((expense) =>
+                expense.paidById && idsSet.has(expense.paidById)
+                  ? {
+                      ...expense,
+                      paidById: undefined,
+                      updatedAt: now,
+                    }
+                  : expense,
+              ),
+            }
+          : event,
+      );
+
+      const currentPayments = state.paymentsByEvent[eventId] ?? [];
+      state.paymentsByEvent[eventId] = currentPayments.filter(
+        (p) => !idsSet.has(p.fromId) && !idsSet.has(p.toId),
+      );
+    },
+    rehydrateEvents: (state, action: PayloadAction<EventsState>) => {
+      state.events = action.payload.events;
+      state.groups = action.payload.groups;
+      state.paymentsByEvent = action.payload.paymentsByEvent;
+    },
+    resetEvents: (state) => {
+      state.events = [];
+      state.groups = [];
+      state.paymentsByEvent = {};
     },
   },
 });

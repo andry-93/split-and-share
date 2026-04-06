@@ -51,6 +51,9 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     useMessageState();
   const { isVisible: isDeleteConfirmVisible, open: openDeleteConfirm, close: closeDeleteConfirm } =
     useConfirmState();
+  const fallbackParticipants = useMemo(() => [], []);
+  const fallbackPools = useMemo(() => [], []);
+
   const {
     amount,
     title,
@@ -67,9 +70,11 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     setAmount,
     setTitle,
     setPaidById,
+    payerOptions,
     toggleParticipant,
   } = useAddExpenseForm({
-    participants: event?.participants ?? [],
+    participants: event?.participants ?? fallbackParticipants,
+    pools: event?.pools ?? fallbackPools,
     currency: event?.currency,
     fallbackCurrency: settings.currency,
     initialAmount: editingExpense ? formatMoneyInputValue(editingExpense.amountMinor / 100) : '',
@@ -96,11 +101,11 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
 
   const paidByOptions = useMemo(
     () =>
-      participantOptions.map((participant) => ({
-        value: participant.id,
-        label: participant.name,
+      payerOptions.map((option) => ({
+        value: option.id,
+        label: option.name,
       })),
-    [participantOptions],
+    [payerOptions],
   );
 
   const handleSave = useCallback(() => {

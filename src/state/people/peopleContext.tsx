@@ -84,6 +84,9 @@ export function usePeopleActions() {
 
         dispatch(peopleActions.removeMany({ ids: payload.ids }));
       },
+      resetPeople: () => {
+        dispatch(peopleActions.resetPeople());
+      },
     }),
     [dispatch],
   );

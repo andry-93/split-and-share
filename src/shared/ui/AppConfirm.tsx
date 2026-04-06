@@ -13,6 +13,8 @@ type AppConfirmProps = {
   confirmText?: string;
   cancelText?: string;
   children?: ReactNode;
+  loading?: boolean;
+  confirmButtonProps?: Partial<React.ComponentProps<typeof Button>>;
 };
 
 export const AppConfirm = memo(function AppConfirm({
@@ -24,6 +26,8 @@ export const AppConfirm = memo(function AppConfirm({
   confirmText = i18n.t('common.save'),
   cancelText = i18n.t('common.cancel'),
   children,
+  loading,
+  confirmButtonProps,
 }: AppConfirmProps) {
   const theme = useTheme();
 
@@ -39,7 +43,14 @@ export const AppConfirm = memo(function AppConfirm({
         <Button mode="outlined" onPress={onDismiss} style={styles.actionButton}>
           {cancelText}
         </Button>
-        <Button mode="contained" onPress={onConfirm} style={styles.actionButton}>
+        <Button 
+          mode="contained" 
+          onPress={onConfirm} 
+          style={styles.actionButton}
+          loading={loading}
+          disabled={loading}
+          {...confirmButtonProps}
+        >
           {confirmText}
         </Button>
       </View>

@@ -16,19 +16,29 @@ export function createDefaultSettingsState(): SettingsState {
     currency: getSystemDefaultCurrency(),
     currencySource: 'system',
     debtsViewMode: 'simplified',
+    isSecurityEnabled: false,
+    isBiometricsEnabled: false,
+    masterPasswordHash: null,
+    autoLockGracePeriod: 30,
   };
 }
 
 export function createDefaultPeopleState(): PeopleState {
   return {
-    people: initialPeople,
+    people: [
+      {
+        id: 'person-me',
+        name: 'Me',
+        isMe: true,
+      },
+    ],
   };
 }
 
 export function createDefaultEventsState(): EventsState {
   return {
-    events: initialEvents,
-    groups: initialGroups,
+    events: [],
+    groups: [],
     paymentsByEvent: {},
   };
 }

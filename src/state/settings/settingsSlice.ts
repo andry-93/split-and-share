@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { createDefaultSettingsState } from '@/state/defaultState';
+import { SettingsState } from '@/state/settings/settingsTypes';
 import { getSystemDefaultCurrency } from '@/state/settings/currencyDefaults';
 import { getSystemDefaultLanguage } from '@/state/settings/languageDefaults';
 import {
@@ -7,6 +8,10 @@ import {
   SetDebtsViewModePayload,
   SetLanguagePayload,
   SetNumberFormatPayload,
+  SetSecurityEnabledPayload,
+  SetBiometricsEnabledPayload,
+  SetMasterPasswordHashPayload,
+  SetAutoLockGracePeriodPayload,
   SetThemePayload,
 } from '@/state/settings/settingsActionTypes';
 import { normalizeLanguageCode } from '@/state/settings/languageCatalog';
@@ -40,6 +45,19 @@ export const settingsSlice = createSlice({
     setDebtsViewMode: (state, action: PayloadAction<SetDebtsViewModePayload>) => {
       state.debtsViewMode = action.payload.debtsViewMode;
     },
+    setSecurityEnabled: (state, action: PayloadAction<SetSecurityEnabledPayload>) => {
+      state.isSecurityEnabled = action.payload.isSecurityEnabled;
+    },
+    setBiometricsEnabled: (state, action: PayloadAction<SetBiometricsEnabledPayload>) => {
+      state.isBiometricsEnabled = action.payload.isBiometricsEnabled;
+    },
+    setMasterPasswordHash: (state, action: PayloadAction<SetMasterPasswordHashPayload>) => {
+      state.masterPasswordHash = action.payload.masterPasswordHash;
+    },
+    setAutoLockGracePeriod: (state, action: PayloadAction<SetAutoLockGracePeriodPayload>) => {
+      state.autoLockGracePeriod = action.payload.autoLockGracePeriod;
+    },
+    rehydrateSettings: (_, action: PayloadAction<SettingsState>) => action.payload,
     resetSettings: () => createDefaultSettingsState(),
   },
 });
