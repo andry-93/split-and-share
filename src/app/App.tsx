@@ -272,9 +272,18 @@ function AppShell() {
   );
 }
 
+import * as SplashScreen from 'expo-splash-screen';
+import { AnimatedSplashScreen } from '@/app/AnimatedSplashScreen';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading the app might trigger some race conditions, ignore them */
+});
+
 export function App() {
   const [initError, setInitError] = useState<unknown>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isSplashAnimationComplete, setSplashAnimationComplete] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -303,20 +312,24 @@ export function App() {
     );
   }
 
-  if (!isReady) {
-    return null; // Or a splash screen
-  }
-
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <MigrationGate>
-          <AppProviders>
-            <AppErrorBoundary>
-              <AppShell />
-            </AppErrorBoundary>
-          </AppProviders>
-        </MigrationGate>
+        {isReady && (
+          <MigrationGate>
+            <AppProviders>
+              <AppErrorBoundary>
+                <AppShell />
+              </AppErrorBoundary>
+            </AppProviders>
+          </MigrationGate>
+        )}
+        
+        {isReady && !isSplashAnimationComplete && (
+          <AnimatedSplashScreen 
+            onAnimationFinish={() => setSplashAnimationComplete(true)} 
+          />
+        )}
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
