@@ -1,3 +1,4 @@
 export function getListPressedBackground(isDark: boolean): string {
-  return isDark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
+  // Use higher opacity and the new primary #1D4ED8 (29, 78, 216) so the "Me" item doesn't blend with the tinted surface
+  return isDark ? 'rgba(147, 180, 255, 0.15)' : 'rgba(29, 78, 216, 0.14)';
 }

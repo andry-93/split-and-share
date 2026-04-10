@@ -78,7 +78,7 @@ export function EventReportPreviewScreen({ navigation, route }: EventReportPrevi
           <View
             style={[
               styles.previewContainer,
-              { borderColor: theme.colors.outlineVariant, backgroundColor: '#FFFFFF' },
+              { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface },
             ]}
           >
             <WebView
@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
   },
   previewWebView: {
     flex: 1,
-    backgroundColor: 'transparent',
   },
   generating: {
     marginTop: 20,

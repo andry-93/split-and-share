@@ -154,8 +154,8 @@ export function PeopleListScreen({ navigation }: PeopleListScreenProps) {
         <>
           <DraggableFab
             icon="plus"
-            color="#FFFFFF"
-            backgroundColor="#2563FF"
+            color={theme.colors.onPrimary}
+            backgroundColor={theme.colors.primary}
             onPress={handleOpenSheet}
             topBoundary={124}
           />

@@ -236,8 +236,8 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
           <>
             <DraggableFab
               icon="plus"
-              color="#FFFFFF"
-              backgroundColor="#2563FF"
+              color={theme.colors.onPrimary}
+              backgroundColor={theme.colors.primary}
               onPress={handleFabPress}
               topBoundary={124}
             />
@@ -536,9 +536,9 @@ const EventCard = memo(function EventCard({
   const statusStyle = useMemo(() => {
     if (status.tone === 'positive') {
       return {
-        backgroundColor: 'rgba(22, 163, 74, 0.16)',
-        color: '#22C55E',
-        borderColor: '#16A34A',
+        backgroundColor: '#DCFCE7',
+        color: '#15803D',
+        borderColor: theme.colors.outlineVariant,
       };
     }
     if (status.tone === 'negative') {

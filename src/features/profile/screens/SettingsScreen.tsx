@@ -566,6 +566,8 @@ export function SettingsScreen() {
           style={styles.resetButton}
           contentStyle={styles.resetButtonContent}
           labelStyle={styles.resetButtonLabel}
+          buttonColor={theme.colors.primaryContainer}
+          textColor={theme.colors.onPrimaryContainer}
         >
           {t('settings.resetSettings')}
         </Button>
@@ -581,7 +583,9 @@ export function SettingsScreen() {
           onPress={openClearData}
           style={styles.clearButton}
           contentStyle={styles.resetButtonContent}
-          labelStyle={[styles.resetButtonLabel, { color: theme.colors.error }]}
+          labelStyle={styles.resetButtonLabel}
+          buttonColor={theme.colors.errorContainer}
+          textColor={theme.colors.onErrorContainer}
         >
           {t('settings.clearData')}
         </Button>

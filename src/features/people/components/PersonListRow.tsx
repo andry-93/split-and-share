@@ -72,8 +72,8 @@ export const PersonListRow = memo(function PersonListRow({
           <View style={styles.nameRow}>
             <Text variant="titleMedium">{name}</Text>
             {isCurrentUser ? (
-              <View style={[styles.youBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-                <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer }}>
+              <View style={[styles.youBadge, { backgroundColor: theme.colors.primary }]}>
+                <Text variant="labelSmall" style={{ color: theme.colors.onPrimary }}>
                   {t('people.meTag')}
                 </Text>
               </View>

@@ -190,9 +190,9 @@ const ParticipantBalanceRow = memo(function ParticipantBalanceRow({
 
   const balanceStyle = balance > 0
     ? {
-        backgroundColor: 'rgba(22, 163, 74, 0.16)',
-        borderColor: '#4ADE80',
-        color: '#16A34A',
+        backgroundColor: '#DCFCE7',
+        borderColor: theme.colors.outlineVariant,
+        color: '#15803D',
       }
     : balance < 0
       ? {

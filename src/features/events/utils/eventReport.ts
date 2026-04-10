@@ -152,8 +152,8 @@ export function buildEventReportHtml({
         margin-bottom: 10px;
         padding: 10px 14px;
         border-radius: 10px;
-        background: #2563FF;
-        color: #FFFFFF;
+        background: #1D4ED8;
+        color: #F4FAFC;
       }
       .title { font-size: 30px; font-weight: 700; margin: 0 0 10px; }
       .sub { color: #4B5563; margin: 0 0 20px; font-size: 16px; }

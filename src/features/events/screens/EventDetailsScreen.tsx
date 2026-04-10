@@ -412,8 +412,8 @@ export function EventDetailsScreen({ navigation, route }: EventDetailsScreenProp
 
       <DraggableFab
         icon="plus"
-        color="#FFFFFF"
-        backgroundColor="#2563FF"
+        color={theme.colors.onPrimary}
+        backgroundColor={theme.colors.primary}
         onPress={handleFabPress}
         topBoundary={220}
         visible={shouldShowFab}
