@@ -57,6 +57,9 @@ export const settingsSlice = createSlice({
     setAutoLockGracePeriod: (state, action: PayloadAction<SetAutoLockGracePeriodPayload>) => {
       state.autoLockGracePeriod = action.payload.autoLockGracePeriod;
     },
+    completeOnboarding: (state) => {
+      state.onboardingCompleted = true;
+    },
     rehydrateSettings: (_, action: PayloadAction<SettingsState>) => action.payload,
     resetSettings: () => createDefaultSettingsState(),
   },

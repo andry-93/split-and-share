@@ -11,17 +11,19 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { useAppAppearance } from '@/shared/hooks/useAppAppearance';
+
 interface AnimatedSplashScreenProps {
   onAnimationFinish: () => void;
 }
 
 export function AnimatedSplashScreen({ onAnimationFinish }: AnimatedSplashScreenProps) {
+  const { backgroundColor } = useAppAppearance();
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
 
   const startAnimation = useCallback(() => {
     // Hide the native splash screen as soon as we start our animation
-    // Our React Native view will cover the exact same pixels because it uses the same color and image.
     SplashScreen.hideAsync().catch(() => {
       // Ignored
     });
@@ -43,7 +45,6 @@ export function AnimatedSplashScreen({ onAnimationFinish }: AnimatedSplashScreen
   }, [opacity, scale, onAnimationFinish]);
 
   useEffect(() => {
-    // Start animation on mount since this component is only mounted when the app is "ready"
     startAnimation();
   }, [startAnimation]);
 
@@ -55,7 +56,7 @@ export function AnimatedSplashScreen({ onAnimationFinish }: AnimatedSplashScreen
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor }]}>
       <Animated.Image
         source={require('../../assets/splash-icon.png')}
         style={[styles.image, animatedStyle]}
@@ -68,14 +69,11 @@ export function AnimatedSplashScreen({ onAnimationFinish }: AnimatedSplashScreen
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#ECF7FA', // Matches app.json splash.backgroundColor
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999, // Ensure it covers everything underneath
+    zIndex: 9999,
   },
   image: {
-    // Dimensions should be roughly what the OS uses for "contain"
-    // Wait, exact size doesn't matter as much, what matters is it scales nicely
     width: '100%',
     height: '100%',
   },

@@ -71,35 +71,56 @@ function migrateToSchema2(state: any): any {
   };
 }
 
+function createBackups() {
+  try {
+    const rawSettings = storage.getString(STORAGE_KEYS.settings);
+    const rawPeople = storage.getString(STORAGE_KEYS.people);
+    const rawEvents = storage.getString(STORAGE_KEYS.events);
+
+    if (rawSettings) storage.set(STORAGE_KEYS.backupSettings, rawSettings);
+    if (rawPeople) storage.set(STORAGE_KEYS.backupPeople, rawPeople);
+    if (rawEvents) storage.set(STORAGE_KEYS.backupEvents, rawEvents);
+  } catch (error) {
+    console.error('[MMKV] Backup failed before migration', error);
+  }
+}
+
 function migrateToCurrentSchema() {
   const version = getStoredSchemaVersion();
 
+  // Settings
   try {
     const settings = readJSON<SettingsState>(STORAGE_KEYS.settings);
-    writeJSON(STORAGE_KEYS.settings, parseSettingsState(settings));
+    if (settings) {
+      writeJSON(STORAGE_KEYS.settings, parseSettingsState(settings));
+    }
   } catch (error) {
     console.error('[MMKV] settings migration failed', error);
-    writeJSON(STORAGE_KEYS.settings, createDefaultSettingsState());
+    // Don't overwrite settings - let the app try to use existing corrupted data with guards
   }
 
+  // People
   try {
     const people = readJSON<PeopleState>(STORAGE_KEYS.people);
-    const normalizedPeople = parsePeopleState(people);
-    writeJSON(STORAGE_KEYS.people, normalizedPeople.people);
+    if (people) {
+      const normalizedPeople = parsePeopleState(people);
+      writeJSON(STORAGE_KEYS.people, normalizedPeople.people);
+    }
   } catch (error) {
     console.error('[MMKV] people migration failed', error);
-    writeJSON(STORAGE_KEYS.people, createDefaultPeopleState().people);
   }
 
+  // Events
   try {
     let events = readJSON<any>(STORAGE_KEYS.events);
-    if (version < 2) {
-      events = migrateToSchema2(events);
+    if (events) {
+      if (version < 2) {
+        events = migrateToSchema2(events);
+      }
+      writeJSON(STORAGE_KEYS.events, parseEventsState(events));
     }
-    writeJSON(STORAGE_KEYS.events, parseEventsState(events));
   } catch (error) {
     console.error('[MMKV] events migration failed', error);
-    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
   }
 }
 
@@ -110,13 +131,18 @@ export function runMigrations() {
   }
 
   try {
+    // 1. Create safety backup of raw data
+    createBackups();
+
+    // 2. Perform the actual data transformations
     migrateToCurrentSchema();
+
+    // 3. Mark the schema version as updated ONLY on success
     setStoredSchemaVersion(CURRENT_SCHEMA_VERSION);
+    console.log(`[MMKV] Migration to version ${CURRENT_SCHEMA_VERSION} completed successfully.`);
   } catch (error) {
-    console.error('[MMKV] migration failed', error);
-    writeJSON(STORAGE_KEYS.settings, createDefaultSettingsState());
-    writeJSON(STORAGE_KEYS.people, createDefaultPeopleState().people);
-    writeJSON(STORAGE_KEYS.events, createDefaultEventsState());
-    setStoredSchemaVersion(CURRENT_SCHEMA_VERSION);
+    // CRITICAL: If the top-level migration fails, WE DO NOT OVERWRITE THE STORAGE WITH DEFAULTS.
+    // We leave the data as is, possibly causing errors in the app, but preventing permanent data destruction.
+    console.error('[MMKV] migration failed. Data preserved.', error);
   }
 }

@@ -3,6 +3,9 @@ export const STORAGE_KEYS = {
   settings: 'settings',
   people: 'people',
   events: 'events',
+  backupSettings: 'backup_settings',
+  backupPeople: 'backup_people',
+  backupEvents: 'backup_events',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

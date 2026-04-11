@@ -34,9 +34,10 @@ export function useEventsActions() {
           throw new Error(i18n.t('events.eventNameRequired'));
         }
 
+        const id = createEntityId('event');
         dispatch(
           eventsActions.createEvent({
-            id: createEntityId('event'),
+            id,
             name: trimmedName,
             description: normalizeOptionalText(payload.description),
             currency: payload.currency,
@@ -44,6 +45,7 @@ export function useEventsActions() {
             groupId: payload.groupId,
           }),
         );
+        return id;
       },
       createGroup: (payload: { name: string; description?: string }) => {
         const trimmedName = payload.name.trim();

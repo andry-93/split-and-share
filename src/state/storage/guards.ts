@@ -121,39 +121,46 @@ function normalizeEventItem(value: EventItem): EventItem {
     createdAt,
     updatedAt,
     pools: Array.isArray(value.pools) ? value.pools.filter(isPoolItem) : [],
-    expenses: value.expenses.map((expense) => {
-      const fallbackExpenseCreatedAt = createdAt;
-      const expenseCreatedAt = normalizeIsoDateString(
-        (expense as EventItem['expenses'][number] & { createdAt?: unknown }).createdAt,
-        fallbackExpenseCreatedAt,
-      );
-      const expenseUpdatedAt = normalizeIsoDateString(
-        (expense as EventItem['expenses'][number] & { updatedAt?: unknown }).updatedAt,
-        expenseCreatedAt,
-      );
-      const rawSplitBetween = (expense as EventItem['expenses'][number] & { splitBetweenIds?: unknown })
-        .splitBetweenIds;
-      const normalizedSplitBetween = Array.isArray(rawSplitBetween)
-        ? Array.from(
-            new Set(
-              rawSplitBetween.filter(
-                (id): id is string => typeof id === 'string' && participantIdsSet.has(id),
-              ),
-            ),
-          )
-        : [];
+    expenses: (value.expenses || [])
+      .map((expense) => {
+        try {
+          if (!isRecord(expense)) return null;
+          const fallbackExpenseCreatedAt = createdAt;
+          const expenseCreatedAt = normalizeIsoDateString(
+            (expense as any).createdAt,
+            fallbackExpenseCreatedAt,
+          );
+          const expenseUpdatedAt = normalizeIsoDateString(
+            (expense as any).updatedAt,
+            expenseCreatedAt,
+          );
+          const rawSplitBetween = (expense as any).splitBetweenIds;
+          const normalizedSplitBetween = Array.isArray(rawSplitBetween)
+            ? Array.from(
+                new Set(
+                  rawSplitBetween.filter(
+                    (id): id is string => typeof id === 'string' && participantIdsSet.has(id),
+                  ),
+                ),
+              )
+            : [];
 
-      return {
-        ...expense,
-        amountMinor: typeof expense.amountMinor === 'number' ? Math.round(expense.amountMinor) : 0,
-        splitBetweenIds:
-          normalizedSplitBetween.length > 0
-            ? normalizedSplitBetween
-            : allParticipantIds,
-        createdAt: expenseCreatedAt,
-        updatedAt: expenseUpdatedAt,
-      };
-    }),
+          return {
+            ...expense,
+            amountMinor: typeof expense.amountMinor === 'number' ? Math.round(expense.amountMinor) : 0,
+            splitBetweenIds:
+              normalizedSplitBetween.length > 0
+                ? normalizedSplitBetween
+                : allParticipantIds,
+            createdAt: expenseCreatedAt,
+            updatedAt: expenseUpdatedAt,
+          };
+        } catch (e) {
+          console.error('[Guards] Failed to normalize expense', e);
+          return null;
+        }
+      })
+      .filter((exp): exp is NonNullable<typeof exp> => exp !== null),
   };
 }
 
@@ -192,58 +199,61 @@ function isEventPayment(value: unknown): value is EventPayment {
 }
 
 export function parseSettingsState(value: unknown): SettingsState {
+  const fallback = createDefaultSettingsState();
   if (!isRecord(value)) {
-    return createDefaultSettingsState();
+    return fallback;
   }
 
-  const theme = value.theme;
-  const language = value.language;
-  const languageSource = value.languageSource;
-  const numberFormat = value.numberFormat;
-  const currency = value.currency;
-  const currencySource = value.currencySource;
-  const debtsViewMode = value.debtsViewMode;
-  if (
-    (theme !== 'light' && theme !== 'dark' && theme !== 'system') ||
-    typeof language !== 'string' ||
-    typeof currency !== 'string'
-  ) {
-    return createDefaultSettingsState();
-  }
+  const theme =
+    value.theme === 'light' || value.theme === 'dark' || value.theme === 'system'
+      ? value.theme
+      : fallback.theme;
 
-  const normalizedLanguage = normalizeLanguageCode(language);
+  const language = typeof value.language === 'string' ? normalizeLanguageCode(value.language) : fallback.language;
   const systemLanguage = getSystemDefaultLanguage();
-  const normalizedCurrency = normalizeCurrencyCode(currency);
-  const systemCurrency = getSystemDefaultCurrency();
-  const resolvedLanguageSource: SettingsState['languageSource'] =
-    languageSource === 'manual' || languageSource === 'system'
-      ? languageSource
-      : normalizedLanguage === systemLanguage
+  
+  const languageSourceRaw = value.languageSource;
+  const languageSource =
+    languageSourceRaw === 'manual' || languageSourceRaw === 'system'
+      ? languageSourceRaw
+      : language === systemLanguage
         ? 'system'
         : 'manual';
-  const resolvedCurrencySource: SettingsState['currencySource'] =
-    currencySource === 'manual' || currencySource === 'system'
-      ? currencySource
+
+  const currency = typeof value.currency === 'string' ? normalizeCurrencyCode(value.currency) : fallback.currency;
+  const currencySourceRaw = value.currencySource;
+  const currencySource =
+    currencySourceRaw === 'manual' || currencySourceRaw === 'system'
+      ? currencySourceRaw
       : 'system';
+
+  const numberFormatRaw = value.numberFormat;
+  const numberFormat =
+    numberFormatRaw === 'us' || numberFormatRaw === 'eu' || numberFormatRaw === 'ru' || numberFormatRaw === 'ch'
+      ? numberFormatRaw
+      : fallback.numberFormat;
+
+  const debtsViewMode = value.debtsViewMode === 'detailed' ? 'detailed' : 'simplified';
+
+  const isSecurityEnabled = typeof value.isSecurityEnabled === 'boolean' ? value.isSecurityEnabled : fallback.isSecurityEnabled;
+  const isBiometricsEnabled = typeof value.isBiometricsEnabled === 'boolean' ? value.isBiometricsEnabled : fallback.isBiometricsEnabled;
+  const masterPasswordHash = typeof value.masterPasswordHash === 'string' ? value.masterPasswordHash : fallback.masterPasswordHash;
+  const autoLockGracePeriod = typeof value.autoLockGracePeriod === 'number' ? value.autoLockGracePeriod : fallback.autoLockGracePeriod;
+  const onboardingCompleted = typeof value.onboardingCompleted === 'boolean' ? value.onboardingCompleted : fallback.onboardingCompleted;
 
   return {
     theme,
-    language: normalizedLanguage,
-    languageSource: resolvedLanguageSource,
-    numberFormat:
-      numberFormat === 'us' ||
-      numberFormat === 'eu' ||
-      numberFormat === 'ru' ||
-      numberFormat === 'ch'
-        ? numberFormat
-        : 'system',
-    currency: normalizedCurrency,
-    currencySource: resolvedCurrencySource,
-    debtsViewMode: debtsViewMode === 'detailed' ? 'detailed' : 'simplified',
-    isSecurityEnabled: typeof value.isSecurityEnabled === 'boolean' ? value.isSecurityEnabled : false,
-    isBiometricsEnabled: typeof value.isBiometricsEnabled === 'boolean' ? value.isBiometricsEnabled : false,
-    masterPasswordHash: typeof value.masterPasswordHash === 'string' ? value.masterPasswordHash : null,
-    autoLockGracePeriod: typeof value.autoLockGracePeriod === 'number' ? value.autoLockGracePeriod : 30,
+    language,
+    languageSource,
+    numberFormat,
+    currency,
+    currencySource,
+    debtsViewMode,
+    isSecurityEnabled,
+    isBiometricsEnabled,
+    masterPasswordHash,
+    autoLockGracePeriod,
+    onboardingCompleted,
   };
 }
 

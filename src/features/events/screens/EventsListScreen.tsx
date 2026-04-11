@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Appbar, Card, Checkbox, Icon, Text, useTheme } from 'react-native-paper';
@@ -11,6 +11,7 @@ import { EventGroupItem, EventItem } from '@/features/events/types/events';
 import { EventsStackParamList } from '@/navigation/types';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { AppList } from '@/shared/ui/AppList';
+import { AppTheme } from '@/app/theme';
 import { AppSearchbar } from '@/shared/ui/AppSearchbar';
 import { BottomTabSwipeBoundary } from '@/shared/ui/BottomTabSwipeBoundary';
 import { useConfirmState } from '@/shared/hooks/useConfirmState';
@@ -32,12 +33,14 @@ import {
 import { selectCurrentUser } from '@/state/people/peopleSelectors';
 import { usePeopleState } from '@/state/people/peopleContext';
 import { useSettingsState } from '@/state/settings/settingsContext';
+import { PremiumPressable } from '@/shared/ui/PremiumPressable';
+import { Shadows, Spacing, Typography } from '@/shared/ui/theme/styles';
 
 type EventsListScreenProps = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
 export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
   const { t } = useTranslation();
-  const theme = useTheme();
+  const theme = useTheme() as AppTheme;
   const eventsState = useEventsState();
   const { removeEvents, removeGroups } = useEventsActions();
   const { people } = usePeopleState();
@@ -207,30 +210,32 @@ export function EventsListScreen({ navigation, route }: EventsListScreenProps) {
           />
         )}
 
-        <AppSearchbar
-          value={query}
-          onChangeText={setQuery}
-          placeholder={currentGroup ? t('navigation.events') : t('events.searchEventsOrGroups')}
-          style={styles.search}
-        />
+        <View style={styles.contentWrapper}>
+          <AppSearchbar
+            value={query}
+            onChangeText={setQuery}
+            placeholder={currentGroup ? t('navigation.events') : t('events.searchEventsOrGroups')}
+            style={styles.search}
+          />
 
-        <AppList
-          data={listEntries}
-          keyExtractor={(item) => item.id}
-          containerStyle={styles.eventsListContainer}
-          listStyle={styles.list}
-          contentContainerStyle={[styles.listContent, listEntries.length === 0 ? styles.listEmpty : null]}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          renderItem={renderListItem}
-          emptyComponent={
-            <View style={styles.emptyState}>
-              <Text variant="bodyMedium" style={styles.emptyStateText}>{emptyText}</Text>
-            </View>
-          }
-          showDividers={false}
-        />
+          <AppList
+            data={listEntries}
+            keyExtractor={(item) => item.id}
+            containerStyle={styles.eventsListContainer}
+            listStyle={styles.list}
+            contentContainerStyle={[styles.listContent, listEntries.length === 0 ? styles.listEmpty : null]}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            renderItem={renderListItem}
+            emptyComponent={
+              <View style={styles.emptyState}>
+                <Text variant="bodyMedium" style={styles.emptyStateText}>{emptyText}</Text>
+              </View>
+            }
+            showDividers={false}
+          />
+        </View>
 
         {!isEditMode ? (
           <>
@@ -385,78 +390,70 @@ const GroupCard = memo(function GroupCard({
 }: GroupCardProps) {
   const theme = useTheme();
   const pressedCardBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
-  const longPressTriggeredRef = useRef(false);
 
   return (
-    <Pressable
-      onPress={() => {
-        if (longPressTriggeredRef.current) {
-          longPressTriggeredRef.current = false;
-          return;
-        }
-        onPress();
-      }}
-      onLongPress={() => {
-        longPressTriggeredRef.current = true;
-        onLongPress();
-      }}
-      onPressIn={() => {
-        longPressTriggeredRef.current = false;
-      }}
+    <PremiumPressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={styles.cardPressable}
     >
-      {({ pressed }) => (
-        <Card
-          mode="contained"
-          style={[
-            styles.card,
-            {
-              backgroundColor: selected || pressed ? pressedCardBackground : theme.colors.surface,
-              borderColor: theme.colors.outlineVariant,
-            },
-          ]}
-        >
-          <Card.Content style={styles.groupCardContent}>
-            <View style={styles.groupHeader}>
-              <View style={[styles.groupIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-                <Icon source="folder-outline" size={16} color={theme.colors.primary} />
-                <View style={[styles.groupIconCountBubble, { backgroundColor: theme.colors.primary }]}>
-                  <Text variant="labelSmall" style={[styles.groupIconCountText, { color: theme.colors.onPrimary }]}>
-                    {eventsCount > 99 ? '99+' : String(eventsCount)}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.groupMeta}>
-                <View style={styles.groupTitleRow}>
-                  <Text variant="titleSmall" numberOfLines={1} style={styles.groupTitleText}>
-                    {group.name}
-                  </Text>
-                </View>
-                {group.description ? (
-                  <Text
-                    variant="bodySmall"
-                    style={{ color: theme.colors.onSurfaceVariant }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {group.description}
-                  </Text>
-                ) : null}
-              </View>
-              <View style={styles.groupRight}>
-                {!selectable ? (
-                  <Icon source="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-                ) : null}
+      <Card
+        mode="contained"
+        style={[
+          styles.card,
+          {
+            backgroundColor: selected ? pressedCardBackground : theme.colors.surface,
+            borderColor: selected ? theme.colors.primary : theme.colors.outlineVariant,
+            borderWidth: selected ? 1.5 : StyleSheet.hairlineWidth,
+          },
+          Shadows.soft,
+        ]}
+      >
+        <Card.Content style={styles.groupCardContent}>
+          <View style={styles.groupHeader}>
+            <View style={[styles.groupIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Icon source="folder-outline" size={16} color={theme.colors.primary} />
+              <View style={[styles.groupIconCountBubble, { backgroundColor: theme.colors.primary }]}>
+                <Text variant="labelSmall" style={[styles.groupIconCountText, { color: theme.colors.onPrimary }]}>
+                  {eventsCount > 99 ? '99+' : String(eventsCount)}
+                </Text>
               </View>
             </View>
-          </Card.Content>
-          {selectable ? (
-            <View pointerEvents="none" style={styles.eventCheckboxOverlay}>
-              <Checkbox status={selected ? 'checked' : 'unchecked'} />
+            <View style={styles.groupMeta}>
+              <View style={styles.groupTitleRow}>
+                <Text 
+                  variant="titleSmall" 
+                  numberOfLines={1} 
+                  style={[styles.groupTitleText, { fontWeight: Typography.weights.semiBold as any }]}
+                >
+                  {group.name}
+                </Text>
+              </View>
+              {group.description ? (
+                <Text
+                  variant="bodySmall"
+                  style={{ color: theme.colors.onSurfaceVariant }}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {group.description}
+                </Text>
+              ) : null}
             </View>
-          ) : null}
-        </Card>
-      )}
-    </Pressable>
+            <View style={styles.groupRight}>
+              {!selectable ? (
+                <Icon source="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+              ) : null}
+            </View>
+          </View>
+        </Card.Content>
+        {selectable ? (
+          <View pointerEvents="none" style={styles.eventCheckboxOverlay}>
+            <Checkbox status={selected ? 'checked' : 'unchecked'} />
+          </View>
+        ) : null}
+      </Card>
+    </PremiumPressable>
   );
 });
 
@@ -485,7 +482,6 @@ const EventCard = memo(function EventCard({
 }: EventCardProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const longPressTriggeredRef = useRef(false);
   const pressedCardBackground = theme.dark ? 'rgba(147, 180, 255, 0.12)' : 'rgba(37, 99, 255, 0.08)';
   const selectors = useMemo(() => createEventCardSelectors(), []);
   const eventCurrencyCode = useMemo(
@@ -536,8 +532,8 @@ const EventCard = memo(function EventCard({
   const statusStyle = useMemo(() => {
     if (status.tone === 'positive') {
       return {
-        backgroundColor: '#DCFCE7',
-        color: '#15803D',
+        backgroundColor: theme.colors.successContainer,
+        color: theme.colors.onSuccessContainer,
         borderColor: theme.colors.outlineVariant,
       };
     }
@@ -561,78 +557,80 @@ const EventCard = memo(function EventCard({
     theme.colors.onSurfaceVariant,
     theme.colors.outlineVariant,
     theme.colors.surface,
+    theme.colors.successContainer,
+    theme.colors.onSuccessContainer,
   ]);
 
   return (
-    <Pressable
-      onPress={() => {
-        if (longPressTriggeredRef.current) {
-          longPressTriggeredRef.current = false;
-          return;
-        }
-        onPress();
-      }}
-      onLongPress={() => {
-        longPressTriggeredRef.current = true;
-        onLongPress();
-      }}
-      onPressIn={() => {
-        longPressTriggeredRef.current = false;
-      }}
+    <PremiumPressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={styles.cardPressable}
     >
-      {({ pressed }) => (
-        <Card
-          mode="contained"
-          style={[
-            styles.card,
-            {
-              backgroundColor: selected || pressed ? pressedCardBackground : theme.colors.surface,
-              borderColor: theme.colors.outlineVariant,
-            },
-          ]}
-        >
-          <Card.Content style={styles.cardContent}>
-            <Text variant="titleMedium" style={styles.cardTitle}>
-              {event.name}
-            </Text>
-            {eventDate ? (
-              <>
-                <View style={styles.dateRow}>
-                  <Icon source="calendar-blank-outline" size={18} color={theme.colors.onSurfaceVariant} />
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    {eventDate}
-                  </Text>
-                </View>
-                <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />
-              </>
-            ) : null}
-            <View style={styles.totalRow}>
-              <View>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {t('events.totals.total')}
-                </Text>
-                <Text variant="titleMedium">{formatCurrencyAmount(eventCurrencyCode, total)}</Text>
-              </View>
-              <View
-                style={[
-                  styles.statusPill,
-                  { backgroundColor: statusStyle.backgroundColor, borderColor: statusStyle.borderColor },
-                ]}
-              >
-                <Text variant="labelSmall" style={{ color: statusStyle.color }}>
-                  {status.text}
+      <Card
+        mode="contained"
+        style={[
+          styles.card,
+          {
+            backgroundColor: selected ? pressedCardBackground : theme.colors.surface,
+            borderColor: selected ? theme.colors.primary : theme.colors.outlineVariant,
+            borderWidth: selected ? 1.5 : StyleSheet.hairlineWidth,
+          },
+          Shadows.soft,
+        ]}
+      >
+        <Card.Content style={styles.cardContent}>
+          <Text 
+            variant="titleMedium" 
+            style={[styles.cardTitle, { fontWeight: Typography.weights.semiBold as any }]}
+          >
+            {event.name}
+          </Text>
+          {eventDate ? (
+            <>
+              <View style={styles.dateRow}>
+                <Icon source="calendar-blank-outline" size={16} color={theme.colors.onSurfaceVariant} />
+                <Text 
+                  variant="bodySmall" 
+                  style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}
+                >
+                  {eventDate}
                 </Text>
               </View>
-            </View>
-          </Card.Content>
-          {selectable ? (
-            <View pointerEvents="none" style={styles.eventCheckboxOverlay}>
-              <Checkbox status={selected ? 'checked' : 'unchecked'} />
-            </View>
+              <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />
+            </>
           ) : null}
-        </Card>
-      )}
-    </Pressable>
+          <View style={styles.totalRow}>
+            <View>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 2 }}>
+                {t('events.totals.total')}
+              </Text>
+              <Text variant="titleMedium" style={{ fontWeight: Typography.weights.bold as any }}>
+                {formatCurrencyAmount(eventCurrencyCode, total)}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.statusPill,
+                { backgroundColor: statusStyle.backgroundColor, borderColor: statusStyle.borderColor },
+              ]}
+            >
+              <Text 
+                variant="labelSmall" 
+                style={{ color: statusStyle.color, fontWeight: Typography.weights.medium as any }}
+              >
+                {status.text}
+              </Text>
+            </View>
+          </View>
+        </Card.Content>
+        {selectable ? (
+          <View pointerEvents="none" style={styles.eventCheckboxOverlay}>
+            <Checkbox status={selected ? 'checked' : 'unchecked'} />
+          </View>
+        ) : null}
+      </Card>
+    </PremiumPressable>
   );
 });
 
@@ -640,9 +638,13 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+  contentWrapper: {
+    flex: 1,
+    paddingTop: Spacing.s,
+  },
   search: {
-    marginHorizontal: 16,
-    marginBottom: 12,
+    marginHorizontal: Spacing.l,
+    marginBottom: Spacing.m,
   },
   list: {
     flex: 1,
@@ -655,40 +657,35 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.l,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.huge, // Space for FAB
   },
   listEmpty: {
     flexGrow: 1,
   },
+  cardPressable: {
+    marginBottom: Spacing.s,
+  },
   card: {
-    marginBottom: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 0,
-    shadowColor: 'transparent',
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
+    borderRadius: 16,
+    overflow: 'visible', // Allow shadows to show
   },
   cardContent: {
-    paddingVertical: 12,
+    paddingVertical: Spacing.m,
   },
   groupCardContent: {
-    paddingTop: 9,
-    paddingBottom: 9,
+    paddingVertical: Spacing.m - 2,
   },
   groupHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.s,
   },
   groupIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -713,30 +710,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#fff', // Better separation
   },
   groupIconCountText: {
-    fontSize: 9.5,
+    fontSize: 9,
     lineHeight: 11,
     fontWeight: '700',
   },
   groupRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 10,
+    marginLeft: Spacing.s,
     width: 20,
     justifyContent: 'center',
   },
   cardTitle: {
-    marginBottom: 8,
+    marginBottom: Spacing.s,
+    letterSpacing: Typography.letterSpacing.tight,
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.s,
   },
   separator: {
-    marginVertical: 8,
+    marginVertical: Spacing.m,
     height: StyleSheet.hairlineWidth,
+    opacity: 0.5,
   },
   totalRow: {
     flexDirection: 'row',
@@ -744,24 +745,25 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   statusPill: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   eventCheckboxOverlay: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 6,
+    right: 6,
     zIndex: 2,
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: Spacing.xxl,
   },
   emptyStateText: {
     textAlign: 'center',
+    opacity: 0.6,
   },
 });

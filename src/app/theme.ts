@@ -1,3 +1,19 @@
+import { MD3Theme } from 'react-native-paper';
+
+declare module 'react-native-paper' {
+  export interface MD3Colors {
+    successContainer: string;
+    onSuccessContainer: string;
+  }
+}
+
+export type AppTheme = MD3Theme & {
+  colors: {
+    successContainer: string;
+    onSuccessContainer: string;
+  };
+};
+
 export const lightColorOverrides = {
   primary: '#1D4ED8', // Richer, premium blue
   onPrimary: '#F4FAFC',
@@ -39,6 +55,8 @@ export const lightColorOverrides = {
   surfaceDisabled: 'rgba(15, 23, 42, 0.08)',
   onSurfaceDisabled: 'rgba(15, 23, 42, 0.38)',
   backdrop: 'rgba(15, 23, 42, 0.4)',
+  successContainer: '#DCFCE7',
+  onSuccessContainer: '#15803D',
 } as const;
 
 export const darkColorOverrides = {
@@ -82,4 +100,6 @@ export const darkColorOverrides = {
   surfaceDisabled: 'rgba(232, 238, 249, 0.12)',
   onSurfaceDisabled: 'rgba(232, 238, 249, 0.38)',
   backdrop: 'rgba(8, 22, 51, 0.6)',
+  successContainer: '#064E3B',
+  onSuccessContainer: '#34D399',
 } as const;

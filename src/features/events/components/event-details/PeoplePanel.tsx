@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ParticipantItem } from '@/features/events/types/events';
 import { AppList } from '@/shared/ui/AppList';
 import { PersonListRow } from '@/features/people/components/PersonListRow';
+import { AppTheme } from '@/app/theme';
 import { formatCurrencyAmount } from '@/shared/utils/money';
 import { eventDetailsStyles as styles } from '@/features/events/components/event-details/styles';
 import { isCurrentUserPerson, sortPeopleWithCurrentUserFirst } from '@/shared/utils/people';
@@ -179,7 +180,7 @@ const ParticipantBalanceRow = memo(function ParticipantBalanceRow({
   onPress,
   onLongPress,
 }: ParticipantBalanceRowProps) {
-  const theme = useTheme();
+  const theme = useTheme() as AppTheme;
   const absoluteBalance = Math.abs(balance);
   const formattedBalance =
     balance > 0
@@ -190,9 +191,9 @@ const ParticipantBalanceRow = memo(function ParticipantBalanceRow({
 
   const balanceStyle = balance > 0
     ? {
-        backgroundColor: '#DCFCE7',
+        backgroundColor: theme.colors.successContainer,
         borderColor: theme.colors.outlineVariant,
-        color: '#15803D',
+        color: theme.colors.onSuccessContainer,
       }
     : balance < 0
       ? {

@@ -28,6 +28,9 @@ const en = {
     name: 'Name',
     note: 'Note',
     apply: 'Apply',
+    next: 'Next',
+    back: 'Back',
+    done: 'Done',
   },
   navigation: {
     events: 'Events',
@@ -232,6 +235,8 @@ const en = {
     searchPeople: 'Search people',
     addFirstPerson: 'Add your first person',
     splitFaster: 'Split expenses faster with your people list.',
+    name: 'Name',
+    namePlaceholder: 'Enter your name',
     phone: 'Phone',
     email: 'Email',
     deleteContact: {
@@ -329,6 +334,36 @@ const en = {
   misc: {
     rebuildToEnableDatePicker: 'Rebuild the app to enable date picker.',
     generatePdfAgain: 'Generate the PDF again.',
+  },
+  onboarding: {
+    language: {
+      title: 'Select Language',
+      description: 'Choose your preferred language for the application interface.',
+    },
+    me: {
+      title: 'About You',
+      description: 'How should others see you? This information will be used for your "Me" contact.',
+    },
+    currency: {
+      title: 'Default Currency',
+      description: 'Choose the main currency for your events. You can change it later for individual events.',
+    },
+    numberFormat: {
+      title: 'Number Format',
+      description: 'Choose how you want your amounts and prices to be displayed.',
+    },
+    debtMode: {
+      title: 'Balance View',
+      description: 'Choose how you want to see who owes what.',
+      simplifiedTitle: 'Simplified',
+      detailedTitle: 'Detailed',
+      simplifiedDesc: 'Combine all debts between people into single totals. Easier to settle up.',
+      detailedDesc: 'Keep track of every specific expense and who owes whom for what. Better for transparency.',
+    },
+    appearance: {
+      title: 'Appearance',
+      description: 'Customize the look and feel of the app.',
+    },
   },
 };
 

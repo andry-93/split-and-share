@@ -20,6 +20,7 @@ export function createDefaultSettingsState(): SettingsState {
     isBiometricsEnabled: false,
     masterPasswordHash: null,
     autoLockGracePeriod: 30,
+    onboardingCompleted: false,
   };
 }
 

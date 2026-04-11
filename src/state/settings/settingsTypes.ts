@@ -11,4 +11,5 @@ export type SettingsState = {
   isBiometricsEnabled: boolean;
   masterPasswordHash: string | null;
   autoLockGracePeriod: number; // in seconds
+  onboardingCompleted: boolean;
 };

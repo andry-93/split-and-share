@@ -170,16 +170,20 @@ export function AddEventScreen({ navigation, route }: AddEventScreenProps) {
           date: selectedDate ? selectedDate.toISOString() : null,
           groupId: eventGroupId,
         });
+        navigation.goBack();
       } else {
-        createEvent({
+        const eventId = createEvent({
           name,
           description,
           currency: eventCurrency,
           date: selectedDate ? selectedDate.toISOString() : null,
           groupId: eventGroupId,
         });
+
+        // For new events: Replace current screen with EventDetails and open AddPeople on top
+        navigation.replace('EventDetails', { eventId });
+        navigation.navigate('AddPeopleToEvent', { eventId });
       }
-      navigation.goBack();
     } catch (error) {
       const message = error instanceof Error ? error.message : targetEvent ? t('events.updateEventAgain') : t('events.createEventAgain');
       setErrorMessage(message);

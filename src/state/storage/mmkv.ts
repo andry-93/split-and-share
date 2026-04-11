@@ -1,24 +1,30 @@
-import { createMMKV } from 'react-native-mmkv';
+import { createMMKV, MMKV } from 'react-native-mmkv';
 import { reportError } from '@/shared/monitoring/errorReporting';
 import { getOrCreateStorageEncryptionKey } from '@/state/storage/encryptionKey';
 
 let storageInitializationError: unknown = null;
 let isStorageInitialized = false;
 
-export const storage = createMMKV({
-  id: 'split-and-share-storage',
-});
+// Initialize dynamically when encryption key is available
+export let storage: MMKV;
 
 /**
  * Initializes the storage by retrieving/creating the encryption key
- * and applying it to the MMKV instance.
+ * and applying it safely to the MMKV instance on creation.
  */
 export async function initializeStorage(): Promise<void> {
   if (isStorageInitialized) return;
 
   try {
     const encryptionKey = await getOrCreateStorageEncryptionKey();
-    storage.recrypt(encryptionKey);
+    
+    // We MUST initialize MMKV with the key. Using recrypt on an unencrypted instance 
+    // wipes previously encrypted data.
+    storage = createMMKV({
+      id: 'split-and-share-storage',
+      encryptionKey,
+    });
+    
     isStorageInitialized = true;
   } catch (error) {
     storageInitializationError = error;
