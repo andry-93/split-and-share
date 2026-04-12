@@ -41,7 +41,7 @@ export const OnboardingThemeStep: React.FC<{ onDone: () => void; onBack: () => v
 
   return (
     <OnboardingLayout
-      image={require('../../../../assets/onboarding/appearance.png')}
+      image={require('../../../../assets/onboarding/appearance.jpg')}
       title={t('onboarding.appearance.title', 'Appearance')}
       description={t('onboarding.appearance.description', 'Choose how the application should look.')}
       onNext={onDone}
@@ -67,18 +67,18 @@ export const OnboardingThemeStep: React.FC<{ onDone: () => void; onBack: () => v
               styles.iconWrapper,
               { backgroundColor: selectedTheme === item.id ? (theme.dark ? 'rgba(33, 150, 243, 0.15)' : 'rgba(33, 150, 243, 0.08)') : (theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)') }
             ]}>
-              <MaterialCommunityIcons 
-                name={item.icon} 
-                size={28} 
-                color={selectedTheme === item.id ? theme.colors.primary : (theme.dark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)')} 
+              <MaterialCommunityIcons
+                name={item.icon}
+                size={28}
+                color={selectedTheme === item.id ? theme.colors.primary : (theme.dark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)')}
               />
             </View>
-            <Text 
-              variant="labelLarge" 
+            <Text
+              variant="labelLarge"
               numberOfLines={1}
               ellipsizeMode="tail"
               style={[
-                styles.label, 
+                styles.label,
                 { color: selectedTheme === item.id ? theme.colors.onBackground : (theme.dark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)') }
               ]}
             >

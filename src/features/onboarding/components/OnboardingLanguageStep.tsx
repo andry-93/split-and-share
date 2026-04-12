@@ -15,14 +15,12 @@ export const OnboardingLanguageStep: React.FC<{ onNext: () => void }> = ({ onNex
   const [selectedLang, setSelectedLang] = useState(normalizeLanguageCode(settings.language));
 
   const handleNext = () => {
-    dispatch(settingsActions.setLanguage({ language: selectedLang }));
-    i18n.changeLanguage(selectedLang.toLowerCase());
     onNext();
   };
 
   return (
     <OnboardingLayout
-      image={require('../../../../assets/onboarding/language.png')}
+      image={require('../../../../assets/onboarding/language.jpg')}
       title={t('onboarding.language.title', 'Select Language')}
       description={t('onboarding.language.description', 'Choose your preferred language for the application interface.')}
       onNext={handleNext}
@@ -32,7 +30,11 @@ export const OnboardingLanguageStep: React.FC<{ onNext: () => void }> = ({ onNex
         <IPhonePicker
           data={SUPPORTED_LANGUAGE_OPTIONS}
           selectedValue={SUPPORTED_LANGUAGE_OPTIONS.find(o => o.value === selectedLang) || SUPPORTED_LANGUAGE_OPTIONS[0]}
-          onValueChange={(item) => setSelectedLang(item.value)}
+          onValueChange={(item) => {
+            setSelectedLang(item.value);
+            dispatch(settingsActions.setLanguage({ language: item.value }));
+            i18n.changeLanguage(item.value.toLowerCase());
+          }}
           renderLabel={(item) => item.label}
           itemHeight={52}
         />

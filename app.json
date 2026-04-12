@@ -25,6 +25,7 @@
       }
     },
     "android": {
+      "ndkVersion": "29.0.14206865",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ecf7fa"
@@ -60,6 +61,14 @@
           "resizeMode": "contain",
           "dark": {
             "backgroundColor": "#081633"
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "ndkVersion": "29.0.14206865"
           }
         }
       ]

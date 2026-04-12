@@ -20,14 +20,14 @@ export const OnboardingButton: React.FC<OnboardingButtonProps> = ({
 }) => {
   const theme = useTheme();
   const isPrimary = mode === 'primary';
-  
+
   // Use theme colors for dynamic dark/light mode support
-  const buttonBg = isPrimary 
-    ? theme.colors.primary 
+  const buttonBg = isPrimary
+    ? theme.colors.primary
     : theme.dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
-  
-  const textColor = isPrimary 
-    ? theme.colors.onPrimary 
+
+  const textColor = isPrimary
+    ? theme.colors.onBackground
     : theme.colors.primary;
 
   return (
@@ -36,10 +36,6 @@ export const OnboardingButton: React.FC<OnboardingButtonProps> = ({
       style={[
         styles.button,
         { backgroundColor: buttonBg },
-        !isPrimary && { 
-          borderWidth: 1.5, 
-          borderColor: theme.dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)' 
-        },
         style
       ]}
     >

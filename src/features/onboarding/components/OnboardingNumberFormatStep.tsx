@@ -12,7 +12,7 @@ export const OnboardingNumberFormatStep: React.FC<{ onNext: () => void; onBack: 
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const settings = useAppSelector(selectSettingsState);
-  
+
   // Default to 'ru' if 'system' was selected, or use current setting if it's already a specific choice
   const initialFormat = settings.numberFormat === 'system' ? 'ru' : settings.numberFormat;
   const [selectedFormat, setSelectedFormat] = useState<SettingsState['numberFormat']>(initialFormat);
@@ -31,7 +31,7 @@ export const OnboardingNumberFormatStep: React.FC<{ onNext: () => void; onBack: 
 
   return (
     <OnboardingLayout
-      image={require('../../../../assets/onboarding/numbers.png')}
+      image={require('../../../../assets/onboarding/numbers.jpg')}
       title={t('onboarding.numberFormat.title', 'Number Format')}
       description={t('onboarding.numberFormat.description', 'Choose how you want your amounts and prices to be displayed.')}
       onNext={handleNext}

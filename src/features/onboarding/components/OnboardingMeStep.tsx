@@ -20,7 +20,7 @@ export const OnboardingMeStep: React.FC<{ onNext: () => void; onBack: () => void
 
   const handleNext = () => {
     if (!name.trim()) return;
-    
+
     dispatch(peopleActions.updatePerson({
       id: me.id,
       name: name.trim(),
@@ -40,7 +40,7 @@ export const OnboardingMeStep: React.FC<{ onNext: () => void; onBack: () => void
 
   return (
     <OnboardingLayout
-      image={require('../../../../assets/onboarding/contact.png')}
+      image={require('../../../../assets/onboarding/contact.jpg')}
       title={t('onboarding.me.title', 'About You')}
       description={t('onboarding.me.description', 'How should others see you? This information will be used for your profile.')}
       onNext={handleNext}
@@ -48,12 +48,12 @@ export const OnboardingMeStep: React.FC<{ onNext: () => void; onBack: () => void
       nextLabel={t('common.next', 'Next')}
       backLabel={t('common.back', 'Back')}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.form}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

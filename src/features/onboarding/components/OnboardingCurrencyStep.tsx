@@ -29,7 +29,7 @@ export const OnboardingCurrencyStep: React.FC<{ onNext: () => void; onBack: () =
 
   return (
     <OnboardingLayout
-      image={require('../../../../assets/onboarding/currency.png')}
+      image={require('../../../../assets/onboarding/currency.jpg')}
       title={t('onboarding.currency.title', 'Default Currency')}
       description={t('onboarding.currency.description', 'Choose the main currency for your events.')}
       onNext={handleNext}
