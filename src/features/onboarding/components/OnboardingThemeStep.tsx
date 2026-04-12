@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '@/state/store';
 import { settingsActions } from '@/state/settings/settingsSlice';
 import { selectSettingsState } from '@/state/settings/settingsSelectors';

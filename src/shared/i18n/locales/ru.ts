@@ -224,6 +224,11 @@ const locale = {
         message: 'Эта копилка и все связанные с ней платежи и расходы будут удалены.',
       },
       poolNameRequired: 'Введите название копилки.',
+      totalAccumulated: 'Итого накоплено',
+      contributors: 'Кто пополнил',
+      addContributor: 'Пополнить',
+      noContributors: 'Нет пополнивших',
+      insufficientBalance: 'Недостаточно средств в копилке для этой траты',
     },
   },
   people: {

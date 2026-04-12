@@ -133,12 +133,11 @@ export const PoolsPanel = memo(function PoolsPanel({
   }
 
   return (
-    <View style={[styles.rawListWrapper, styles.peopleSectionSpacing]}>
+    <View style={styles.rawListWrapper}>
       <AppList
         data={pools}
         keyExtractor={(item) => item.id}
-        containerStyle={styles.rawListContainer}
-        listStyle={styles.rawList}
+        showDividers={true}
         renderItem={({ item }) => renderPoolItem({ item })}
       />
 

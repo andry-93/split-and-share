@@ -1,4 +1,4 @@
-export type PaymentSource = 'detailed' | 'simplified';
+export type PaymentSource = 'detailed' | 'simplified' | 'pool';
 
 export type EventPayment = {
   id: string;

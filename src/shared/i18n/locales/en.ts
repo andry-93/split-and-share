@@ -224,6 +224,11 @@ const en = {
         message: 'This pool and all related payments and expenses will be deleted.',
       },
       poolNameRequired: 'Pool name is required.',
+      totalAccumulated: 'Total accumulated',
+      contributors: 'Contributors',
+      addContributor: 'Add Funds',
+      noContributors: 'No contributors',
+      insufficientBalance: 'Insufficient pool balance for this expense',
     },
   },
   people: {

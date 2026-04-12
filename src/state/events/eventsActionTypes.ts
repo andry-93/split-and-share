@@ -67,12 +67,14 @@ export type AddPoolPayload = {
     id: string;
     name: string;
   };
+  contributions?: EventPayment[];
 };
 
 export type UpdatePoolPayload = {
   eventId: string;
   poolId: string;
   name: string;
+  contributions?: EventPayment[];
 };
 
 export type RemovePoolPayload = {

@@ -115,6 +115,14 @@ function normalizeEventItem(value: EventItem): EventItem {
       .filter((id): id is string => typeof id === 'string' && id.length > 0),
   );
   const allParticipantIds = Array.from(participantIdsSet);
+  const poolIdsSet = new Set(
+    (Array.isArray((value as { pools?: unknown[] }).pools)
+      ? (value as { pools?: unknown[] }).pools ?? []
+      : []
+    )
+      .map((pool) => (isRecord(pool) && typeof pool.id === 'string' ? pool.id : null))
+      .filter((id): id is string => typeof id === 'string' && id.length > 0),
+  );
 
   return {
     ...value,
@@ -151,7 +159,9 @@ function normalizeEventItem(value: EventItem): EventItem {
             splitBetweenIds:
               normalizedSplitBetween.length > 0
                 ? normalizedSplitBetween
-                : allParticipantIds,
+                : poolIdsSet.has((expense as { paidById?: string }).paidById ?? '')
+                  ? []
+                  : allParticipantIds,
             createdAt: expenseCreatedAt,
             updatedAt: expenseUpdatedAt,
           };
@@ -194,7 +204,7 @@ function isEventPayment(value: unknown): value is EventPayment {
     typeof value.toId === 'string' &&
     Number.isFinite(value.amountMinor) &&
     typeof value.createdAt === 'string' &&
-    (value.source === 'detailed' || value.source === 'simplified')
+    (value.source === 'detailed' || value.source === 'simplified' || value.source === 'pool')
   );
 }
 

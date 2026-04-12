@@ -21,6 +21,26 @@ import {
   RemovePoolPayload,
   UpdateParticipantEverywherePayload,
 } from '@/state/events/eventsActionTypes';
+import { EventPayment } from '@/state/events/paymentsModel';
+
+function resetDebtPaymentsForEvent(state: EventsState, eventId: string): void {
+  const currentPayments = state.paymentsByEvent[eventId] ?? [];
+  if (currentPayments.length === 0) {
+    state.paymentsByEvent[eventId] = [];
+    return;
+  }
+
+  const poolIdSet = new Set(
+    (state.events.find((event) => event.id === eventId)?.pools ?? []).map((pool) => pool.id),
+  );
+
+  state.paymentsByEvent[eventId] = currentPayments.filter(
+    (payment) =>
+      payment.source === 'pool' ||
+      poolIdSet.has(payment.toId) ||
+      poolIdSet.has(payment.fromId),
+  );
+}
 
 export const eventsSlice = createSlice({
   name: 'events',
@@ -111,7 +131,7 @@ export const eventsSlice = createSlice({
             }
           : event,
       );
-      state.paymentsByEvent[eventId] = [];
+      resetDebtPaymentsForEvent(state, eventId);
     },
     updateExpense: (state, action: PayloadAction<UpdateExpensePayload>) => {
       const now = new Date().toISOString();
@@ -137,7 +157,7 @@ export const eventsSlice = createSlice({
             }
           : event,
       );
-      state.paymentsByEvent[eventId] = [];
+      resetDebtPaymentsForEvent(state, eventId);
     },
     addParticipants: (state, action: PayloadAction<AddParticipantsPayload>) => {
       const now = new Date().toISOString();
@@ -157,7 +177,7 @@ export const eventsSlice = createSlice({
             }
           : event,
       );
-      state.paymentsByEvent[eventId] = [];
+      resetDebtPaymentsForEvent(state, eventId);
     },
     registerPayment: (state, action: PayloadAction<RegisterPaymentPayload>) => {
       const now = new Date().toISOString();
@@ -216,7 +236,7 @@ export const eventsSlice = createSlice({
             })()
           : event,
       );
-      state.paymentsByEvent[eventId] = [];
+      resetDebtPaymentsForEvent(state, eventId);
     },
     removePeopleEverywhere: (state, action: PayloadAction<RemovePeopleEverywherePayload>) => {
       const now = new Date().toISOString();
@@ -316,11 +336,11 @@ export const eventsSlice = createSlice({
             }
           : event,
       );
-      state.paymentsByEvent[eventId] = [];
+      resetDebtPaymentsForEvent(state, eventId);
     },
     addPool: (state, action: PayloadAction<AddPoolPayload>) => {
       const now = new Date().toISOString();
-      const { eventId, pool } = action.payload;
+      const { eventId, pool, contributions } = action.payload;
       state.events = state.events.map((event) =>
         event.id === eventId
           ? {
@@ -337,10 +357,15 @@ export const eventsSlice = createSlice({
             }
           : event,
       );
+
+      if (contributions) {
+        const currentPayments = state.paymentsByEvent[eventId] ?? [];
+        state.paymentsByEvent[eventId] = [...currentPayments, ...contributions];
+      }
     },
     updatePool: (state, action: PayloadAction<UpdatePoolPayload>) => {
       const now = new Date().toISOString();
-      const { eventId, poolId, name } = action.payload;
+      const { eventId, poolId, name, contributions } = action.payload;
       state.events = state.events.map((event) =>
         event.id === eventId
           ? {
@@ -358,6 +383,12 @@ export const eventsSlice = createSlice({
             }
           : event,
       );
+
+      if (contributions) {
+        const currentPayments = state.paymentsByEvent[eventId] ?? [];
+        const otherPayments = currentPayments.filter((p) => p.toId !== poolId);
+        state.paymentsByEvent[eventId] = [...otherPayments, ...contributions];
+      }
     },
     removePool: (state, action: PayloadAction<RemovePoolPayload>) => {
       const now = new Date().toISOString();

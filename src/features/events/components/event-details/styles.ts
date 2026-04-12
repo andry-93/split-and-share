@@ -176,6 +176,7 @@ export const eventDetailsStyles = StyleSheet.create({
   rawListWrapper: {
     flex: 1,
     paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 12,
   },
   debtsListWrapper: {
@@ -191,9 +192,7 @@ export const eventDetailsStyles = StyleSheet.create({
     marginBottom: 8,
   },
   rawListContainer: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    overflow: 'hidden',
+    // Flat style: no border or radius around the whole list
   },
   rawListContainerHeight: {
     overflow: 'hidden',

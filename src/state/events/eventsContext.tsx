@@ -6,6 +6,8 @@ import {
   selectEffectiveRawDebts,
   selectEventById,
   selectEventsState,
+  selectPayments,
+  selectPoolBalanceMap,
   selectRawDebts,
   selectSimplifiedDebts,
 } from '@/state/events/eventsSelectors';
@@ -112,11 +114,24 @@ export function useEventsActions() {
           throw new Error(i18n.t('events.amountPositiveRequired'));
         }
 
+        const event = eventsState.events.find((e) => e.id === payload.eventId);
+        const poolIds = new Set((event?.pools ?? []).map((p) => p.id));
+        const paidByIsPool = payload.expense.paidById ? poolIds.has(payload.expense.paidById) : false;
+
         const normalizedSplitBetweenIds = Array.from(
           new Set(payload.expense.splitBetweenIds ?? []),
         ).filter(Boolean);
-        if (normalizedSplitBetweenIds.length === 0) {
+        if (!paidByIsPool && normalizedSplitBetweenIds.length === 0) {
           throw new Error(i18n.t('events.splitBetweenRequired'));
+        }
+        // Pool always fronts the FULL expense amount from its balance
+        if (paidByIsPool && payload.expense.paidById) {
+          const payments = selectPayments(eventsState, payload.eventId);
+          const poolBalanceMap = selectPoolBalanceMap(event!, payments);
+          const currentBalanceMinor = Math.round((poolBalanceMap.get(payload.expense.paidById) ?? 0) * 100);
+          if (payload.expense.amountMinor > currentBalanceMinor) {
+            throw new Error(i18n.t('events.pools.insufficientBalance'));
+          }
         }
 
         const nextExpense = {
@@ -149,11 +164,30 @@ export function useEventsActions() {
           throw new Error(i18n.t('events.amountPositiveRequired'));
         }
 
+        const event2 = eventsState.events.find((e) => e.id === payload.eventId);
+        const poolIds2 = new Set((event2?.pools ?? []).map((p) => p.id));
+        const paidByIsPool2 = payload.patch.paidById ? poolIds2.has(payload.patch.paidById) : false;
+
         const normalizedSplitBetweenIds = Array.from(
           new Set(payload.patch.splitBetweenIds ?? []),
         ).filter(Boolean);
-        if (normalizedSplitBetweenIds.length === 0) {
+        if (!paidByIsPool2 && normalizedSplitBetweenIds.length === 0) {
           throw new Error(i18n.t('events.splitBetweenRequired'));
+        }
+        // Pool always fronts the FULL expense amount from its balance.
+        // For update, we first add back the old expense to restore the pre-edit balance.
+        if (paidByIsPool2 && payload.patch.paidById) {
+          const payments2 = selectPayments(eventsState, payload.eventId);
+          const poolBalanceMap2 = selectPoolBalanceMap(event2!, payments2);
+          const currentBalanceMinor2 = Math.round((poolBalanceMap2.get(payload.patch.paidById) ?? 0) * 100);
+          const editingExpense = event2?.expenses.find((e) => e.id === payload.expenseId);
+          const oldExpenseAmountMinor = editingExpense?.paidById === payload.patch.paidById
+            ? (editingExpense?.amountMinor ?? 0)
+            : 0;
+          const availableBalanceMinor = currentBalanceMinor2 + oldExpenseAmountMinor;
+          if (payload.patch.amountMinor > availableBalanceMinor) {
+            throw new Error(i18n.t('events.pools.insufficientBalance'));
+          }
         }
 
         dispatch(
@@ -244,7 +278,7 @@ export function useEventsActions() {
       removeExpenses: (payload: { eventId: string; expenseIds: string[] }) => {
         dispatch(eventsActions.removeExpenses(payload));
       },
-      addPool: (payload: { eventId: string; name: string; id?: string }) => {
+      addPool: (payload: { eventId: string; name: string; id?: string; contributions?: EventPayment[] }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
           throw new Error(i18n.t('events.pools.poolNameRequired'));
@@ -257,11 +291,12 @@ export function useEventsActions() {
               id: poolId,
               name: trimmedName,
             },
+            contributions: payload.contributions,
           }),
         );
         return poolId;
       },
-      updatePool: (payload: { eventId: string; poolId: string; name: string }) => {
+      updatePool: (payload: { eventId: string; poolId: string; name: string; contributions?: EventPayment[] }) => {
         const trimmedName = payload.name.trim();
         if (!trimmedName) {
           throw new Error(i18n.t('events.pools.poolNameRequired'));
@@ -271,6 +306,7 @@ export function useEventsActions() {
             eventId: payload.eventId,
             poolId: payload.poolId,
             name: trimmedName,
+            contributions: payload.contributions,
           }),
         );
       },

@@ -126,16 +126,34 @@ export function buildEventReportHtml({
     pools.length === 0
       ? `<tr><td colspan="2" class="muted">${escapeHtml(i18n.t('events.report.tableNoPools'))}</td></tr>`
       : pools
-          .map(
-            (pool) => `
+          .map((pool) => {
+            const rawContributions = payments.filter((p) => p.toId === pool.id);
+            const merged = new Map<string, number>();
+            for (const p of rawContributions) {
+              merged.set(p.fromId, (merged.get(p.fromId) ?? 0) + p.amountMinor);
+            }
+            
+            const contributionsList = Array.from(merged.entries()).map(([fromId, amount]) => {
+              const name = participantById.get(fromId) ?? fromId;
+              return `<li style="margin-bottom: 4px;">${escapeHtml(name)}: <span style="font-weight: 500; margin-left: 6px;">${formatMoneyFromMinor(currencyCode, amount, locale)}</span></li>`;
+            }).join('');
+            
+            const contributorsHtml = contributionsList.length > 0 
+                ? `<ul style="margin: 8px 0 0; padding-left: 20px; color: #4B5563; font-size: 15px;">${contributionsList}</ul>` 
+                : `<div style="margin-top: 6px; color: #9CA3AF; font-size: 14px;">${escapeHtml(i18n.t('events.pools.noContributors'))}</div>`;
+
+            return `
             <tr>
-              <td>${escapeHtml(pool.name)}</td>
-              <td style="color: ${(poolBalanceMap.get(pool.id) ?? 0) >= 0 ? '#16A34A' : '#DC2626'}">
+              <td style="vertical-align: top;">
+                <div style="font-weight: 600; font-size: 16px;">${escapeHtml(pool.name)}</div>
+                ${contributorsHtml}
+              </td>
+              <td style="color: ${(poolBalanceMap.get(pool.id) ?? 0) >= 0 ? '#16A34A' : '#DC2626'}; vertical-align: top; padding-top: 13px; font-weight: 600; font-size: 16px;">
                 ${formatMoneyFromMinor(currencyCode, toMinorUnits(poolBalanceMap.get(pool.id) ?? 0), locale)}
               </td>
             </tr>
-          `,
-          )
+          `;
+          })
           .join('');
 
   return `

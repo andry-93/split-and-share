@@ -94,8 +94,10 @@ export function selectRawDebts(event?: EventItem): RawDebt[] {
     return [];
   }
 
+  const pools = event.pools ?? [];
+  const poolIds = new Set(pools.map((p) => p.id));
   const participantById = createParticipantMap(event.participants);
-  (event.pools ?? []).forEach((pool) => {
+  pools.forEach((pool) => {
     participantById.set(pool.id, { id: pool.id, name: pool.name });
   });
 
@@ -103,9 +105,10 @@ export function selectRawDebts(event?: EventItem): RawDebt[] {
     eventId: event.id,
     participants: [
       ...event.participants,
-      ...(event.pools ?? []).map((pool) => ({ id: pool.id, name: pool.name })),
+      ...pools.map((pool) => ({ id: pool.id, name: pool.name })),
     ],
     expenses: event.expenses,
+    poolIds,
   });
 
   return mapDebtMinorToRawDebts(rawDebts, participantById);

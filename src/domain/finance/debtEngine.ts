@@ -14,6 +14,7 @@ type ComputeRawDebtsInput = {
   eventId: string;
   participants: ParticipantItem[];
   expenses: ExpenseItem[];
+  poolIds?: Set<string>;
 };
 
 function compactDebts(debts: DebtMinor[]) {
@@ -24,13 +25,17 @@ export function computeRawDebts({
   eventId,
   participants,
   expenses,
+  poolIds = new Set(),
 }: ComputeRawDebtsInput): DebtMinor[] {
   if (participants.length === 0 || expenses.length === 0) {
     return [];
   }
 
   const participantsById = new Map(participants.map((participant) => [participant.id, participant]));
-  const participantIds = participants.map((participant) => participant.id);
+  // Only human participants (non-pool) can appear in splitBetweenIds fallback
+  const humanParticipantIds = participants
+    .filter((p) => !poolIds.has(p.id))
+    .map((p) => p.id);
 
   return compactDebts(
     expenses.flatMap((expense) => {
@@ -41,7 +46,18 @@ export function computeRawDebts({
         return [];
       }
 
-      const splitBetweenIds = sanitizeSplitParticipantIds(expense.splitBetweenIds, participantIds);
+      // If payer is a pool and no explicit split was set, don't create debts.
+      // The expense is simply deducted from the pool balance.
+      const payerIsPool = expense.paidById ? poolIds.has(expense.paidById) : false;
+      const hasExplicitSplit = (expense.splitBetweenIds?.length ?? 0) > 0;
+      const allowEmpty = payerIsPool && !hasExplicitSplit;
+
+      // Use humanParticipantIds for fallback so pools are never auto-included as debtors
+      const splitBetweenIds = sanitizeSplitParticipantIds(
+        expense.splitBetweenIds,
+        humanParticipantIds,
+        allowEmpty,
+      );
       if (splitBetweenIds.length === 0) {
         return [];
       }

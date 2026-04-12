@@ -40,16 +40,15 @@ export const BottomPrimaryActionBar = memo(function BottomPrimaryActionBar({
       <View style={[styles.actionsRow, hasSecondary ? styles.actionsRowDual : null]}>
         {hasSecondary ? (
           <Button
-            mode="outlined"
+            mode="contained-tonal"
             onPress={onSecondaryPress}
             disabled={secondaryDisabled}
             style={[
               styles.actionButton,
               styles.actionButtonHalf,
-              styles.secondaryActionButton,
-              { borderColor: theme.colors.error },
             ]}
-            textColor={theme.colors.error}
+            buttonColor={theme.colors.errorContainer}
+            textColor={theme.colors.onErrorContainer}
           >
             {secondaryLabel}
           </Button>
@@ -79,8 +78,5 @@ const styles = StyleSheet.create({
   },
   actionButtonHalf: {
     flex: 1,
-  },
-  secondaryActionButton: {
-    borderWidth: 1,
   },
 });

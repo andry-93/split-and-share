@@ -21,7 +21,7 @@ import { useDismissBottomSheetsOnBlur } from '@/shared/hooks/useDismissBottomShe
 import { useSelectionListMode } from '@/shared/hooks/useSelectionListMode';
 import { normalizeCurrencyCode } from '@/shared/utils/currency';
 import { formatShortEventDate } from '@/shared/utils/date';
-import { formatCurrencyAmount } from '@/shared/utils/money';
+import { formatCurrencyAmount, fromMinorUnits } from '@/shared/utils/money';
 import { getLanguageLocale } from '@/state/settings/languageCatalog';
 import { SelectionActionToolbar } from '@/shared/ui/SelectionActionToolbar';
 import { SelectionDeleteConfirm } from '@/shared/ui/SelectionDeleteConfirm';
@@ -519,12 +519,12 @@ const EventCard = memo(function EventCard({
     }
     if (balance > 0) {
       return {
-        text: t('events.cards.collect', { amount: formatCurrencyAmount(eventCurrencyCode, balance) }),
+        text: t('events.cards.collect', { amount: formatCurrencyAmount(eventCurrencyCode, fromMinorUnits(balance)) }),
         tone: 'positive' as const,
       };
     }
     return {
-      text: t('events.cards.pay', { amount: formatCurrencyAmount(eventCurrencyCode, Math.abs(balance)) }),
+      text: t('events.cards.pay', { amount: formatCurrencyAmount(eventCurrencyCode, fromMinorUnits(Math.abs(balance))) }),
       tone: 'negative' as const,
     };
   }, [currentUserId, effectiveDebts, event.participants, eventCurrencyCode, t]);

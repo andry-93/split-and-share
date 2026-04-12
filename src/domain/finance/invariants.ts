@@ -7,12 +7,17 @@ type PaymentValidationResult =
 export function sanitizeSplitParticipantIds(
   splitBetweenIds: readonly string[] | undefined,
   allParticipantIds: readonly string[],
+  allowEmptyResult = false,
 ): string[] {
   const allowed = new Set(allParticipantIds.filter(Boolean));
   const sanitized = Array.from(new Set((splitBetweenIds ?? []).filter((id) => allowed.has(id))));
 
   if (sanitized.length > 0) {
     return sanitized;
+  }
+
+  if (allowEmptyResult) {
+    return [];
   }
 
   return Array.from(new Set(allParticipantIds.filter(Boolean)));

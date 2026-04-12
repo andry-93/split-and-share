@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -70,7 +71,7 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
       const effectiveRawDebts = selectEffectiveRawDebts(rawDebts, payments);
       const detailedDebts = selectDetailedDebts(effectiveRawDebts);
       const simplifiedDebts = selectSimplifiedDebts(effectiveRawDebts);
-      const poolBalanceMap = selectPoolBalanceMap(event, effectiveRawDebts);
+      const poolBalanceMap = selectPoolBalanceMap(event, payments);
       const html = buildEventReportHtml({
         appName: 'Split & Share',
         event,
@@ -105,11 +106,31 @@ export function useEventReportPreview({ eventId }: UseEventReportPreviewInput) {
     }
   }, [event, eventsState, settings.currency, settings.debtsViewMode, settings.language]);
 
+  const prevDepsRef = useRef<string>('');
+
   useEffect(() => {
-    if (!pdfUri && !isGenerating) {
+    if (!event) return;
+    
+    // Build a lightweight signature of the data that affects the report
+    const signature = JSON.stringify({
+      eventId: event.id,
+      updatedAt: event.updatedAt,
+      paymentsCount: Object.values(eventsState.paymentsByEvent).flat().length,
+    });
+
+    if (pdfUri && prevDepsRef.current === signature) return;
+    prevDepsRef.current = signature;
+
+    // If data changed after generating a PDF, reset it so it regenerates
+    if (pdfUri) {
+      setPdfUri(null);
+      return;
+    }
+
+    if (!isGenerating) {
       void generatePdf();
     }
-  }, [generatePdf, isGenerating, pdfUri]);
+  }, [generatePdf, isGenerating, pdfUri, event, eventsState.paymentsByEvent]);
 
   const handleShare = useCallback(async () => {
     if (!pdfUri) {

@@ -25,31 +25,43 @@ export function useAddExpenseForm({
   initialPaidById,
   initialSplitBetweenIds,
 }: UseAddExpenseFormInput) {
+  const hasInitialSplitBetweenIds = initialSplitBetweenIds !== undefined;
   const [amount, setAmount] = useState(initialAmount);
   const [title, setTitle] = useState(initialTitle);
   const [paidById, setPaidById] = useState(initialPaidById ?? participants[0]?.id ?? '');
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>(
-    initialSplitBetweenIds?.length ? initialSplitBetweenIds : participants.map((participant) => participant.id),
+    hasInitialSplitBetweenIds
+      ? [...(initialSplitBetweenIds ?? [])]
+      : participants.map((participant) => participant.id),
   );
 
+  const poolIds = useMemo(() => new Set(pools.map((p) => p.id)), [pools]);
+  const paidByIsPool = useMemo(() => poolIds.has(paidById), [poolIds, paidById]);
+
+  // Exclude the payer from the split-between list (they're already in the calculation)
   const participantOptions = useMemo(
     () =>
-      sortPeopleWithCurrentUserFirst(participants).map((participant) => ({
-        id: participant.id,
-        name: participant.name,
-      })),
-    [participants],
+      sortPeopleWithCurrentUserFirst(participants)
+        .filter((p) => p.id !== paidById)
+        .map((participant) => ({
+          id: participant.id,
+          name: participant.name,
+        })),
+    [participants, paidById],
   );
 
   const payerOptions = useMemo(
     () => [
-      ...participantOptions,
+      ...sortPeopleWithCurrentUserFirst(participants).map((participant) => ({
+        id: participant.id,
+        name: participant.name,
+      })),
       ...pools.map((pool) => ({
         id: pool.id,
         name: pool.name,
       })),
     ],
-    [participantOptions, pools],
+    [participants, pools],
   );
 
   const participantIds = useMemo(
@@ -82,14 +94,15 @@ export function useAddExpenseForm({
     if (!amount.trim() || !title.trim() || !paidById.trim()) {
       return true;
     }
-    if (selectedParticipantIds.length === 0) {
+    // When payer is a pool, no split-between participants are required
+    if (!paidByIsPool && selectedParticipantIds.length === 0) {
       return true;
     }
     if (!Number.isFinite(parsedAmountMinor) || parsedAmountMinor <= 0) {
       return true;
     }
     return false;
-  }, [amount, paidById, parsedAmountMinor, selectedParticipantIds.length, title]);
+  }, [amount, paidById, paidByIsPool, parsedAmountMinor, selectedParticipantIds.length, title]);
 
   // Track the identity of the expense being edited to avoid redundant resets
   const lastInitializedIdRef = useRef<string | undefined>(undefined);
@@ -111,7 +124,9 @@ export function useAddExpenseForm({
     }
 
     const defaultIds = participants.map((p) => p.id);
-    const nextSelectedIds = initialSplitBetweenIds?.length ? initialSplitBetweenIds : defaultIds;
+    const nextSelectedIds = hasInitialSplitBetweenIds
+      ? [...(initialSplitBetweenIds ?? [])]
+      : defaultIds;
     
     setSelectedParticipantIds((prev) => {
       if (nextSelectedIds.length === prev.length && nextSelectedIds.every((v, i) => v === prev[i])) {
@@ -119,7 +134,15 @@ export function useAddExpenseForm({
       }
       return nextSelectedIds;
     });
-  }, [initialAmount, initialPaidById, initialSplitBetweenIds, initialTitle, participants, currentExpenseId]);
+  }, [
+    hasInitialSplitBetweenIds,
+    initialAmount,
+    initialPaidById,
+    initialSplitBetweenIds,
+    initialTitle,
+    participants,
+    currentExpenseId,
+  ]);
 
   useEffect(() => {
     if (payerOptions.length === 0) {
@@ -135,15 +158,14 @@ export function useAddExpenseForm({
     
     const participantIdSet = new Set(participantOptions.map((p) => p.id));
     setSelectedParticipantIds((prev) => {
-      const next = prev.filter((id) => participantIdSet.has(id));
-      const final = next.length > 0 ? next : [...participantIds];
-      
+      const final = prev.filter((id) => participantIdSet.has(id));
+
       if (final.length === prev.length && final.every((v, i) => v === prev[i])) {
         return prev;
       }
       return final;
     });
-  }, [participantIds, participantOptions, payerOptions]);
+  }, [participantOptions, payerOptions, paidById]);
 
   const toggleParticipant = useCallback((participantId: string) => {
     setSelectedParticipantIds((prev) =>
@@ -151,6 +173,17 @@ export function useAddExpenseForm({
         ? prev.filter((item) => item !== participantId)
         : [...prev, participantId],
     );
+  }, []);
+
+  const changePaidById = useCallback((nextPaidById: string) => {
+    setPaidById((prevPaidById) => {
+      if (prevPaidById === nextPaidById) {
+        return prevPaidById;
+      }
+      // UX: when payer changes, reset split-between selection.
+      setSelectedParticipantIds([]);
+      return nextPaidById;
+    });
   }, []);
 
   return {
@@ -164,6 +197,7 @@ export function useAddExpenseForm({
     participantIds,
     selectedCurrencyCode,
     paidBy,
+    paidByIsPool,
     isExpression,
     calculationResult,
     parsedAmountMinor,
@@ -171,6 +205,7 @@ export function useAddExpenseForm({
     setAmount,
     setTitle,
     setPaidById,
+    changePaidById,
     setSelectedParticipantIds,
     toggleParticipant,
   };

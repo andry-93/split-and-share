@@ -137,15 +137,14 @@ export const PeoplePanel = memo(function PeoplePanel({
   }
 
   return (
-    <View style={[styles.rawListWrapper, styles.peopleSectionSpacing]}>
+    <View style={styles.rawListWrapper}>
       <AppList
         data={sortedParticipants}
         keyExtractor={(item) => item.id}
-        containerStyle={styles.rawListContainer}
-        listStyle={styles.rawList}
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         windowSize={5}
+        showDividers={true}
         renderItem={({ item }) => renderParticipantItem({ item })}
       />
 

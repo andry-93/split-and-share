@@ -69,7 +69,7 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
     isSaveDisabled,
     setAmount,
     setTitle,
-    setPaidById,
+    changePaidById,
     payerOptions,
     toggleParticipant,
   } = useAddExpenseForm({
@@ -95,9 +95,9 @@ export function AddExpenseScreen({ navigation, route }: AddExpenseScreenProps) {
   }, [navigation]);
 
   const handleSelectPaidBy = useCallback((id: string) => {
-    setPaidById(id);
+    changePaidById(id);
     sheetRef.current?.dismiss();
-  }, [setPaidById]);
+  }, [changePaidById]);
 
   const paidByOptions = useMemo(
     () =>
