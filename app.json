@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-icon-transparent.png",
       "resizeMode": "contain",
       "backgroundColor": "#ecf7fa",
       "dark": {
@@ -28,7 +28,10 @@
       "ndkVersion": "29.0.14206865",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ecf7fa"
+        "backgroundColor": "#ecf7fa",
+        "dark": {
+          "backgroundColor": "#081633"
+        }
       },
       "splash": {
         "backgroundColor": "#ecf7fa",
@@ -57,9 +60,10 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#ecf7fa",
-          "image": "./assets/splash-icon.png",
+          "image": "./assets/splash-icon-transparent.png",
           "resizeMode": "contain",
           "dark": {
+            "image": "./assets/splash-icon-transparent.png",
             "backgroundColor": "#081633"
           }
         }
