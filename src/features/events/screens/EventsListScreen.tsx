@@ -532,8 +532,8 @@ const EventCard = memo(function EventCard({
   const statusStyle = useMemo(() => {
     if (status.tone === 'positive') {
       return {
-        backgroundColor: theme.colors.successContainer,
-        color: theme.colors.onSuccessContainer,
+        backgroundColor: (theme.colors as any).successContainer,
+        color: (theme.colors as any).onSuccessContainer,
         borderColor: theme.colors.outlineVariant,
       };
     }
@@ -557,8 +557,8 @@ const EventCard = memo(function EventCard({
     theme.colors.onSurfaceVariant,
     theme.colors.outlineVariant,
     theme.colors.surface,
-    theme.colors.successContainer,
-    theme.colors.onSuccessContainer,
+    (theme.colors as any).successContainer,
+    (theme.colors as any).onSuccessContainer,
   ]);
 
   return (

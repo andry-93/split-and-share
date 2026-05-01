@@ -13,7 +13,7 @@ import {
 } from '@/state/events/eventsSelectors';
 import { persistEvents } from '@/state/events/eventsStateInit';
 import { eventsActions } from '@/state/events/eventsSlice';
-import { createEventPayment, PaymentSource } from '@/state/events/paymentsModel';
+import { createEventPayment, PaymentSource, EventPayment } from '@/state/events/paymentsModel';
 import { useAppDispatch, useAppSelector } from '@/state/store';
 import { createEntityId } from '@/shared/utils/id';
 import { normalizeOptionalText } from '@/shared/utils/validation';

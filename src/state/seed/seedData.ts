@@ -205,6 +205,7 @@ export function createInitialEventsSeed(): EventItem[] {
       groupId: event.groupId,
       createdAt: event.createdAt ?? new Date(0).toISOString(),
       updatedAt: event.updatedAt ?? event.createdAt ?? new Date(0).toISOString(),
+      pools: [],
       participants,
       expenses: event.expenses
         .map((expense) => {

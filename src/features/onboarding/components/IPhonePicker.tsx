@@ -5,6 +5,7 @@ import Animated, {
   interpolate,
   useSharedValue,
   useAnimatedScrollHandler,
+  SharedValue,
 } from 'react-native-reanimated';
 import { Text, useTheme } from 'react-native-paper';
 
@@ -95,7 +96,7 @@ export function IPhonePicker<T>({
 interface ItemProps<T> {
   item: T;
   index: number;
-  scrollY: Animated.SharedValue<number>;
+  scrollY: SharedValue<number>;
   itemHeight: number;
   renderLabel: (item: T) => string;
   theme: any;

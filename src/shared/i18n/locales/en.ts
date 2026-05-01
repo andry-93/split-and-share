@@ -283,6 +283,9 @@ const en = {
     resetSettings: 'Reset settings',
     resetSettingsHint: 'Return app preferences to their default values.',
     resetSettingsConfirm: 'This will restore app preferences to default values.',
+    clearData: 'Clear all data',
+    clearDataHint: 'Delete all events, expenses, and contacts. This action cannot be undone.',
+    clearDataConfirm: 'This will permanently delete all your data (events, expenses, and people). Continue?',
     systemFollowsDevice: 'System follows your device appearance.',
     customCurrency: 'Custom currency',
     customCurrencyHint: 'Enter a custom currency symbol or code.',
@@ -368,6 +371,9 @@ const en = {
     appearance: {
       title: 'Appearance',
       description: 'Customize the look and feel of the app.',
+      light: 'Light',
+      dark: 'Dark',
+      system: 'System',
     },
   },
 };

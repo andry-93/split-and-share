@@ -36,8 +36,10 @@ function createEvent(participants: ParticipantItem[], splitBetweenIds: string[],
       },
     ],
     participants,
+    pools: [],
   };
 }
+
 
 function payment(
   id: string,

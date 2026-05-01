@@ -7,8 +7,8 @@ declare module 'react-native-paper' {
   }
 }
 
-export type AppTheme = MD3Theme & {
-  colors: {
+export type AppTheme = Omit<MD3Theme, 'colors'> & {
+  colors: MD3Theme['colors'] & {
     successContainer: string;
     onSuccessContainer: string;
   };
@@ -86,8 +86,8 @@ export const darkColorOverrides = {
   outlineVariant: '#3C5371',
   shadow: '#000000',
   scrim: '#000000',
-  inverseSurface: '#E8EEF9',
-  inverseOnSurface: '#1A2A45',
+  inverseSurface: '#1A2A45',
+  inverseOnSurface: '#E8EEF9',
   inversePrimary: '#93B4FF',
   elevation: {
     level0: 'transparent',

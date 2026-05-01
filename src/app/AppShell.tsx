@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Platform, StatusBar } from 'react-native';
-import { PaperProvider, Snackbar } from 'react-native-paper';
+import { PaperProvider, Snackbar, Text } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -92,8 +92,10 @@ export function AppShell() {
         <Snackbar
           visible={exitHintVisible}
           onDismiss={() => setExitHintVisible(false)}
+          theme={paperTheme}
+          style={{ backgroundColor: paperTheme.colors.surface }}
         >
-          {t('app.backExitHint')}
+          <Text style={{ color: paperTheme.colors.onSurface }}>{t('app.backExitHint')}</Text>
         </Snackbar>
       </BottomSheetModalProvider>
     </PaperProvider>
