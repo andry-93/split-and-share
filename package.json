@@ -52,6 +52,9 @@
     "react-redux": "^9.2.0"
   },
   "devDependencies": {
+    "@react-native-community/cli": "^20.1.2",
+    "@react-native/debugger-frontend": "^0.81.0",
+    "@react-native/metro-config": "^0.83.1",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.1.0",
     "babel-preset-expo": "~54.0.9",
